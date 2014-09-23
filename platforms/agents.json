@@ -1,0 +1,11 @@
+{
+  "default":{ "run-with": "vagrant", "rudder-version": "2.11" },
+  "agent1": { "rudder-setup": "node1", "system": "centos6" },
+  "agent2": { "rudder-setup": "node2", "system": "centos5" },
+  "agent3": { "rudder-setup": "node3", "system": "debian6" },
+  "agent4": { "rudder-setup": "node4", "system": "debian7" },
+  "agent5": { "rudder-setup": "node5", "system": "oracle6" },
+  "agent6": { "rudder-setup": "node6", "system": "sles11" },
+  "agent7": { "rudder-setup": "node7", "system": "ubuntu12" },
+  "agent8": { "rudder-setup": "node8", "system": "ubuntu14" }
+}

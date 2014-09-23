@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# various hacks to clean boxes from vagrantbox.es
+# no set -e since things may fail
+
+
+
+# old ubuntu release have no more mirror to rely on
+if [ "$(lsb_release -cs)" = "quantal" ]
+then
+  echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe" > /etc/apt/sources.list
+  echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
+fi
+
+# the centos5 box doesn't confiruge dns properly for vagrant
+if [ -f /etc/redhat-release ] && [ -x /usr/bin/lsb_release ]
+then
+  if [[ `cat /etc/redhat-release` =~ "CentOS release 5" ]]
+  then
+    echo "nameserver 10.0.2.3" > /etc/resolv.conf
+  fi
+fi
+
+# we don't want selinux and firewall
+setenforce 0 2>/dev/null
+service iptables stop 2>/dev/null
+

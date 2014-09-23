@@ -1,0 +1,202 @@
+#!/usr/bin/python
+
+
+# commands : 
+#   - run <test> <platform>
+#   - platform up <platform>
+#   - platform destroy <platform>
+
+import argparse
+import json
+import pprint
+import os
+import copy
+import re
+
+
+class Host:
+    def __init__(self, host_info):
+        self.info = host_info
+
+    def get_command(self, test_info):
+        # fill environment variables
+        env = "TEST_SYSTEM='" + self.info['system'] + "'"
+        env = env + " TEST_TYPE='" + self.info['rudder-setup'] + "'"
+
+        command_line = env + " sudo -E ./" + test_info['command']
+        command_line = "cd /vagrant/commands; " + command_line
+        return self.get_command_line(command_line)
+
+class Vagrant(Host):
+    def __init__(self, host_info):
+        Host.__init__(self, host_info)
+        self.hostid = self.info['rudder-setup'] + "_" + self.info['system']
+
+    # find the host matching description and set it up
+    def start(self):
+        os.system("vagrant up " + self.hostid)
+
+    # find the host matching description and stop it
+    def stop(self):
+        os.system("vagrant destroy " + self.hostid)
+
+    # get the full command to run it on this host
+    def get_command_line(self, command):
+        return "vagrant ssh " + self.hostid + " -c \"" + command + "\""
+
+
+host_types = { 'vagrant': Vagrant }
+
+
+class Platform:
+    def __init__(self, platform_info):
+        self.hosts = {}
+        # manage default values
+        default = platform_info['default']
+        for host in platform_info.keys():
+            if host == "default":
+                continue
+            host_info = copy.deepcopy(default)
+            host_info.update(platform_info[host])
+            class_name = host_info['run-with']
+            self.hosts[host] = host_types[class_name](host_info) # new Vagrant/AWS/... object
+
+    # startup the full platform
+    def setup(self):
+        for host in self.hosts.keys():
+            self.hosts[host].start()
+
+    # stop the full platform
+    def teardown(self):
+        for host in self.hosts.keys():
+            self.hosts[host].stop()
+
+    # get the full command to run the given test on its remote host
+    def test_command(self, test_info):
+        host = test_info['host']
+        cmd = ""
+        if host == "all-nodes":
+            for host in self.hosts.keys():
+                if re.match("node", self.hosts[host].info['rudder-setup']):
+                    cmd = cmd + self.hosts[host].get_command(test_info) + "\n"
+        elif host == "all-servers":
+            for host in self.hosts.keys():
+                if re.match("server", self.hosts[host].info['rudder-setup']):
+                    cmd = cmd + self.hosts[host].get_command(test_info) + "\n"
+        elif host == "all":
+            for host in self.hosts.keys():
+                cmd = cmd + self.hosts[host].get_command(test_info) + "\n"
+        else:
+            cmd = self.hosts[host].get_command(test_info) + "\n"
+        return cmd
+
+# Load a commented json
+def load_json(filename):
+    # read json from file
+    file = open(filename, 'r')
+    data = file.read()
+    file.close()
+    data = re.sub("\\/\\/.*", "", data)
+    return json.loads(data)
+
+# Get a platform object given it file name
+_platform = None
+def get_platform(name):
+    global _platform
+    if _platform is not None:
+        return _platform
+
+    platform_description = load_json("platforms/" + name + ".json", 'r')
+    _platform = Platform(platform_description)
+    return _platform
+ 
+############
+# COMMANDS #
+############
+
+# run one scenario
+def run(args):
+
+    # extract test json
+    file = open("tests/" + args.test + ".json", 'r')
+    test_description = json.loads(file.read())
+    file.close()
+
+    # setup platform
+    platform_setup(args)
+    platform = get_platform(args.platform)
+
+    # write tests commands to a single script
+    file = open("harness", "w")
+    file.write("#!/bin/bash\n\n")
+    file.write("cd commands\n\n")
+    for test_item in test_description['checks']:
+        file.write(platform.test_command(test_item))
+    file.close()
+    
+    # run tests
+    # we can prefix the command with "prove "
+    os.system("bash ./harness")
+
+# manage platform
+def platform(args):
+    if args.command == "setup":
+        platform_setup(args)
+    elif args.command == "destroy":
+        platform_destroy(args)
+
+# prepare a platform
+def platform_setup(args):
+    platform = get_platform(args.platform)
+    platform.setup()
+
+# finalize a platform
+def platform_destroy(args):
+    platform = get_platform(args.platform)
+    platform.teardown()
+
+
+
+# MAIN, argument parser and help
+
+if __name__ == "__main__":
+    # parse arguments
+    parser = argparse.ArgumentParser(prog='testing')
+    subparsers = parser.add_subparsers(help='sub-commands help')
+
+    run_parser = subparsers.add_parser('run', help='run help')
+    run_parser.add_argument('test', type=str, help='run test help')
+    run_parser.add_argument('platform', type=str, help='run test help')
+    run_parser.set_defaults(func=run)
+
+    platform_parser = subparsers.add_parser('pf', help='up help')
+    platform_parser.add_argument('command', type=str, help='pf help')
+    platform_parser.add_argument('platform', type=str, help='pf help')
+    platform_parser.set_defaults(func=platform)
+
+    args = parser.parse_args()
+    args.func(args)
+
+    print("Done")
+
+
+# test scenario {
+#   infra: { type: amazon;  force-new:true; }
+#   server-os: { type: debian7;  force-new:true; }
+#   server: { type: simple; version: last; force-new:true; }
+#   client-os: { type: debian4;  force-new:true; }
+#   client: { force-new:true; }
+#   tests: [ 
+#     { action: setup-technique ..., check: user valid ...; reset-after-test: true }
+#     { action: upgrade-os ..., check: user valid ... reset-after-test: false }
+#     { action: setup-technique ..., check: user valid ... }
+#     { action: setup-technique ..., check: user valid ... }
+#   ]
+# }
+
+# tester-db: {
+#   infra: { type: amazon; status: installed; connect-info: {...}  } 
+#   server: { type: simple; version: 2.10; linked-to: infra,amazon,..; connect-info: {...}  }
+#   client: { version: 2.10; linked-to: infra,amazon,..; connect-info: {...}  }
+# }
+

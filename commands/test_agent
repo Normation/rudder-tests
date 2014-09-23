@@ -1,0 +1,18 @@
+#!/bin/bash
+
+test_description="Test that agent is set up"
+
+. sharness.sh
+
+test_expect_success "Agent installed" "
+  test -x /var/rudder/cfengine-community/bin/cf-agent
+"
+
+test_expect_success "Policy server configured" "
+  getent hosts $(cat /var/rudder/cfengine-community/policy_server.dat)
+"
+
+test_expect_success "Agent running" "
+  [ $(ps auxww | grep "[c]f-execd" | wc -l) -eq 1 ]
+"
+test_done
