@@ -38,11 +38,11 @@ class Vagrant(Host):
 
     # find the host matching description and stop it
     def stop(self):
-        os.system("vagrant destroy " + self.hostid)
+        os.system("vagrant destroy -f " + self.hostid)
 
     # get the full command to run it on this host
     def get_command_line(self, command):
-        return "vagrant ssh " + self.hostid + " -c \"" + command + "\""
+        return "echo '" + self.hostid + "'; vagrant ssh " + self.hostid + " -c \"" + command + "\""
 
 
 host_types = { 'vagrant': Vagrant }
@@ -106,7 +106,7 @@ def get_platform(name):
     if _platform is not None:
         return _platform
 
-    platform_description = load_json("platforms/" + name + ".json", 'r')
+    platform_description = load_json("platforms/" + name + ".json")
     _platform = Platform(platform_description)
     return _platform
  
@@ -123,7 +123,7 @@ def run(args):
     file.close()
 
     # setup platform
-    platform_setup(args)
+#    platform_setup(args)
     platform = get_platform(args.platform)
 
     # write tests commands to a single script
@@ -135,7 +135,6 @@ def run(args):
     file.close()
     
     # run tests
-    # we can prefix the command with "prove "
     os.system("bash ./harness")
 
 # manage platform

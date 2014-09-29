@@ -9,7 +9,7 @@ test_expect_success "Agent installed" "
 "
 
 test_expect_success "Policy server configured" "
-  getent hosts $(cat /var/rudder/cfengine-community/policy_server.dat)
+  test -f /var/rudder/cfengine-community/policy_server.dat && getent hosts $(cat /var/rudder/cfengine-community/policy_server.dat)
 "
 
 test_expect_success "Agent running" "

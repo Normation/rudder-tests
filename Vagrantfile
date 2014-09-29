@@ -93,8 +93,13 @@ Vagrant.configure("2") do |config|
     :name   => "ubuntu14",
     :url    => "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box",
   }
+  
+  solaris11 = {
+    :name   => "solaris11",
+    :url    => "http://www.benden.us/vagrant/solaris-11.1.box"
+  }
 
-  os = [ oracle6, debian6, debian7, sles11, ubuntu12_10, centos5, centos6, ubuntu14_04 ]
+  os = [ oracle6, debian6, debian7, sles11, ubuntu12_10, centos5, centos6, ubuntu14_04, solaris11 ]
   server = { :ip       => "192.168.42.10",
              :hostname => "server"
            }
