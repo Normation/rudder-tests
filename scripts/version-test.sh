@@ -1,6 +1,3 @@
-#!/bin/sh
-
-MATRIX_FILE=matrix
 
 # matrix file format
 # ruddersetup;rudder-version-spec;os;os-version-spec
@@ -18,7 +15,15 @@ MATRIX_FILE=matrix
 
 # echo the version component number $id
 get_component() {
-  echo "${1}" | cut -d. -f${2} | sed -s 's/[^0-9].*//'
+  gc_version="$1"
+  gc_id="$2"
+  gc_component=`echo "${gc_version}" | cut -d. -f${gc_id} | sed -s 's/[^0-9].*//'`
+  if [ -z "${gc_component}" ]
+  then
+    gc_id=`expr ${gc_id} - 1`
+    gc_component=`echo "${gc_version}" | cut -d. -f${gc_id} | sed -s 's/[0-9]//g' | sed -s 's/.*[^0-9].*/-1/'`
+  fi
+  echo "${gc_component}"
 }
 
 # return true if the version is between vmin and vmax
@@ -58,8 +63,8 @@ version_between() {
 is_version_ok() {
   VERSION_isok="$1"
   version_isok="$2"
-  v1=`echo "${version_isok}" | cut -d\> -f1`
-  v2=`echo "${version_isok}" | cut -d\> -f2`
+  v1=`echo "${version_isok}" | sed 's/[][]//g' | cut -d' ' -f1`
+  v2=`echo "${version_isok}" | sed 's/[][]//g' | cut -d' ' -f2`
   if [ -z "${v2}" ]
   then
     version_between "${VERSION_isok}" "${v1}" "${v1}"
@@ -93,13 +98,15 @@ version_spec() {
   test_spec ok "2.11" "2.11" 
   test_spec ok "2.11.2" "2.11" 
   test_spec ok "2.11" "2.11.2" 
-  test_spec ok "2.11" "2.11>2.12" 
-  test_spec ok "2.12" "2.11>2.12" 
-  test_spec ok "2.11" "2.11.1>2.11.3" 
-  test_spec ok "2.11-rc1" "2.11.1>2.11.3" 
+  test_spec ok "2.11" "[2.11 2.12]"
+  test_spec ok "2.12" "[2.11 2.12]" 
+  test_spec ok "2.11" "[2.11.1 2.11.3]" 
+  test_spec ok "2.11-rc1" "2.11"
+  test_spec ko "2.11-rc1" "2.11.1"
+  test_spec ko "2.11-rc1" "[2.11.1 2.11.3]" 
   test_spec ko "2.10" "2.11"
   test_spec ko "2.10" "2.11>2.11.3" 
-  test_spec ko "2.10-rc1" "2.11.1>2.11.3" 
+  test_spec ko "2.10-rc1" "[2.11.1 2.11.3]" 
 }
 
 
@@ -116,7 +123,7 @@ is_compatible() {
 
   IFS_OLD="$IFS"
   IFS=";$IFS"
-  cat "${MATRIX_FILE}" | while read rudder rudder_version os os_version
+  echo "${MATRIX}" | while read rudder rudder_version os os_version
   do
     # check rudderr setup
     if [ "${rudder}" != "*" ] && [ "${rudder}" != "${RUDDER}" ]
