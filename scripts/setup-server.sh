@@ -2,22 +2,33 @@
 # Setup rudder server #
 #######################
 setup_server() {
-  RUDDER_VERSION="$1"
 
-  # detect package manager
-#  apt=`which apt-get`
-#  yum=`which yum`
-#  zypper=`which zypper`
+  # install via package manager only
+  if [ -z "${PM}" ]
+  then
+    echo "Sorry your System is not *yet* supported !"
+    exit 4
+  fi
 
-#  if [ -x "${apt}" ]
-#  then
-#  elif [ -x "${yum}" ]
-#  then
-#  elif [ -x "${zypper}" ]
-#  then
-#  else
-    echo "Sorry your System is not supported by Rudder Server !"
-    exit 5
-#  fi
+  # TODO detect supported OS
+  # echo "Sorry your System is not supported by Rudder Server !"
+  # exit 5
+
+  $local SERVER_HOSTNAME=`hostname`
+  $local DEMOSAMPLE="no"
+  $local LDAPRESET="yes"
+  $local INITPRORESET="yes"
+  # TODO detect
+  $local ALLOWEDNETWORK='192.168.42.0/24'
+
+  # install
+  ${PM_INSTALL} rudder-server-root
+
+  # hacks
+  #######
+  # None at first
+
+  # Initialize Rudder
+  /opt/rudder/bin/rudder-init.sh ${SERVER_HOSTNAME} ${DEMOSAMPLE} ${LDAPRESET} ${INITPRORESET} ${ALLOWEDNETWORK} < /dev/null > /dev/null 2>&1
 }
 

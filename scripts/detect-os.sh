@@ -1,7 +1,7 @@
 release_file() {
-  rf_distro="$1"
-  rf_release_file="$2"
-  rf_regex="$3"
+  $local rf_distro="$1"
+  $local rf_release_file="$2"
+  $local rf_regex="$3"
   if [ ! -f "${rf_release_file}" ]; then return 1; fi
   OS_NAME="${rf_distro}"
   OS_VERSION=`sed -n "/${rf_regex}/s/${rf_regex}/\\1/p" ${rf_release_file}`
@@ -29,16 +29,16 @@ detect_os() {
   # detect package manager
   ########################
   # TODO macports, homebrew, portage
-  if which apt-get > /dev/null
+  if hash apt-get 2> /dev/null
   then
     PM="apt"
     export DEBIAN_FRONTEND=noninteractive
     PM_INSTALL="apt-get -y install"
-  elif which yum > /dev/null
+  elif hash yum 2> /dev/null
   then
     PM="yum"
     PM_INSTALL="yum -y install"
-  elif which zypper > /dev/null
+  elif hash zypper 2> /dev/null
   then
     PM="zypper"
     PM_INSTALL="zypper --non-interactive install"
@@ -57,7 +57,7 @@ detect_os() {
     OS_VERSION="$(uname -v).$(uname -r)"
 
   # try with lsb_release
-  elif which lsb_release > /dev/null; then
+  elif hash lsb_release 2> /dev/null; then
     OS_NAME=`lsb_release -is`
     OS_VERSION=`lsb_release -rs`
 

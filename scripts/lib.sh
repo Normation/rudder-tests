@@ -1,7 +1,14 @@
+# use local or typeset to define a local variable
+setlocal() {
+  local="local"
+  $local x=1 2>/dev/null || local="typeset"
+}
+setlocal
+
 # Reimplement which (taken from 10_ncf_internals/list-compatible-inputs)
 which() {
-  name="$1"
-  IFS_SAVE="$IFS"
+  local name="$1"
+  local IFS_SAVE="$IFS"
   IFS=:
   for directory in $PATH
   do

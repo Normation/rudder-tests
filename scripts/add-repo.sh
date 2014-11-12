@@ -2,7 +2,6 @@
 # Add rudder repository to package manager #
 ############################################
 add_repo() {
-  RUDDER_VERSION="$1"
 
   if [ "${PM}" = "apt" ]
   then
@@ -17,7 +16,7 @@ EOF
   elif [ "${PM}" = "yum" ]
   then
     # Add RHEL like rpm repo
-    OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
+    $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
     cat > /etc/yum.repos.d/rudder.repo << EOF
 [Rudder_${RUDDER_VERSION}]
 name=Rudder ${RUDDER_VERSION} Repository
@@ -30,7 +29,7 @@ EOF
   
   elif [ "${PM}" = "zypper" ]
   then
-    OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
+    $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
     rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xADAB3BD36F07D355"
     zypper addrepo -n "Normation RPM Repositories" "http://www.rudder-project.org/rpm-${RUDDER_VERSION}/SLES_${OSVERSION}/" Rudder || true
     zypper refresh

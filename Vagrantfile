@@ -118,14 +118,14 @@ Vagrant.configure("2") do |config|
         server_config.vm.network :forwarded_port, guest: 443, host: 8081
         server_config.vm.network :private_network, ip: server[:ip]
         server_config.vm.hostname = server[:hostname]
-        server_config.vm.provision :shell, :inline => "/vagrant/scripts/cleanbox; /vagrant/scripts/rudder-setup setup_server 2.11\n"
+        server_config.vm.provision :shell, :inline => "/vagrant/scripts/cleanbox; /vagrant/scripts/rudder-setup setup_server 2.10.4\n"
       end
     end
 
     (1..10).each { |i|
       n = i.to_s()
       config.vm.define ("node"+n+"_"+os[:name]).to_sym do |node_config|
-        node_config.vm.provision :shell, :inline => "/vagrant/scripts/cleanbox; /vagrant/scripts/rudder-setup setup_agent 2.11\n"
+        node_config.vm.provision :shell, :inline => "/vagrant/scripts/cleanbox; /vagrant/scripts/rudder-setup setup_agent 2.10.4\n"
         node_config.vm.network :private_network, ip: "192.168.42.1"+n
         node_config.vm.box =  os[:name]
         node_config.vm.box_url = os[:url]

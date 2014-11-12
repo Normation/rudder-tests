@@ -3,7 +3,7 @@
 ######################
 setup_agent() {
 
-  # install via packahe manager only
+  # install via package manager only
   if [ -z "${PM}" ]
   then
     echo "Sorry your System is not *yet* supported !"

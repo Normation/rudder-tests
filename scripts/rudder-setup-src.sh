@@ -38,15 +38,15 @@ detect_os
 
 case "${COMMAND}" in
   add_repository)
-    add_repo "${RUDDER_VERSION}"
+    add_repo
     ;;
   setup_agent)
-    add_repo "${RUDDER_VERSION}"
-    setup_agent "${RUDDER_VERSION}"
+    add_repo
+    setup_agent 
     ;;
   setup_server)
-    add_repo "${RUDDER_VERSION}"
-    setup_server "${RUDDER_VERSION}"
+    add_repo
+    setup_server
     ;;
   *)
     usage

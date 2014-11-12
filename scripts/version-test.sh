@@ -15,27 +15,27 @@
 
 # echo the version component number $id
 get_component() {
-  gc_version="$1"
-  gc_id="$2"
-  gc_component=`echo "${gc_version}" | cut -d. -f${gc_id} | sed -s 's/[^0-9].*//'`
-  if [ -z "${gc_component}" ]
+  $local version="$1"
+  $local id="$2"
+  $local component=`echo "${version}" | cut -d. -f${id} | sed -s 's/[^0-9].*//'`
+  if [ -z "${component}" ]
   then
-    gc_id=`expr ${gc_id} - 1`
-    gc_component=`echo "${gc_version}" | cut -d. -f${gc_id} | sed -s 's/[0-9]//g' | sed -s 's/.*[^0-9].*/-1/'`
+    gc_id=`expr ${id} - 1`
+    gc_component=`echo "${version}" | cut -d. -f${id} | sed -s 's/[0-9]//g' | sed -s 's/.*[^0-9].*/-1/'`
   fi
-  echo "${gc_component}"
+  echo "${component}"
 }
 
 # return true if the version is between vmin and vmax
 version_between() {
-  _version="$1"
-  _vmin="$2"
-  _vmax="$3"
+  $local version="$1"
+  $local vmin="$2"
+  $local vmax="$3"
   for i in 1 2 3 4 5 6 7 8 9 # maximum 9 components
   do
-    version_component=`get_component "${_version}" "${i}"`
-    vmin_component=`get_component "${_vmin}" "${i}"`
-    vmax_component=`get_component "${_vmax}" "${i}"`
+    $local version_component=`get_component "${version}" "${i}"`
+    $local vmin_component=`get_component "${vmin}" "${i}"`
+    $local vmax_component=`get_component "${vmax}" "${i}"`
     if [ -z "${version_component}" ]
     then
       return 0
@@ -58,13 +58,13 @@ version_between() {
   return 0
 }
 
-# Return true if the version is compatible with the version spectfication
+# Return true if the version is compatible with the version specification
 # Parameters (VERSION, version specification)
 is_version_ok() {
-  VERSION_isok="$1"
-  version_isok="$2"
-  v1=`echo "${version_isok}" | sed 's/[][]//g' | cut -d' ' -f1`
-  v2=`echo "${version_isok}" | sed 's/[][]//g' | cut -d' ' -f2`
+  $local VERSION_isok="$1"
+  $local version_isok="$2"
+  $local v1=`echo "${version_isok}" | sed 's/[][]//g' | cut -d' ' -f1`
+  $local v2=`echo "${version_isok}" | sed 's/[][]//g' | cut -d' ' -f2`
   if [ -z "${v2}" ]
   then
     version_between "${VERSION_isok}" "${v1}" "${v1}"
@@ -75,14 +75,13 @@ is_version_ok() {
 
 # test a version specification
 test_spec() {
-  ok="$1"
-  version="$2"
-  spec="$3"
+  $local ok="$1"
+  $local version="$2"
+  $local spec="$3"
+  $local retval=1
   if [ "${ok}" = "ok" ]
   then
     retval=0
-  else
-    retval=1
   fi
   is_version_ok "${version}" "${spec}"
   if [ $? -eq ${retval} ]
@@ -114,14 +113,14 @@ version_spec() {
 # Parameters (RUDDER, RUDDER_VERSION, OS, OS_VERSION)
 # RUDDER : agent / server / multiserver
 is_compatible() {
-  RUDDER="$1"
-  RUDDER_VERSION="$2"
-  OS="$3"
-  OS_VERSION="$3"
+  $local RUDDER="$1"
+  $local RUDDER_VERSION="$2"
+  $local OS="$3"
+  $local OS_VERSION="$3"
 
-  EXIT=1
+  $local EXIT=1
 
-  IFS_OLD="$IFS"
+  $local IFS_OLD="$IFS"
   IFS=";$IFS"
   echo "${MATRIX}" | while read rudder rudder_version os os_version
   do
