@@ -1,5 +1,0 @@
-{
-  "checks": [
-    { "host": "all-nodes", "command": "test_agent" }
-  ]
-}

@@ -1,5 +1,0 @@
-{
-  "checks": [
-    { "host": "agent1", "accepted": "true", "command": "test_fusion_os" }
-  ]
-}
