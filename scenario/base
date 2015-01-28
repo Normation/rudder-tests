@@ -1,0 +1,36 @@
+#!/bin/sh
+
+PORT=8181
+PF=sles
+
+RSPEC_BIN="/usr/bin/ruby2.1 -S rspec"
+RSPEC_OPTS="--order defined --fail-fast --format html"
+RSPEC="${RSPEC_BIN} ${RSPEC_OPTS}"
+
+export PATH=$PATH:/home/bpeccatte/Rudder/rudder-api-client/cli
+export PYTHONPATH=/home/bpeccatte/Rudder/rudder-api-client/lib.python
+export RUDDER_SERVER=https://localhost:${PORT}/rudder
+export RUDDER_TOKEN=$(vagrant ssh ${PF}_server -c "sudo cat /root/rudder-token" 2>/dev/null | tr -d '\r')
+
+# Generic tests
+TARGET_HOST=${PF}_agent1 ${RSPEC} spec/tests/fusion.rb spec/tests/agent.rb
+TARGET_HOST=${PF}_server ${RSPEC} spec/tests/fusion.rb spec/tests/agent.rb
+
+# force inventory
+
+# accept node
+RUDDER_ACCEPT=agent1 TARGET_HOST=localhost ${RSPEC} spec/tests/agent_accept.rb
+
+# Add a rule
+RUDDER_NAME="Test User" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/user_rule.rb
+
+# Run agent
+
+# Test rule result
+
+# remove rule/directive
+RUDDER_DELETE="Test User Directive" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/directive_delete.rb
+RUDDER_DELETE="Test User Rule" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/rule_delete.rb
+
+# remove agent
+RUDDER_DELETE=agent1 TARGET_HOST=localhost ${RSPEC} spec/tests/agent_delete.rb

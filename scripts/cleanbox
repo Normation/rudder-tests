@@ -3,7 +3,8 @@
 # various hacks to clean boxes from vagrantbox.es
 # no set -e since things may fail
 
-
+RUDDER=192.168.42.10
+[ -n "$1" ] && RUDDER="192.168.${1}.2"
 
 # old ubuntu release have no more mirror to rely on
 if hash lsb_release 2>/dev/null && [ "$(lsb_release -cs)" = "quantal" ]
@@ -12,20 +13,60 @@ then
   echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
 fi
 
-# the centos5 box doesn't confiruge dns properly for vagrant
-if [ -f /etc/redhat-release ] && [ -x /usr/bin/lsb_release ]
-then
-  if [[ `cat /etc/redhat-release` =~ "CentOS release 5" ]]
-  then
-    echo "nameserver 10.0.2.3" > /etc/resolv.conf
-  fi
-fi
+## the centos5 box doesn't confiruge dns properly for vagrant
+#if [ -f /etc/redhat-release ] && [ -x /usr/bin/lsb_release ]
+#then
+#  if [[ `cat /etc/redhat-release` =~ "CentOS release 5" ]]
+#  then
+#    echo "nameserver 10.0.2.3" > /etc/resolv.conf
+#  fi
+#fi
+
+# force DNS server to an always valid one
+echo "nameserver 8.8.8.8" > /etc/resolv.conf 
+
 
 # we don't want selinux and firewall
 setenforce 0 2>/dev/null
+sed -i -e 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
 service iptables stop 2>/dev/null
+chkconfig iptables off 2>/dev/null
 
 # prepare hosts for rudder
 sed -ri "s/^127\.0\.1\.1[\t ]+(node[0-9]+)(.*)/127\.0\.1\.1\\t\1\.rudder\.local\2/" /etc/hosts
-echo -e "\n192.168.42.10 server.rudder.local rudder" >> /etc/hosts
+echo -e "\n${RUDDER}.2 server.rudder.local rudder" >> /etc/hosts
+
+# SLES specific
+if grep SUSE /etc/issue
+then
+  if [ $(uname -m) = "x86_64" ]
+  then
+    rpm -ivh http://www.normation.com/tarball/java/jdk-7u71-linux-x64.rpm
+    if grep "11 SP1" /etc/issue
+    then
+      rm /etc/zypp/repos.d/SUSE-Linux-Enterprise-Server-11-SP1*.repo
+      cat > /etc/zypp/repos.d/SUSE-SP1.repo <<EOF
+[SUSE_SLES-11_SP1]
+name=Official released updates for SUSE Linux Enterprise 11 SP1
+type=yast2
+baseurl=https://ci.normation.com/sles-repo/SLES-11-SP1-64-SDK-DVD1/
+gpgcheck=0
+path=/
+enabled=1
+EOF
+      cat >  /etc/zypp/repos.d/SUSE_SLE-11_SP1_SDK.repo <<EOF
+[SUSE_SLE-11_SP1_SDK]
+name=Official SUSE Linux Enterprise 11 SP1 SDK
+type=yast2
+baseurl=https://ci.normation.com/sles-repo/SLES-11-SP1-DVD-x86_64-GM-DVD1/
+path=/
+enabled=1
+autorefresh=0
+keeppackages=0
+EOF
+    fi
+  else
+    rpm -ivh http://www.normation.com/tarball/java/jdk-7u71-linux-i586.rpm
+  fi
+fi
 
