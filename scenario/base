@@ -2,9 +2,11 @@
 
 PORT=8181
 PF=sles
+# available: progress, documentation, html, json
+FORMAT=documentation
 
 RSPEC_BIN="/usr/bin/ruby2.1 -S rspec"
-RSPEC_OPTS="--order defined --fail-fast --format html"
+RSPEC_OPTS="--order defined --fail-fast --format ${FORMAT}"
 RSPEC="${RSPEC_BIN} ${RSPEC_OPTS}"
 
 export PATH=$PATH:/home/bpeccatte/Rudder/rudder-api-client/cli
@@ -14,23 +16,38 @@ export RUDDER_TOKEN=$(vagrant ssh ${PF}_server -c "sudo cat /root/rudder-token" 
 
 # Generic tests
 TARGET_HOST=${PF}_agent1 ${RSPEC} spec/tests/fusion.rb spec/tests/agent.rb
+echo ""
 TARGET_HOST=${PF}_server ${RSPEC} spec/tests/fusion.rb spec/tests/agent.rb
+echo ""
 
 # force inventory
+RUDDER_PARAMS="-D force_inventory" TARGET_HOST=${PF}_agent1 ${RSPEC} spec/tests/run_agent.rb
+echo ""
+RUDDER_PARAMS="" TARGET_HOST=${PF}_server ${RSPEC} spec/tests/run_agent.rb
+echo ""
 
 # accept node
 RUDDER_ACCEPT=agent1 TARGET_HOST=localhost ${RSPEC} spec/tests/agent_accept.rb
+echo ""
 
 # Add a rule
 RUDDER_NAME="Test User" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/user_rule.rb
+echo ""
 
 # Run agent
+RUDDER_PARAMS="" TARGET_HOST=${PF}_agent1 ${RSPEC} spec/tests/run_agent.rb
+echo ""
 
 # Test rule result
+TARGET_HOST=${PF}_agent1 ${RSPEC} spec/tests/user_test.rb
+echo ""
 
-# remove rule/directive
-RUDDER_DELETE="Test User Directive" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/directive_delete.rb
-RUDDER_DELETE="Test User Rule" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/rule_delete.rb
-
-# remove agent
-RUDDER_DELETE=agent1 TARGET_HOST=localhost ${RSPEC} spec/tests/agent_delete.rb
+## remove rule/directive
+#RUDDER_DELETE="Test User Directive" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/directive_delete.rb
+#echo ""
+#RUDDER_DELETE="Test User Rule" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/rule_delete.rb
+#echo ""
+#
+## remove agent
+#RUDDER_DELETE=agent1 TARGET_HOST=localhost ${RSPEC} spec/tests/agent_delete.rb
+#echo ""
