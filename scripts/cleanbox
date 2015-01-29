@@ -3,8 +3,7 @@
 # various hacks to clean boxes from vagrantbox.es
 # no set -e since things may fail
 
-RUDDER=192.168.42.10
-[ -n "$1" ] && RUDDER="192.168.${1}.2"
+NET="$1"
 
 # old ubuntu release have no more mirror to rely on
 if hash lsb_release 2>/dev/null && [ "$(lsb_release -cs)" = "quantal" ]
@@ -34,7 +33,13 @@ chkconfig iptables off 2>/dev/null
 
 # prepare hosts for rudder
 sed -ri "s/^127\.0\.1\.1[\t ]+(node[0-9]+)(.*)/127\.0\.1\.1\\t\1\.rudder\.local\2/" /etc/hosts
-echo -e "\n${RUDDER}.2 server.rudder.local rudder" >> /etc/hosts
+echo "" >> /etc/hosts
+echo "${NET}.2 server.rudder.local rudder" >> /etc/hosts
+for i in $(seq 1 10) 
+do
+  j=$(($i+2))
+  echo "${NET}.${j} agent${i}" >> /etc/hosts
+done
 
 # SLES specific
 if grep SUSE /etc/issue

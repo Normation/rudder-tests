@@ -16,6 +16,7 @@ describe "Add a user directive and a rule"  do
 {
   "displayName": "#{name} Directive",
   "longDescription": "Test user management description",
+  "enabled": true,
   "parameters": {
     "section": {
       "name": "sections",
