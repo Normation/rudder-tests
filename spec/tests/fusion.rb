@@ -1,5 +1,6 @@
 require 'spec_helper'
 
+osname = params['OSNAME']
 
 describe command("/opt/rudder/bin/run-inventory --local=/tmp") do
   its(:exit_status) { should eq 0 }
@@ -12,7 +13,7 @@ end
 
 describe file("/tmp/test.ocs") do
    it { should contain('OSNAME').from(/<HARDWARE>/).to(/<.HARDWARE>/) }
-   its(:content) { should match /<OSNAME>(?i:#{os[:family]}).*<.OSNAME>/ }
+   its(:content) { should match /<OSNAME>(?i:#{osname}).*<.OSNAME>/ }
 end
 # >-rm -rf /tmp/x
 # >-mkdir /tmp/x

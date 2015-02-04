@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-acceptHost = ENV['RUDDER_ACCEPT']
+acceptHost = params['ACCEPT']
 
 describe "Accept node"  do
 

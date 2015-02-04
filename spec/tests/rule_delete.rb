@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-name = ENV['RUDDER_DELETE']
+name = params['DELETE']
 
 describe "Delete rule"  do
 

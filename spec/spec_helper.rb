@@ -23,14 +23,25 @@ else
   set :ssh_options, options
 end
 
-# Some common rudder test elements
-url = ENV['RUDDER_SERVER']
-token = ENV['RUDDER_TOKEN']
-$rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token=' + token.to_s
-
-
 # Set environment variables
-# set :env, :LANG => 'C', :LC_MESSAGES => 'C' 
+set :env, :LANG => 'C', :LC_MESSAGES => 'C' 
 
 # Set PATH
 # set :path, '/sbin:/usr/local/sbin:$PATH'
+
+
+# Some common rudder test elements
+params = {}
+ENV.each { |key, value|
+  if key.start_with?("RUDDER_") do
+    key2 = key[7..-1]
+    params[key2] = value
+  end
+}
+
+
+url = params['SERVER']
+token = params['TOKEN']
+$rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token=' + token.to_s
+
+

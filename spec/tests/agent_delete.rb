@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-acceptHost = ENV['RUDDER_DELETE']
+acceptHost = params['DELETE']
 
 describe "Delete node"  do
 

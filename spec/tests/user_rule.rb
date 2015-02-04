@@ -1,7 +1,7 @@
 require 'spec_helper'
 
-group = ENV['RUDDER_GROUP']
-name = ENV['RUDDER_NAME']
+group = params['GROUP']
+name = params['NAME']
 
 directiveFile = "/tmp/directive.json"
 ruleFile = "/tmp/rule.json"
