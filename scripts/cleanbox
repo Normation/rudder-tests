@@ -24,6 +24,14 @@ fi
 # force DNS server to an always valid one
 echo "nameserver 8.8.8.8" > /etc/resolv.conf 
 
+# add https support to apt
+if hash apt-get 2>/dev/null
+then
+  apt-get update
+  apt-get install --force-yes -y apt-transport-https
+  # specific to debian7 / rudder server 2.11.6-4 
+  apt-get install --force-yes -y libltdl7
+fi
 
 # we don't want selinux and firewall
 setenforce 0 2>/dev/null

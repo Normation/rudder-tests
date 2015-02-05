@@ -41,6 +41,8 @@ EOF
   
   elif [ "${PM}" = "zypper" ]
   then
+    # Add SuSE repo
+    $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
     if [ "${USE_CI}" = "yes" ]
     then
       $local URL_BASE="https://ci.normation.com/rpm-packages/release/${RUDDER_VERSION}/SLES_${OSVERSION}/"
@@ -59,3 +61,4 @@ EOF
   echo "Sorry your Package Manager is not *yet* supported !"
   return 1
 }
+

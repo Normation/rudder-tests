@@ -21,6 +21,15 @@ setup_server() {
   # TODO detect
   [ -z "${ALLOWEDNETWORK}" ] && $local ALLOWEDNETWORK='127.0.0.1/24'
 
+  # debian / jdk6
+  if [ "${PM}" = "apt" ]
+  then
+    cat << EOF | debconf-set-selections
+sun-java6-bin   shared/accepted-sun-dlj-v1-1    boolean true
+sun-java6-jre   shared/accepted-sun-dlj-v1-1    boolean true
+EOF
+  fi
+
   # install
   ${PM_INSTALL} rudder-server-root
 

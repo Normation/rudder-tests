@@ -45,21 +45,9 @@ token = $params['TOKEN']
 $rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token=' + token.to_s
 
 
-# # monkeypatching serverspec
-# module Serverspec::Type
-#   class Command
-#     def duration
-#       @duration
-#     end
-#     def command_result()
-#       time = Time.now
-#       command = @runner.run_command(@name)
-#       @duration = Time.now - time
-#       @command_result ||= command
-#     end
-#   end
-# end
+## monkeypatching serverspec
 
+# print test duration in dicumentation format
 module RSpec
   module Core
     module Formatters
@@ -73,12 +61,12 @@ module RSpec
 
         def example_pending(pending)
           output.puts pending_output(pending.example, pending.example.execution_result.pending_message)
-          output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
+          output.puts "#{current_indentation}time: #{pending.example.execution_result.run_time}s"
         end
 
         def example_failed(failure)
           output.puts failure_output(failure.example, failure.example.execution_result.exception)
-          output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
+          output.puts "#{current_indentation}time: #{failure.example.execution_result.run_time}s"
         end
 
       end

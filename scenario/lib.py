@@ -3,6 +3,7 @@
 import os
 from subprocess import Popen, check_output, PIPE
 from time import sleep
+from datetime import datetime
 from pprint import pprint
 
 class Scenario:
@@ -54,7 +55,9 @@ def run(target, test, error_mode, **kwargs):
 
   # run it
   now = datetime.now().isoformat()
-  print("[" + now + "] Running " + command)
+  if scenario.frmt == "documentation":
+    print("[" + now + "] Running '" + test + "' test on " + target)
+    print(command)
   process = Popen(command, shell=True)
   retcode = process.wait()
 
@@ -78,7 +81,7 @@ def shell(command):
   output, unused_err = process.communicate()
   scenario.retcode = process.poll()
   if scenario.retcode != 0:
-    print("ERROR(" + scenario.retcode + ") in: " +command)
+    print("ERROR(" + str(scenario.retcode) + ") in: " +command)
   return output
 
 

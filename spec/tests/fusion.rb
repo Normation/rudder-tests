@@ -11,9 +11,8 @@ describe command("mv $(ls -tr /tmp/*.ocs|tail -n1) /tmp/test.ocs") do
   its(:exit_status) { should eq 0 }
 end
 
-describe file("/tmp/test.ocs") do
-   it { should contain('OSNAME').from(/<HARDWARE>/).to(/<.HARDWARE>/) }
-   its(:content) { should match /<OSNAME>(?i:#{osname}).*<.OSNAME>/ }
+describe command("sed -ne '/<HARDWARE>/,/<.HARDWARE>/p' /tmp/test.ocs") do
+   its(:stdout) { should match /<OSNAME>(?i:#{osname}).*<.OSNAME>/ }
 end
 # >-rm -rf /tmp/x
 # >-mkdir /tmp/x
