@@ -34,6 +34,13 @@ EOF
 COMMAND="$1"
 RUDDER_VERSION="$2"
 
+PREFIX=$(echo "${RUDDER_VERSION}" | cut -f 1 -d "/")
+if [ "${PREFIX}" = "ci" ]
+then
+  USE_CI=yes
+  RUDDER_VERSION=$(echo "${RUDDER_VERSION}" | cut -f 2 -d "/")
+fi
+
 detect_os
 
 case "${COMMAND}" in

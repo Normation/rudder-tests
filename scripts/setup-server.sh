@@ -19,7 +19,7 @@ setup_server() {
   $local LDAPRESET="yes"
   $local INITPRORESET="yes"
   # TODO detect
-  $local ALLOWEDNETWORK='192.168.42.0/24'
+  [ -z "${ALLOWEDNETWORK}" ] && $local ALLOWEDNETWORK='127.0.0.1/24'
 
   # install
   ${PM_INSTALL} rudder-server-root

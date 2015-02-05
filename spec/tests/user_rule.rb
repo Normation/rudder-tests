@@ -1,7 +1,7 @@
 require 'spec_helper'
 
-group = params['GROUP']
-name = params['NAME']
+group = $params['GROUP']
+name = $params['NAME']
 
 directiveFile = "/tmp/directive.json"
 ruleFile = "/tmp/rule.json"

@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-acceptHost = params['DELETE']
+acceptHost = $params['DELETE']
 
 describe "Delete node"  do
 

@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-osname = params['OSNAME']
+osname = $params['OSNAME']
 
 describe command("/opt/rudder/bin/run-inventory --local=/tmp") do
   its(:exit_status) { should eq 0 }

@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-name = params['DELETE']
+name = $params['DELETE']
 
 describe "Delete node"  do
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-PORT=8281
-PF=sles
+PORT=8381
+PF=centos
 # available: progress, documentation, html, json
 FORMAT=documentation
 
@@ -36,11 +36,13 @@ RUDDER_NAME="Test User" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC
 echo ""
 
 # wait for promise generation
-agent_uuid=$(rudder-cli --skip-verify --url=${RUDDER_SERVER} --token=${RUDDER_TOKEN} nodes list | jq '.nodes | map(select(.hostname=="agent1")) | .[0].id')
+agent_uuid=$(rudder-cli --skip-verify --url=${RUDDER_SERVER} --token=${RUDDER_TOKEN} nodes list | jq '.nodes | map(select(.hostname=="agent1")) | .[0].id' | tr -d '"')
 while true
 do
   sleep 1
-  d1=$(vagrant ssh ${PF}_server -c "sudo cat /var/rudder/share/${agent_uuid}/rules/cfengine-community/rudder_promises_generated" | tr -d '\r')
+  echo "Waiting for $agent_uuid"
+  d1=$(vagrant ssh ${PF}_server -c "sudo cat /var/rudder/share/${agent_uuid}/rules/cfengine-community/rudder_promises_generated 2>/dev/null" | tr -d '\r')
+  [ -z "${d1}" ] && break
   date1=$(date -d ${d1} +%s)
   if [ ${date1} -gt ${date0} ]
   then
@@ -58,6 +60,7 @@ echo ""
 # Test rule result
 TARGET_HOST=${PF}_agent1 ${RSPEC} spec/tests/user_test.rb
 echo ""
+
 
 # remove rule/directive
 RUDDER_DELETE="Test User Directive" RUDDER_GROUP="special:all" TARGET_HOST=localhost ${RSPEC} spec/tests/directive_delete.rb

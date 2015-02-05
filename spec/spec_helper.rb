@@ -31,17 +31,58 @@ set :env, :LANG => 'C', :LC_MESSAGES => 'C'
 
 
 # Some common rudder test elements
-params = {}
+$params = {}
 ENV.each { |key, value|
-  if key.start_with?("RUDDER_") do
+  if key.start_with?("RUDDER_")
     key2 = key[7..-1]
-    params[key2] = value
+    $params[key2] = value
   end
 }
 
 
-url = params['SERVER']
-token = params['TOKEN']
+url = $params['SERVER']
+token = $params['TOKEN']
 $rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token=' + token.to_s
 
+
+# # monkeypatching serverspec
+# module Serverspec::Type
+#   class Command
+#     def duration
+#       @duration
+#     end
+#     def command_result()
+#       time = Time.now
+#       command = @runner.run_command(@name)
+#       @duration = Time.now - time
+#       @command_result ||= command
+#     end
+#   end
+# end
+
+module RSpec
+  module Core
+    module Formatters
+      # @private
+      class DocumentationFormatter < BaseTextFormatter
+
+        def example_passed(passed)
+          output.puts passed_output(passed.example)
+          output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
+        end
+
+        def example_pending(pending)
+          output.puts pending_output(pending.example, pending.example.execution_result.pending_message)
+          output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
+        end
+
+        def example_failed(failure)
+          output.puts failure_output(failure.example, failure.example.execution_result.exception)
+          output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
+        end
+
+      end
+    end
+  end
+end
 
