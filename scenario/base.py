@@ -1,9 +1,9 @@
 from scenario.lib import *
 
 # Generic tests
-run('agent1', 'fusion', Err.CONTINUE, OSNAME="debian")
+run('agent1', 'fusion', Err.CONTINUE, OSNAME="centos")
 run('agent1', 'agent', Err.CONTINUE)
-run('server', 'fusion', Err.CONTINUE, OSNAME="debian")
+run('server', 'fusion', Err.CONTINUE, OSNAME="centos")
 run('server', 'agent', Err.CONTINUE)
 
 # force inventory

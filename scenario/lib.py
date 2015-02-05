@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import re
 from subprocess import Popen, check_output, PIPE
 from time import sleep
 from datetime import datetime
@@ -108,8 +109,11 @@ def wait_for_generation(name, error_mode, date0, hostname, timeout=10):
     datestr = datestr.rstrip()
     if datestr == "":
       continue
-    date = shell("date -d " + datestr + " +%s")
-    if date > date0:
+    if re.match(r'^\d+$', datestr):
+      date = datestr
+    else:
+      date = shell("date -d " + datestr + " +%s")
+    if int(date) > int(date0):
       break
     time += 1
     if time >= timeout:
