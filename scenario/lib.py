@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import os
 import re
 from subprocess import Popen, check_output, PIPE
 from time import sleep
@@ -8,7 +7,7 @@ from datetime import datetime
 from pprint import pprint
 
 class Scenario:
-  def __init__(self, platform, rspec, rcli, server_name, frmt = "documentation", run_only=None):
+  def __init__(self, platform, rspec, rcli, server_name, frmt, run_only, run_finally):
     self.errors = False
     self.pf = platform
     self.rspec = rspec
@@ -16,7 +15,9 @@ class Scenario:
     self.server_name = server_name
     self.frmt = frmt
     self.run_only = run_only
+    self.run_finally = run_finally
 
+# Global variable
 scenario = None
 
 def enum(*sequential, **named):
@@ -26,13 +27,15 @@ def enum(*sequential, **named):
 Err = enum('CONTINUE', 'BREAK', 'FINALLY')
 
 
-# Beware, reverse logic
+# Beware, negative logic
 def dont_run(name, mode):
   if mode != Err.FINALLY and scenario.errors:
     return True
   if scenario.run_only is not None:
     if name not in scenario.run_only:
       return True
+  if mode == Err.FINALLY and not scenario.run_finally:
+    return True
   return False
 
 
@@ -84,13 +87,6 @@ def shell(command):
   if scenario.retcode != 0:
     print("ERROR(" + str(scenario.retcode) + ") in: " +command)
   return output
-
-
-def env(client_path, url, token):
-  os.environ['PATH'] += ":" + client_path + "/cli"
-  os.environ['PYTHONPATH'] = client_path +  "/lib.python"
-  os.environ['RUDDER_SERVER'] = url
-  os.environ['RUDDER_TOKEN'] = token
 
 
 def wait_for_generation(name, error_mode, date0, hostname, timeout=10):

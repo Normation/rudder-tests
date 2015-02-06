@@ -1,5 +1,0 @@
-{
-  "default":{ "run-with": "vagrant", "rudder-version": "3.0", "system": "centos6" },
-  "server": { "rudder-setup": "server" },
-  "agent1": { "rudder-setup": "node" }
-}

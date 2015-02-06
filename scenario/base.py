@@ -1,9 +1,9 @@
 from scenario.lib import *
 
 # Generic tests
-run('agent1', 'fusion', Err.CONTINUE, OSNAME="centos")
+run('agent1', 'fusion', Err.CONTINUE, OSNAME="")
 run('agent1', 'agent', Err.CONTINUE)
-run('server', 'fusion', Err.CONTINUE, OSNAME="centos")
+run('server', 'fusion', Err.CONTINUE, OSNAME="")
 run('server', 'agent', Err.CONTINUE)
 
 # force inventory
@@ -32,3 +32,5 @@ run('localhost', 'rule_delete', Err.FINALLY, DELETE="Test User Rule", GROUP="spe
 # remove agent
 run('localhost', 'agent_delete', Err.FINALLY, DELETE="agent1")
 
+# test end, print summary
+finish()
