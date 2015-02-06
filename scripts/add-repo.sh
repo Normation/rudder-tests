@@ -3,16 +3,30 @@
 ############################################
 add_repo() {
 
+  # Make Repository URL
+  [ "${PM}" = "apt" ] && REPO_TYPE="apt"
+  [ "${PM}" = "yum" ] && REPO_TYPE="rpm"
+  [ "${PM}" = "zypper" ] && REPO_TYPE="rpm"
+  if [ "${USE_CI}" = "yes" ]
+  then
+    $local URL_BASE="https://ci.normation.com/${REPO_TYPE}-repos/release/${RUDDER_VERSION}/"
+  elif echo "${RUDDER_VERSION}" | sed '/\..*\./' > /dev/null
+  then
+    $local URL_BASE="http://www.rudder-project.org/${REPO_TYPE}-repos/${RUDDER_VERSION}/"
+  else
+    $local URL_BASE="http://www.rudder-project.org/${REPO_TYPE}-${RUDDER_VERSION}"
+  fi
+  if [ "${PM}" = "yum" ] || [ "${PM}" = "zypper" ] 
+  then
+    $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
+    URL_BASE="${URL_BASE}/${OS_COMPATIBLE}_${OSVERSION}/"
+  fi
+
+  # add repository
   if [ "${PM}" = "apt" ]
   then
     # Debian / Ubuntu like
     apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 474A19E8
-    if [ "${USE_CI}" = "yes" ]
-    then
-      $local URL_BASE="https://ci.normation.com/apt-repos/release/${RUDDER_VERSION}/"
-    else
-      $local URL_BASE="http://www.rudder-project.org/apt-${RUDDER_VERSION}/"
-    fi
     cat > /etc/apt/sources.list.d/rudder.list << EOF
 deb ${URL_BASE} `lsb_release -cs` main
 EOF
@@ -22,13 +36,6 @@ EOF
   elif [ "${PM}" = "yum" ]
   then
     # Add RHEL like rpm repo
-    $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
-    if [ "${USE_CI}" = "yes" ]
-    then
-      $local URL_BASE="https://ci.normation.com/rpm-packages/release/${RUDDER_VERSION}/${OS_COMPATIBLE}_${OSVERSION}/"
-    else
-      $local URL_BASE="http://www.rudder-project.org/rpm-${RUDDER_VERSION}/${OS_COMPATIBLE}_${OSVERSION}/"
-    fi
     cat > /etc/yum.repos.d/rudder.repo << EOF
 [Rudder_${RUDDER_VERSION}]
 name=Rudder ${RUDDER_VERSION} Repository
@@ -42,14 +49,6 @@ EOF
   elif [ "${PM}" = "zypper" ]
   then
     # Add SuSE repo
-    $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
-    if [ "${USE_CI}" = "yes" ]
-    then
-      $local URL_BASE="https://ci.normation.com/rpm-packages/release/${RUDDER_VERSION}/SLES_${OSVERSION}/"
-    else
-      $local URL_BASE="http://www.rudder-project.org/rpm-${RUDDER_VERSION}/SLES_${OSVERSION}/"
-    fi
-    $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
     rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xADAB3BD36F07D355"
     zypper addrepo -n "Normation RPM Repositories" "${URL_BASE}" Rudder || true
     zypper refresh
