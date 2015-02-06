@@ -15,7 +15,7 @@ Usage:
     rtf host update-rudder <host> <version>
     rtf host update-os <host> <version>
     rtf scenario list
-    rtf scenario run <scenario>
+    rtf scenario run <platform>
 """
 
 # commands : 
@@ -231,37 +231,25 @@ def get_platform(name):
 
 # list platforms
 def list_platforms():
-    for dir in os.listdir("platforms"):
-        print(dir.replace(".json", ""))
+    for file in os.listdir("platforms"):
+        print(file.replace(".json", ""))
 
+# list scenarii
+def list_scenarii():
+    for f in os.listdir("scenario"):
+        file = f.replace(".py", "")
+        if file != "__init__" and file != "lib":
+            print(file)
+
+# run one scenario
+def run_scenario(platform):
+  # dump stub, parameters are ignored
+  os.system("./scenar.py " + platform)
  
+
 ############
 # COMMANDS #
 ############
-
-# run one scenario
-def run(args):
-
-    # extract test json
-    file = open("tests/" + args.test + ".json", 'r')
-    test_description = json.loads(file.read())
-    file.close()
-
-    # setup platform
-#    platform_setup(args)
-    platform = get_platform(args.platform)
-
-    # write tests commands to a single script
-    file = open("harness", "w")
-    file.write("#!/bin/bash\n\n")
-    file.write("cd commands\n\n")
-    for test_item in test_description['checks']:
-        file.write(platform.test_command(test_item))
-    file.close()
-    
-    # run tests
-    os.system("bash ./harness")
-
 
 # MAIN, argument parser and help
 if __name__ == "__main__":
@@ -286,9 +274,9 @@ if __name__ == "__main__":
     pass
   elif args['scenario']:
     if args['list']:
-      pass
+      list_scenarii()
     elif args['run']:
-      pass
+      run_scenario(args['<platform>'])
 
 
 # tester-db: {
