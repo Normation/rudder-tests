@@ -41,3 +41,31 @@ EOF
   /opt/rudder/bin/rudder-init.sh ${SERVER_HOSTNAME} ${DEMOSAMPLE} ${LDAPRESET} ${INITPRORESET} ${ALLOWEDNETWORK} < /dev/null > /dev/null 2>&1
 }
 
+upgrade_server() {
+  # Upgrade via package manager only
+  if [ -z "${PM}" ]
+  then
+    echo "Sorry your System is not *yet* supported !"
+    exit 4
+  fi
+
+  # Upgrade
+  if [ "${PM}" = "apt" ]
+  then
+    ${PM_UPGRADE} rudder-server-root
+  else
+    ${PM_UPGRADE} "rudder-*" "ncf"
+  fi
+
+  /etc/init.d/rudder-jetty restart
+}
+
+upgrade_techniques() {
+  cd /var/rudder/configuration-repository
+  cp -a /opt/rudder/share/techniques/* techniques/
+  git add -u techniques
+  git add techniques
+  git commit -m "Technique upgrade to version ${RUDDER_VERSION}"
+  curl -s -f -k "https://localhost/rudder/api/techniqueLibrary/reload"
+  ehco ""
+}

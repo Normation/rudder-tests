@@ -24,3 +24,16 @@ setup_agent() {
 
   /etc/init.d/rudder-agent start
 }
+
+upgrade_agent() {
+  # Upgrade via package manager only
+  if [ -z "${PM}" ]
+  then
+    echo "Sorry your System is not *yet* supported !"
+    exit 4
+  fi
+
+  # Upgrade
+  ${PM_UPGRADE} rudder-agent
+}
+

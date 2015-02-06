@@ -25,6 +25,7 @@ detect_os() {
   OS_COMPATIBLE_VERSION=""
   PM=""
   PM_INSTALL="echo 'Your package manager is not yet supported; false"
+  PM_UPGRADE="echo 'Your package manager is not yet supported; false"
   
   # detect package manager
   ########################
@@ -34,14 +35,17 @@ detect_os() {
     PM="apt"
     export DEBIAN_FRONTEND=noninteractive
     PM_INSTALL="apt-get -y install"
+    PM_UPGRADE="apt-get -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold -y install"
   elif hash yum 2> /dev/null
   then
     PM="yum"
     PM_INSTALL="yum -y install"
+    PM_UPGRADE="yum -y update"
   elif hash zypper 2> /dev/null
   then
     PM="zypper"
     PM_INSTALL="zypper --non-interactive install"
+    PM_UPGRADE="zypper --non-interactive update"
   fi
 
 

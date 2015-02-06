@@ -55,6 +55,17 @@ case "${COMMAND}" in
     add_repo
     setup_server
     ;;
+  upgrade_agent)
+    add_repo
+    upgrade_agent
+    ;;
+  upgrade_server)
+    add_repo
+    upgrade_server
+    ;;
+  upgrade_techniques)
+    upgrade_techniques
+    ;;
   *)
     usage
     ;;
