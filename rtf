@@ -72,8 +72,8 @@ class Vagrant(Host):
         return "echo '" + self.hostid + "'; vagrant ssh " + self.hostid + " -c \"" + command + "\""
 
     # upgrade rudder
-    def upgrade_rudder(self, version):
-        os.system("vagrant ssh " + self.hostid + " -c \"/vagrant/script/rudder-setup upgrade-" + self.host_info['rudder-setup'] + " " + version + "\"")
+    def update_rudder(self, version):
+        os.system("vagrant ssh " + self.hostid + " -c \"sudo /vagrant/scripts/rudder-setup upgrade-" + self.info['rudder-setup'] + " " + version + "\"")
 
     # replace configuration for the given platform
     @staticmethod
