@@ -9,7 +9,8 @@ from pprint import pprint
 class Scenario:
   def __init__(self, platform, rspec, rcli, server_name, frmt, run_only, run_finally):
     self.errors = False
-    self.pf = platform
+    self.platform = platform
+    self.pf = platform.name
     self.rspec = rspec
     self.rcli = rcli
     self.server_name = server_name

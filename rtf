@@ -15,7 +15,12 @@ Usage:
     rtf host update-rudder <host> <version>
     rtf host update-os <host> <version>
     rtf scenario list
-    rtf scenario run <platform>
+    rtf scenario run <platform> <scenario> [--no-finally] [--filter=<test1>,<test2>,...] [--format=<format>]
+
+Options:
+    --no-finally       Do not run tests tagged FINALLY in the scenario, to avoid coming back to initial state
+    --filter=...       Only run priovided test list from scenario
+    --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
 """
 
 # commands : 
@@ -25,13 +30,13 @@ Usage:
 
 import argparse
 import json
-import pprint
 import os
 import copy
 import re
 import scenario.lib
 import importlib
 from subprocess import check_output
+from pprint import pprint
 
 
 import docopt
@@ -182,7 +187,7 @@ class Platform:
         self.hosts = {}
         # manage default values
         default = platform_info['default']
-        for hostname, host,  in platform_info.items():
+        for hostname, host in platform_info.items():
             if hostname == "default":
                 continue
             host_info = copy.deepcopy(default)
@@ -235,20 +240,16 @@ class Platform:
       server_name = None
       for hostname, host in self.hosts.items():
           if host.info['rudder-setup'] == "server":
-            print("host " + host.info['rudder-setup'])
             rudder_url = host.get_url()
-            print("url " + rudder_url)
             token = host.run('cat /root/rudder-token')
-            print("token " + token)
             server_name = host.hostid
-            print("server_name " + server_name)
       if rudder_url is None or token is None:
           print("This platform has no rudder server, can't run scenario")
           exit(2)
       rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
 
       # load and run
-      scenario.lib.scenario = scenario.lib.Scenario(self.name, rspec, rcli, server_name, frmt, run_only, run_finally)
+      scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, server_name, frmt, run_only, run_finally)
       setenv(client_path, rudder_url, token)
       importlib.import_module("scenario." + name)
 
@@ -259,12 +260,15 @@ class Platform:
 
 # Set environment variables for command calls
 def setenv(client_path, url, token):
-  os.environ['PATH'] += ":" + client_path + "/cli"
-  os.environ['PYTHONPATH'] = client_path +  "/lib.python"
-  print("export PATH=" + os.environ['PATH'])
-  print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
+  if client_path is not None:
+    os.environ['PATH'] += ":" + client_path + "/cli"
+    print("export PATH=" + os.environ['PATH'])
+    os.environ['PYTHONPATH'] = client_path +  "/lib.python"
+    print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
   os.environ['RUDDER_SERVER'] = url
+  print("export RUDDER_SERVER=" + os.environ['RUDDER_SERVER'])
   os.environ['RUDDER_TOKEN'] = token
+  print("export RUDDER_TOKEN=" + os.environ['RUDDER_TOKEN'])
 
 
 # Load a commented json
@@ -333,19 +337,18 @@ if __name__ == "__main__":
     if args['list']:
       list_scenarii()
     elif args['run']:
-      # TODO parametrize here
-      # True to clean tests, False to not run finally tests 
-      run_finally=True
-      # None for no filter, [ 'test1', 'test2' ] to run only test1 and test2
-      run_only=None
-      # available: progress, documentation, html, json
-      frmt = "documentation"
-      # Root on rudder-api-client repository
-      client_path = "/home/bpeccatte/Rudder/rudder-api-client"
-      # scenario to run
-      scenario_name = "base"
-      # END TODO
+      # Hack nedded because there is not api client package yet
+      client_path = "rudder-api-client"
+      if not os.path.exists(client_path):
+          print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
+          print("If you want to use rudder-api-client from a local repository please type this command:")
+          print("ln -s ~/<path_to>/rudder-api-client")
+          exit(1)
+
+      filter=args['--filter']
+      if filter == []:
+          filter = None
 
       platform = get_platform(args['<platform>'])
-      platform.run_scenario(scenario_name, frmt, run_finally, run_only, client_path)
+      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], filter, client_path)
 
