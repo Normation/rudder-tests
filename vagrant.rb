@@ -19,6 +19,26 @@
 #
 #####################################################################################
 
+$centos5 = "hfm4/centos5"
+$centos6 = "geerlingguy/centos6"
+$centos7 = "chef/centos-7.0"
+
+$oracle6 = "kikitux/oracle6"
+
+$sles11 = "idar/sles11sp3"
+
+$debian5 = "pelavinz/debian-lenny"
+$debian6 = "dene/debian-squeeze"
+$debian7 = "cargomedia/debian-7-amd64-default"
+$debian8 = "oar-team/debian8"
+
+$ubuntu12_04 = "ubuntu/precise64"
+$ubuntu12_10 = "chef/ubuntu-12.10"
+$ubuntu14_04 = "ubuntu/trusty64"
+
+$solaris11 = "ruby-concurrency/oracle-solaris-11"
+
+
 def configure(config, os, pf_name, pf_id,  host_id, version)
   # Parameters
   if host_id == 0 then
@@ -43,7 +63,7 @@ def configure(config, os, pf_name, pf_id,  host_id, version)
 
   # Configure
   config.vm.define (name).to_sym do |server_config|
-    server_config.vm.box = os[:name]
+    server_config.vm.box = os
     server_config.vm.provider :virtualbox do |vb|
       vb.customize ["modifyvm", :id, "--memory", memory]
     end
@@ -55,67 +75,6 @@ def configure(config, os, pf_name, pf_id,  host_id, version)
     server_config.vm.hostname = host_name
     server_config.vm.provision :shell, :inline => command
   end
-end
-
-
-Vagrant.configure("2") do |config|
-
-  centos7 = {
-    :name   => "chef/centos-7.0",
-  }
-
-  centos6 = {
-    :name   => "geerlingguy/centos6",
-  }
-
-  centos5 = {
-    :name   => "hfm4/centos5",
-  }
-
-  oracle6 = {
-    :name   => "kikitux/oracle6",
-  }
- 
-  debian5 = {
-    :name   => "pelavinz/debian-lenny" ,
-  }
- 
-  debian6 = {
-    :name   => "dene/debian-squeeze",
-  }
-
-  debian7 = {
-    :name   => "cargomedia/debian-7-amd64-default",
-  }
-
-  debian8 = {
-    :name   => " oar-team/debian8",
-  }
-    
-  sles11 = {
-    :name   => "idar/sles11sp3 ",
-  }
-
-  ubuntu12_04  = {
-    :name   => "ubuntu/precise64",
-  }
- 
-  ubuntu12_10 = {
-    :name   => "chef/ubuntu-12.10",
-  }
-
-  ubuntu14_04  = {
-    :name   => "ubuntu/trusty64",
-  }
-  
-  solaris11 = {
-    :name   => "ruby-concurrency/oracle-solaris-11",
-  }
-
-
-
-### AUTOGEN TAG
-
 end
 
 
