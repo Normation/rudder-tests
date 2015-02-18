@@ -14,6 +14,7 @@ Usage:
     rtf host update-rudder <host> <version>
     rtf host update-os <host> <version>
     rtf scenario list
+    rtf scenario env <platform>
     rtf scenario run <platform> <scenario> [--no-finally] [--filter=<test1>,<test2>,...] [--format=<format>]
 
 Options:
@@ -104,7 +105,7 @@ class Vagrant(Host):
 
   def run(self, command):
     """ Run a command as root on this host """
-    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo sudo PATH=$PATH:/vagrant/scripts " + command + "\"", shell=True)
+    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo sudo PATH=$PATH:/vagrant/scripts " + command + "\" -- -q", shell=True)
     return value .rstrip()
 
   def get_url(self):
@@ -245,6 +246,21 @@ class Platform:
     setenv(client_path, rudder_url, token)
     importlib.import_module("scenario." + name)
 
+  def print_environment(self, client_path):
+    """ Print environment used to run tests on this platform """
+    # Get server info
+    rudder_url = None
+    token = None
+    for hostname, host in self.hosts.items():
+      if host.info['rudder-setup'] == "server":
+        rudder_url = host.get_url()
+        token = host.run('cat /root/rudder-token')
+    setenv(client_path, rudder_url, token)
+    print("export PATH=" + os.environ['PATH'])
+    print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
+    print("export RUDDER_SERVER=" + os.environ['RUDDER_SERVER'])
+    print("export RUDDER_TOKEN=" + os.environ['RUDDER_TOKEN'])
+
 
 ###################
 # Utility methods #
@@ -254,13 +270,9 @@ def setenv(client_path, url, token):
   """ Set environment variables for command calls """
   if client_path is not None:
     os.environ['PATH'] += ":" + client_path + "/cli"
-    print("export PATH=" + os.environ['PATH'])
     os.environ['PYTHONPATH'] = client_path +  "/lib.python"
-    print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
   os.environ['RUDDER_SERVER'] = url
-  print("export RUDDER_SERVER=" + os.environ['RUDDER_SERVER'])
   os.environ['RUDDER_TOKEN'] = token
-  print("export RUDDER_TOKEN=" + os.environ['RUDDER_TOKEN'])
 
 def load_json(filename):
   """ Load a commented json """
@@ -328,20 +340,23 @@ if __name__ == "__main__":
   elif args['host']:
     pass
   elif args['scenario']:
+    client_path = "rudder-api-client"
     if args['list']:
       list_scenarii()
+    elif args['env']:
+      platform = get_platform(args['<platform>'])
+      platform.print_environment(client_path)
     elif args['run']:
       # Hack nedded because there is not api client package yet
-      client_path = "rudder-api-client"
       if not os.path.exists(client_path):
-          print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
-          print("If you want to use rudder-api-client from a local repository please type this command:")
-          print("ln -s ~/<path_to>/rudder-api-client")
-          exit(1)
+        print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
+        print("If you want to use rudder-api-client from a local repository please type this command:")
+        print("ln -s ~/<path_to>/rudder-api-client")
+        exit(1)
 
       filter=args['--filter']
       if filter == []:
-          filter = None
+        filter = None
 
       platform = get_platform(args['<platform>'])
       platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], filter, client_path)

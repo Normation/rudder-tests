@@ -114,7 +114,6 @@ EOF
     it {
       # register output uuid for next command
       $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
-      puts $uuid
     }
   end
 
@@ -154,7 +153,6 @@ EOF
     it {
       # register output uuid for next command
       $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
-      puts $uuid
     }
   end
 

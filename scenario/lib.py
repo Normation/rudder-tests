@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import re
+import copy
 from subprocess import Popen, check_output, PIPE, CalledProcessError
 from time import sleep
 from datetime import datetime
@@ -105,6 +106,30 @@ def run(target, test, error_mode, **kwargs):
 
   if retcode != 0 and error_mode == Err.BREAK:
     errors = True
+
+
+def run_on_all(*args, **kwargs):
+  """ Run a test on all nodes """
+  for host in scenario.all_nodes():
+    run(host, *args, **kwargs)
+
+
+def run_on_agents(*args, **kwargs):
+  """ Run a test on all agents node """
+  for host in scenario.agent_nodes():
+    run(host, *args, **kwargs)
+
+
+def run_on_servers(*args, **kwargs):
+  """ Run a test on all server nodes """
+  for host in scenario.server_nodes():
+    run(host, *args, **kwargs)
+
+
+def start():
+  """ Start a scenario """
+  now = datetime.now().isoformat()
+  print("[" + now + "] Begining of scenario")
 
 
 def finish():

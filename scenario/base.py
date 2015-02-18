@@ -1,19 +1,21 @@
 from scenario.lib import *
 
+# test begins, register start time
+start()
 
 # Generic tests
 for host in scenario.all_nodes():
   hostinfo = scenario.platform.hosts[host].info
   osname = hostinfo['osname'] if 'osname' in hostinfo else ""
   run(host, 'fusion', Err.CONTINUE, OSNAME=osname)
-  run(host, 'agent', Err.CONTINUE)
+
+run_on_all('agent', Err.CONTINUE)
 
 # force inventory
-for host in scenario.agent_nodes():
-  run(host, 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
-run('server', 'run_agent', Err.CONTINUE, PARAMS="")
+run_on_agents('run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
+run_on_servers('run_agent', Err.CONTINUE, PARAMS="")
 
-# accept node
+# accept nodes
 for host in scenario.agent_nodes():
   run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
@@ -24,13 +26,11 @@ for host in scenario.agent_nodes():
   wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
 
 # Run agent
-for host in scenario.agent_nodes():
-  run(host, 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
-  run(host, 'run_agent', Err.CONTINUE, PARAMS="")
+run_on_agents('run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
+run_on_agents('run_agent', Err.CONTINUE, PARAMS="")
 
 # Test rule result
-for host in scenario.agent_nodes():
-  run(host, 'user_test', Err.CONTINUE)
+run_on_agents('user_test', Err.CONTINUE)
 
 # remove rule/directive
 run('localhost', 'directive_delete', Err.FINALLY, DELETE="Test User Directive", GROUP="special:all")

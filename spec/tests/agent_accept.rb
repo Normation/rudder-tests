@@ -5,7 +5,6 @@ acceptHost = $params['ACCEPT']
 describe "Accept node"  do
 
   # find node uuid
-  puts $rudderCli + " nodes list_pending | jq '.nodes | map(select(.hostname==\"" + acceptHost + "\")) | .[0].id'"
   describe command($rudderCli + " nodes list_pending | jq '.nodes | map(select(.hostname==\"" + acceptHost + "\")) | .[0].id'") do
     its(:exit_status) { should eq 0 }
     its(:stdout) { should match /^"[0-9a-f\-]+"$/ }

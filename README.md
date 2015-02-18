@@ -64,10 +64,11 @@ Scenarii are in scenario/
 A scenario is a list of commands to run tests in order with parameters.
 
 A typical scenario:
- from scenario.lib import *
- run('hostname', 'test', Err.CONTINUE, PARAM=value)
- ...
- finish()
+        from scenario.lib import *
+        start()
+        run('hostname', 'test', Err.CONTINUE, PARAM=value)
+        ...
+        finish()
 
 - Scenarii are python modules
 - A global variable called scenario contains all necessary informations to run the scenario
