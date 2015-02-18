@@ -1,51 +1,82 @@
 #!/usr/bin/python
 
 import re
-from subprocess import Popen, check_output, PIPE
+from subprocess import Popen, check_output, PIPE, CalledProcessError
 from time import sleep
 from datetime import datetime
 from pprint import pprint
 
 class Scenario:
-  def __init__(self, platform, rspec, rcli, server_name, frmt, run_only, run_finally):
+  """ Holds a scenario data 
+  Most scenario related methods are global and not in this class to make scenario writing look like script writing
+  """
+  def __init__(self, platform, rspec, rcli, frmt, run_only, run_finally):
     self.errors = False
     self.platform = platform
     self.pf = platform.name
     self.rspec = rspec
     self.rcli = rcli
-    self.server_name = server_name
     self.frmt = frmt
     self.run_only = run_only
     self.run_finally = run_finally
 
-# Global variable
+  def all_nodes(self):
+    """ List all nodes in this scenario's platform """
+    return self.platform.hosts.keys()
+
+  def agent_nodes(self):
+    """ List all agent nodes in this scenario's platform """
+    nodes = []
+    for hostname, host in self.platform.hosts.items():
+      if host.info['rudder-setup'] == 'agent':
+        nodes.append(hostname)
+    return nodes
+
+  def server_nodes(self):
+    """ List all server nodes in this scenario's platform """
+    nodes = []
+    for hostname, host in self.platform.hosts.items():
+      if host.info['rudder-setup'] == 'server':
+        nodes.append(hostname)
+    return nodes
+
+
+# Global variable that hold current scenario data
 scenario = None
 
 def enum(*sequential, **named):
+  """ Enum compatibility for old python versions """
   enums = dict(zip(sequential, range(len(sequential))), **named)
   return type('Enum', (), enums)
 
+# Error handling mode in scenario
 Err = enum('CONTINUE', 'BREAK', 'FINALLY')
 
 
-# Beware, negative logic
-def dont_run(name, mode):
+def dont_run(test, mode):
+  """ Return True when the test must not be run """
+  # Beware, negative logic
   if mode != Err.FINALLY and scenario.errors:
     return True
   if scenario.run_only is not None:
-    if name not in scenario.run_only:
+    if test not in scenario.run_only:
       return True
   if mode == Err.FINALLY and not scenario.run_finally:
     return True
   return False
 
 
-# run one test
-# error_mode can be : 
-#  - CONTINUE: continue testing even if this fail, should ne the default
-#  - BREAK: stop the scenario if this fail, for tests that change a state
-#  - FINALLY: always run this test, for leaning after a scenario, broken or not
+############################################
+# Commands to be used in a scenario script #
+############################################
+
 def run(target, test, error_mode, **kwargs):
+  """ Run one test in a scenario 
+  error_mode can be : 
+   - CONTINUE: continue testing even if this fail, should ne the default
+   - BREAK: stop the scenario if this fail, for tests that change a state
+   - FINALLY: always run this test, for leaning after a scenario, broken or not
+  """
   if dont_run(test, error_mode):
     return
 
@@ -77,20 +108,34 @@ def run(target, test, error_mode, **kwargs):
 
 
 def finish():
+  """ Finish a scenario """
   now = datetime.now().isoformat()
   print("[" + now + "] End of scenario")
 
 
+def shell_on(hostname, command):
+  """ Run a shell command on a host and return its output without failing if there is an error """
+  try:
+    if hostname == 'localhost':
+      return check_output(command, shell=True)
+    else:
+      if hostname not in scenario.platform.hosts:
+        print("ERROR: No host named " + hostname)
+        return ""
+      host = scenario.platform.hosts[hostname]
+      return host.run(command)
+  except CalledProcessError, e:
+    print("ERROR(" + str(e.returncode) + ") in: " + command + " on " + hostname)
+    return e.output
+
+
 def shell(command):
-  process = Popen(command, stdout=PIPE, shell=True)
-  output, unused_err = process.communicate()
-  scenario.retcode = process.poll()
-  if scenario.retcode != 0:
-    print("ERROR(" + str(scenario.retcode) + ") in: " +command)
-  return output
+  """ Run a shell command on localhost and return its output without failing if there is an error """
+  return shell_on('localhost', command)
 
 
-def wait_for_generation(name, error_mode, date0, hostname, timeout=10):
+def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
+  """ Wait for the generation of a given node promises """
   if dont_run(name, error_mode):
     return
   # wait for promise generation
@@ -102,8 +147,7 @@ def wait_for_generation(name, error_mode, date0, hostname, timeout=10):
   while True:
     sleep(1)
     print("Waiting for " + agent_uuid + " rule generation")
-    datestr = shell("vagrant ssh " + scenario.server_name + " -c 'sudo cat /var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder_promises_generated 2>/dev/null' 2>/dev/null")
-    datestr = datestr.rstrip()
+    datestr = shell_on(server, "cat /var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder_promises_generated 2>/dev/null")
     if datestr == "":
       continue
     if re.match(r'^\d+$', datestr):
@@ -119,9 +163,10 @@ def wait_for_generation(name, error_mode, date0, hostname, timeout=10):
     print("ERROR: Timeout in promise generation (>" + str(timeout) + "s)")
 
 
-def server_date(name, error_mode):
+def host_date(name, error_mode, server):
+  """ Return the current date on the host """
   if dont_run(name, error_mode):
     return None
-  return shell("vagrant ssh " + scenario.server_name + " -c 'date +%s' 2>/dev/null").strip()
+  return shell_on(server, "date +%s")
 
 

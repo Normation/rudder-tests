@@ -47,30 +47,31 @@ $rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token=' + token.
 
 ## monkeypatching serverspec
 
-# print test duration in dicumentation format
-module RSpec
-  module Core
-    module Formatters
-      # @private
-      class DocumentationFormatter < BaseTextFormatter
-
-        def example_passed(passed)
-          output.puts passed_output(passed.example)
-          output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
+if defined? RSpec::Core::Formatters::BaseTextFormatter
+  # print test duration in dicumentation format
+  module RSpec
+    module Core
+      module Formatters
+        # @private
+        class DocumentationFormatter < BaseTextFormatter
+  
+          def example_passed(passed)
+            output.puts passed_output(passed.example)
+            output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
+          end
+  
+          def example_pending(pending)
+            output.puts pending_output(pending.example, pending.example.execution_result.pending_message)
+            output.puts "#{current_indentation}time: #{pending.example.execution_result.run_time}s"
+          end
+  
+          def example_failed(failure)
+            output.puts failure_output(failure.example, failure.example.execution_result.exception)
+            output.puts "#{current_indentation}time: #{failure.example.execution_result.run_time}s"
+          end
+  
         end
-
-        def example_pending(pending)
-          output.puts pending_output(pending.example, pending.example.execution_result.pending_message)
-          output.puts "#{current_indentation}time: #{pending.example.execution_result.run_time}s"
-        end
-
-        def example_failed(failure)
-          output.puts failure_output(failure.example, failure.example.execution_result.exception)
-          output.puts "#{current_indentation}time: #{failure.example.execution_result.run_time}s"
-        end
-
       end
     end
   end
 end
-

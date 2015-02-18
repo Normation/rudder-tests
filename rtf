@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-
 """
 Rudder test framework
 
@@ -19,14 +18,9 @@ Usage:
 
 Options:
     --no-finally       Do not run tests tagged FINALLY in the scenario, to avoid coming back to initial state
-    --filter=...       Only run priovided test list from scenario
+    --filter=...       Only run provided test list from scenario
     --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
 """
-
-# commands : 
-#   - run <test> <platform>
-#   - platform up <platform>
-#   - platform destroy <platform>
 
 import argparse
 import json
@@ -35,51 +29,49 @@ import copy
 import re
 import scenario.lib
 import importlib
+import docopt
 from subprocess import check_output
 from pprint import pprint
 
 
-import docopt
-
-
-# Generic Host
-# Inherit to create host managed by a specific provider
-# Look at Vagrant class for the list of methods to implement
-# See vagrant for an example
 class Host:
-    def __init__(self, host_info):
-        self.info = host_info
+  """Generic Host
+  Inherit to create host managed by a specific provider
+  Look at Vagrant class for the list of methods to implement
+  """
+  def __init__(self, host_info):
+    self.info = host_info
 
 
-## Vagrant specific methods
+### Vagrant specific code ###
 
-# return a Vagrantfile host line 
 def host_lines(platform, hosts, pf_id):
-    pf = platform.split('.')[0]
-    lines=[]
-    i=1
-    for hostname, host_obj in hosts.iteritems():
-        host = host_obj.info
-        if host['run-with'] == 'vagrant':
-            os = host['system']
-            if host['rudder-setup'] == 'server':
-                host_id = "0"
-            else:
-                host_id = str(i)
-                i += 1
-            line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", " + host_id + ", '" + host['rudder-version'] + "')\n"
-            if host['rudder-setup'] == 'server':
-                lines.insert(0, line)
-            else:
-                lines.append(line)
-    return lines
+  """ Return a Vagrantfile host line """ 
+  pf = platform.split('.')[0]
+  lines=[]
+  i=1
+  for hostname, host_obj in hosts.iteritems():
+    host = host_obj.info
+    if host['run-with'] == 'vagrant':
+      os = host['system']
+      if host['rudder-setup'] == 'server':
+        host_id = "0"
+      else:
+        host_id = str(i)
+        i += 1
+      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", " + host_id + ", '" + host['rudder-version'] + "')\n"
+      if host['rudder-setup'] == 'server':
+        lines.insert(0, line)
+      else:
+        lines.append(line)
+  return lines
 
-# initialize an empty Vagrantfile
 def init_vagrantfile():
-    if os.path.isfile("Vagrantfile"):
-        return
-    with open("Vagrantfile", "w") as vagrant:
-        vagrant.write("""# -*- mode: ruby -*-
+  """ Initialize an empty Vagrantfile """
+  if os.path.isfile("Vagrantfile"):
+    return
+  with open("Vagrantfile", "w") as vagrant:
+    vagrant.write("""# -*- mode: ruby -*-
 # vi: set ft=ruby :
 
 require_relative 'vagrant.rb'
@@ -92,174 +84,174 @@ end
 """)
 
 
-# Vagrant managed host
-# Manage start, stop and vagrant configuration
 class Vagrant(Host):
-    def __init__(self, platform, name, host_info):
-        Host.__init__(self, host_info)
-        pf = platform.split('.')[0]
-        self.platform = pf
-        self.hostid = pf + '_' + name
-        init_vagrantfile()
+  """ Vagrant managed host """
+  def __init__(self, platform, name, host_info):
+    Host.__init__(self, host_info)
+    pf = platform.split('.')[0]
+    self.platform = pf
+    self.name = name
+    self.hostid = pf + '_' + name
+    init_vagrantfile()
 
-    # find the host matching description and set it up
-    def start(self):
-        os.system("vagrant up " + self.hostid)
+  def start(self):
+    """ Setup and run this host """
+    os.system("vagrant up " + self.hostid)
 
-    # find the host matching description and stop it
-    def stop(self):
-        os.system("vagrant destroy -f " + self.hostid)
+  def stop(self):
+    """ Destroy this host """
+    os.system("vagrant destroy -f " + self.hostid)
 
-    # Run a command as root on the host
-    def run(self, command):
-        value = check_output("vagrant ssh " + self.hostid + " -c \"sudo sudo PATH=$PATH:/vagrant/scripts " + command + "\"", shell=True)
-        return value .rstrip()
+  def run(self, command):
+    """ Run a command as root on this host """
+    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo sudo PATH=$PATH:/vagrant/scripts " + command + "\"", shell=True)
+    return value .rstrip()
 
-    # get rudder redirected http url or None
-    def get_url(self):
-      # port autodetection
-      port = None
-      for line in open("Vagrantfile"):
-        # match configure(config, pf_name, 'platform', id, 0, 'version')
-        m = re.match(r'configure\((?:.*?,){2}\s*' + "'" + self.platform + "'" + r'\s*,\s*(\d+)', line)
+  def get_url(self):
+    """ Get matching server URL """
+    # port autodetection
+    port = None
+    for line in open("Vagrantfile"):
+      # match configure(config, pf_name, 'platform', id, 0, 'version')
+      m = re.match(r'configure\((?:.*?,){2}\s*' + "'" + self.platform + "'" + r'\s*,\s*(\d+)', line)
+      if m:
+        port = str(int(m.group(1)) * 100 + 8081)
+    if port is None:
+      return None
+    return "https://localhost:" + str(port) + "/rudder"
+
+  @staticmethod
+  def status(platform, hosts):
+    """ Return the status of all hosts on a given platform """
+    host_list = [ platform + '_' + h for h in hosts ]
+    os.system("vagrant status " + " ".join(host_list))
+
+  @staticmethod
+  def reset_platform(name, hosts):
+    """ Update or replace the Vagrantfile configuration for the given platform """
+    lines = []
+    with open("Vagrantfile", "r+") as fd:
+      updated = False
+      line=fd.readline()
+      max_pf_id = 0
+      while line:
+        m = re.match(r'configure\((?:.*?,){3}\s*(\d+)', line)
         if m:
-          port = str(int(m.group(1)) * 100 + 8081)
-      if port is None:
-        return None
-      return "https://localhost:" + str(port) + "/rudder"
+          pf_id = int(m.group(1))
+          if pf_id > max_pf_id:
+            max_pf_id = pf_id
+        if not updated and re.match(r'### AUTOGENERATED FOR PLATFORM ' + name + r' \(\d+\)', line):
+          lines.append(line)
+          while not re.match(r'### END OF AUTOGENERATION FOR ' + name, line):
+            line = fd.readline()
+            m = re.match(r'configure\((?:.*?,){3}\s*(\d+)', line)
+            if m:
+              pf_id = int(m.group(1))
+          lines.extend(host_lines(name, hosts, pf_id))
+          lines.append(line)
+          updated = True
+        elif not updated and re.match(r'### AUTOGEN TAG', line):
+          lines.append('### AUTOGENERATED FOR PLATFORM ' + name + " (" + str(max_pf_id+1) + ")\n")
+          lines.extend(host_lines(name, hosts, max_pf_id+1))
+          lines.append('### END OF AUTOGENERATION FOR ' + name + "\n")
+          lines.append("\n### AUTOGEN TAG\n")
+          updated = True
+        else:
+          lines.append(line)
+        line=fd.readline()
+      fd.seek(0)
+      fd.truncate()
+      fd.writelines(lines)
 
-    # Update or replace the configuration for the given platform
-    @staticmethod
-    def reset_platform(name, hosts):
-        lines = []
-        with open("Vagrantfile", "r+") as fd:
-            updated = False
-            line=fd.readline()
-            max_pf_id = 0
-            while line:
-                m = re.match(r'configure\((?:.*?,){3}\s*(\d+)', line)
-                if m:
-                    pf_id = int(m.group(1))
-                    if pf_id > max_pf_id:
-                        max_pf_id = pf_id
-                if not updated and re.match(r'### AUTOGENERATED FOR PLATFORM ' + name + r' \(\d+\)', line):
-                    lines.append(line)
-                    while not re.match(r'### END OF AUTOGENERATION FOR ' + name, line):
-                        line = fd.readline()
-                        m = re.match(r'configure\((?:.*?,){3}\s*(\d+)', line)
-                        if m:
-                          pf_id = int(m.group(1))
-                    lines.extend(host_lines(name, hosts, pf_id))
-                    lines.append(line)
-                    updated = True
-                elif not updated and re.match(r'### AUTOGEN TAG', line):
-                    lines.append('### AUTOGENERATED FOR PLATFORM ' + name + " (" + str(max_pf_id+1) + ")\n")
-                    lines.extend(host_lines(name, hosts, max_pf_id+1))
-                    lines.append('### END OF AUTOGENERATION FOR ' + name + "\n")
-                    lines.append("\n### AUTOGEN TAG\n")
-                    updated = True
-                else:
-                    lines.append(line)
-                line=fd.readline()
-            fd.seek(0)
-            fd.truncate()
-            fd.writelines(lines)
-
-    # return the status of all hosts on a given platform
-    @staticmethod
-    def status(platform, hosts):
-        host_list = [ platform + '_' + h for h in hosts ]
-        os.system("vagrant status " + " ".join(host_list))
-
-
+### End of vagrant specific code ###
 
 # Global list of host type
 host_types = { 'vagrant': Vagrant }
 
 
 
-# A full test platform
-# Can be setup or teared down at once
-# Can run a test command on the whole platform
 class Platform:
-    def __init__(self, name, platform_info):
-        self.name = name
-        self.hosts = {}
-        # manage default values
-        default = platform_info['default']
-        for hostname, host in platform_info.items():
-            if hostname == "default":
-                continue
-            host_info = copy.deepcopy(default)
-            host_info.update(host)
-            class_name = host_info['run-with']
-            # New host object (Vagrant/AWS/...)
-            self.hosts[hostname] = host_types[class_name](name, hostname, host_info)
+  """ A test platform
+  Can be setup or teared down at once
+  Can be used to run a test scenario
+  """
+  def __init__(self, name, platform_info, override):
+    self.name = name
+    self.hosts = {}
+    # manage default values
+    default = platform_info['default']
+    for hostname, host in platform_info.items():
+      if hostname == "default":
+          continue
+      host_info = copy.deepcopy(default)
+      host_info.update(host)
+      host_info.update(override)
+      class_name = host_info['run-with']
+      # New host object (Vagrant/AWS/...)
+      self.hosts[hostname] = host_types[class_name](name, hostname, host_info)
 
-    # startup the full platform
-    def setup(self):
-        for host_type in host_types.values():
-            host_type.reset_platform(self.name, self.hosts)
-        for host in self.hosts.values():
-            host.start()
+  def setup(self):
+    """ Startup the full platform """
+    for host_type in host_types.values():
+      host_type.reset_platform(self.name, self.hosts)
+    for host in self.hosts.values():
+      host.start()
 
-    # stop the full platform
-    def teardown(self):
-        for host in self.hosts.values():
-            host.stop()
+  def teardown(self):
+    """ Stop and destroy he full platform """
+    for host in self.hosts.values():
+      host.stop()
 
-    # update rudder version
-    def update_rudder(self, version):
-        for host in self.hosts.values():
-            print(host.run("rudder-setup upgrade-" + host.info['rudder-setup'] + " " + version))
+  def update_rudder(self, version):
+    """ Update rudder version on all hosts """
+    for host in self.hosts.values():
+      print(host.run("rudder-setup upgrade-" + host.info['rudder-setup'] + " " + version))
 
-    # platform
-    def status(self):
-        for host_type in host_types.values():
-            host_list = []
-            for hostname,host in self.hosts.items():
-                if isinstance(host, host_type):
-                    host_list.append(hostname)
-            host_type.status(self.name, host_list)
+  def status(self):
+    """ Show platform status """
+    for host_type in host_types.values():
+      host_list = []
+      for hostname,host in self.hosts.items():
+        if isinstance(host, host_type):
+          host_list.append(hostname)
+      host_type.status(self.name, host_list)
 
-    # run one scenario
-    def run_scenario(self, name, frmt, run_finally, run_only, client_path):
-      # test ruby binary
-      rubyver = check_output("ruby --version", shell=True)
-      if not re.match(r'ruby 2', rubyver):
-        print("Ruby must be version 2")
-        exit(3)
+  def run_scenario(self, name, frmt, run_finally, run_only, client_path):
+    """ Run a scenario on this platform """
+    # test ruby binary
+    rubyver = check_output("ruby --version", shell=True)
+    if not re.match(r'ruby 2', rubyver):
+      print("Ruby must be version 2")
+      exit(3)
 
-      # Test rspec command
-      rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
-      check_output(rspec, shell=True)
-    
-      # Get server info
-      rudder_url = None
-      token = None
-      server_name = None
-      for hostname, host in self.hosts.items():
-          if host.info['rudder-setup'] == "server":
-            rudder_url = host.get_url()
-            token = host.run('cat /root/rudder-token')
-            server_name = host.hostid
-      if rudder_url is None or token is None:
-          print("This platform has no rudder server, can't run scenario")
-          exit(2)
-      rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
+    # Test rspec command
+    rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
+    check_output(rspec, shell=True)
+  
+    # Get server info
+    rudder_url = None
+    token = None
+    for hostname, host in self.hosts.items():
+      if host.info['rudder-setup'] == "server":
+        rudder_url = host.get_url()
+        token = host.run('cat /root/rudder-token')
+    if rudder_url is None or token is None:
+      print("This platform has no rudder server, can't run scenario")
+      exit(2)
+    rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
 
-      # load and run
-      scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, server_name, frmt, run_only, run_finally)
-      setenv(client_path, rudder_url, token)
-      importlib.import_module("scenario." + name)
+    # load and run
+    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally)
+    setenv(client_path, rudder_url, token)
+    importlib.import_module("scenario." + name)
 
 
-###
-### Utility methods
-###
+###################
+# Utility methods #
+###################
 
-# Set environment variables for command calls
 def setenv(client_path, url, token):
+  """ Set environment variables for command calls """
   if client_path is not None:
     os.environ['PATH'] += ":" + client_path + "/cli"
     print("export PATH=" + os.environ['PATH'])
@@ -270,48 +262,45 @@ def setenv(client_path, url, token):
   os.environ['RUDDER_TOKEN'] = token
   print("export RUDDER_TOKEN=" + os.environ['RUDDER_TOKEN'])
 
-
-# Load a commented json
 def load_json(filename):
-    # read json from file
-    file = open(filename, 'r')
-    data = file.read()
-    file.close()
-    data = re.sub("\\/\\/.*", "", data)
-    return json.loads(data)
+  """ Load a commented json """
+  # read json from file
+  file = open(filename, 'r')
+  data = file.read()
+  file.close()
+  data = re.sub("\\/\\/.*", "", data)
+  return json.loads(data)
 
-# Get a platform object given it file name
 _platform = None
-def get_platform(name):
-    global _platform
-    if _platform is not None:
-        return _platform
-
-    platform_description = load_json("platforms/" + name + ".json")
-    _platform = Platform(name, platform_description)
+def get_platform(name, override={}):
+  """ Get a platform object given its name """
+  global _platform
+  if _platform is not None:
     return _platform
 
-# list platforms
+  platform_description = load_json("platforms/" + name + ".json")
+  _platform = Platform(name, platform_description, override)
+  return _platform
+
 def list_platforms():
-    for file in os.listdir("platforms"):
-        print(file.replace(".json", ""))
+  """ List available platforms """
+  for file in os.listdir("platforms"):
+    print(file.replace(".json", ""))
 
-# list scenarii
 def list_scenarii():
-    for f in os.listdir("scenario"):
-        if not f.endswith(".py"):
-            continue
-        file = f.replace(".py", "")
-        if file != "__init__" and file != "lib":
-            print(file)
+  """ List available scenarios """
+  for f in os.listdir("scenario"):
+    if not f.endswith(".py"):
+      continue
+    file = f.replace(".py", "")
+    if file != "__init__" and file != "lib":
+      print(file)
 
 
+##########################
+# Command line interface #
+##########################
 
-############
-# COMMANDS #
-############
-
-# MAIN, argument parser and help
 if __name__ == "__main__":
   args = docopt.docopt(__doc__)
   
@@ -319,15 +308,20 @@ if __name__ == "__main__":
     if args['list']:
       list_platforms()
     else:
-      platform = get_platform(args['<platform>'])
       if args['status']:
+        platform = get_platform(args['<platform>'])
         platform.status()
       elif args['setup']:
-        # TODO force rudder version
+        override = {}
+        if args['<version>'] is not None:
+          override['rudder-version'] = args['<version>']
+        platform = get_platform(args['<platform>'], override)
         platform.setup()
       elif args['destroy']:
+        platform = get_platform(args['<platform>'])
         platform.teardown()
       elif args['update-rudder']:
+        platform = get_platform(args['<platform>'])
         platform.update_rudder(args['<version>'])
       elif args['update-os']:
         pass
