@@ -3,7 +3,7 @@
 #######################
 setup_server() {
 
-  # install via package manager only
+  # Install via package manager only
   if [ -z "${PM}" ]
   then
     echo "Sorry your System is not *yet* supported !"
@@ -18,10 +18,11 @@ setup_server() {
   $local DEMOSAMPLE="no"
   $local LDAPRESET="yes"
   $local INITPRORESET="yes"
+
   # TODO detect
   [ -z "${ALLOWEDNETWORK}" ] && $local ALLOWEDNETWORK='127.0.0.1/24'
 
-  # debian / jdk6
+  # Debian with Sun's JRE
   if [ "${PM}" = "apt" ]
   then
     cat << EOF | debconf-set-selections
@@ -30,18 +31,27 @@ sun-java6-jre   shared/accepted-sun-dlj-v1-1    boolean true
 EOF
   fi
 
-  # install
+  # Install rudder-server-root
   ${PM_INSTALL} rudder-server-root
 
-  # hacks
+  # System specific behavior
   #######
-  # None at first
+
+  # Setup the Java TZ on SLES
+  # On SLES, the Oracle JRE is often unable to get the system
+  # timezone, resulting in broken reporting timings.
+  if [ "${PM}" = "zypper" ]
+  then
+    grep -q JAVA_OPTIONS /opt/rudder/etc/rudder-jetty.conf || echo "JAVA_OPTIONS='-Duser.timezone=Europe/Paris'" >> /opt/rudder/etc/rudder-jetty.conf
+  fi
 
   # Initialize Rudder
   /opt/rudder/bin/rudder-init.sh ${SERVER_HOSTNAME} ${DEMOSAMPLE} ${LDAPRESET} ${INITPRORESET} ${ALLOWEDNETWORK} < /dev/null > /dev/null 2>&1
+
 }
 
 upgrade_server() {
+
   # Upgrade via package manager only
   if [ -z "${PM}" ]
   then
@@ -54,18 +64,22 @@ upgrade_server() {
   then
     ${PM_UPGRADE} rudder-server-root
   else
-    ${PM_UPGRADE} "rudder-*" "ncf"
+    ${PM_UPGRADE} "rudder-*" "ncf*"
   fi
 
-  /etc/init.d/rudder-jetty restart
+  service rudder-jetty restart
+
 }
 
 upgrade_techniques() {
-  cd /var/rudder/configuration-repository
-  cp -a /opt/rudder/share/techniques/* techniques/
+
+  cd /var/rudder/configuration-repository && cp -a /opt/rudder/share/techniques/* techniques/
+
   git add -u techniques
   git add techniques
   git commit -m "Technique upgrade to version ${RUDDER_VERSION}"
+
   curl -s -f -k "https://localhost/rudder/api/techniqueLibrary/reload"
-  ehco ""
+  echo ""
+
 }

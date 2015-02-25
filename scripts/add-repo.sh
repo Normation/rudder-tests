@@ -7,6 +7,7 @@ add_repo() {
   [ "${PM}" = "apt" ] && REPO_TYPE="apt"
   [ "${PM}" = "yum" ] && REPO_TYPE="rpm"
   [ "${PM}" = "zypper" ] && REPO_TYPE="rpm"
+
   if [ "${USE_CI}" = "yes" ]
   then
     $local URL_BASE="https://ci.normation.com/${REPO_TYPE}-repos/release/${RUDDER_VERSION}/"
@@ -16,7 +17,8 @@ add_repo() {
   else
     $local URL_BASE="http://www.rudder-project.org/${REPO_TYPE}-${RUDDER_VERSION}"
   fi
-  if [ "${PM}" = "yum" ] || [ "${PM}" = "zypper" ] 
+
+  if [ "${PM}" = "yum" ] || [ "${PM}" = "zypper" ]
   then
     $local OSVERSION=`echo "${OS_COMPATIBLE_VERSION}" | sed 's/[^0-9].*//'`
     URL_BASE="${URL_BASE}/${OS_COMPATIBLE}_${OSVERSION}/"
@@ -28,16 +30,16 @@ add_repo() {
     # Debian / Ubuntu like
     apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 474A19E8
     cat > /etc/apt/sources.list.d/rudder.list << EOF
-deb ${URL_BASE} `lsb_release -cs` main
+deb ${URL_BASE} $(lsb_release -cs) main
 EOF
     apt-get update
     return 0
-  
+
   elif [ "${PM}" = "yum" ]
   then
     # Add RHEL like rpm repo
     cat > /etc/yum.repos.d/rudder.repo << EOF
-[Rudder_${RUDDER_VERSION}]
+[Rudder]
 name=Rudder ${RUDDER_VERSION} Repository
 baseurl=${URL_BASE}
 gpgcheck=1
@@ -45,16 +47,17 @@ gpgkey=${URL_BASE}repodata/repomd.xml.key
 EOF
     rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xADAB3BD36F07D355"
     return 0
-  
+
   elif [ "${PM}" = "zypper" ]
   then
     # Add SuSE repo
     rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xADAB3BD36F07D355"
-    zypper addrepo -n "Normation RPM Repositories" "${URL_BASE}" Rudder || true
+    zypper removerepo Rudder || true
+    zypper addrepo -n "Rudder repository" "${URL_BASE}" Rudder || true
     zypper refresh
     return 0
   fi
-  
+
   # TODO pkgng emerge pacman smartos
   # There is help in Fusion Inventory lib/FusionInventory/Agent/Task/Inventory/Linux/Distro/NonLSB.pm
   echo "Sorry your Package Manager is not *yet* supported !"
