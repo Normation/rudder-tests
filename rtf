@@ -221,8 +221,12 @@ class Platform:
     """ Run a scenario on this platform """
     # test ruby binary
     rubyver = check_output("ruby --version", shell=True)
-    if not re.match(r'ruby 2', rubyver):
-      print("Ruby must be version 2")
+    if re.match(r'jruby', rubyver):
+      if not re.match(r'jruby 1.7', rubyver):
+        print("WARNING: this is not JRuby 1.7, compatibility unknown")
+
+    elif not re.match(r'ruby 2', rubyver):
+      print("ERROR: MRI Ruby needs be version 2")
       exit(3)
 
     # Test rspec command

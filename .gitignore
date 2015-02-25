@@ -1,1 +1,9 @@
+# Vagrant related
 Vagrantfile
+
+# Byte-compiled / optimized Python files
+__pycache__/
+*.py[cod]
+
+# Script to be rebuilt
+scripts/rudder-setup
