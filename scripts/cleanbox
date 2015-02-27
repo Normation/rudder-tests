@@ -1,85 +1,115 @@
 #!/bin/sh
 
-# various hacks to clean boxes from vagrantbox.es
-# no set -e since things may fail
+# Various cleanups to apply on the Vagrant boxes we use.
+# no set -e since some things are expected to fail
 
 NET="$1"
 
-# old ubuntu release have no more mirror to rely on
-if hash lsb_release 2>/dev/null && [ "$(lsb_release -cs)" = "quantal" ]
+# force DNS server to an always valid one (all)
+cat << EOF > /etc/resolv.conf
+# /etc/resolv.conf, built by rtf (Rudder Test Framwork)
+options rotate
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+EOF
+
+# Disable SELinux (all)
+if [ -e /etc/sysconfig/selinux ]
 then
-  echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe" > /etc/apt/sources.list
-  echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
+  setenforce 0 2>/dev/null
+  sed -i -e 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
 fi
 
-## the centos5 box doesn't confiruge dns properly for vagrant
-#if [ -f /etc/redhat-release ] && [ -x /usr/bin/lsb_release ]
-#then
-#  if [[ `cat /etc/redhat-release` =~ "CentOS release 5" ]]
-#  then
-#    echo "nameserver 10.0.2.3" > /etc/resolv.conf
-#  fi
-#fi
-
-# force DNS server to an always valid one
-echo "nameserver 8.8.8.8" > /etc/resolv.conf 
-
-# add https support to apt
-if hash apt-get 2>/dev/null
+# Disable firewall (RHEL)
+if [ -e /etc/redhat-release ]
 then
-  apt-get update
-  apt-get install --force-yes -y apt-transport-https
-  # specific to debian7 / rudder server 2.11.6-4 
-  apt-get install --force-yes -y libltdl7
+  chkconfig iptables off 2>/dev/null
+  chkconfig firewalld off 2>/dev/null
+  service iptables stop 2>/dev/null
+  service firewalld stop 2>/dev/null
 fi
 
-# we don't want selinux and firewall
-setenforce 0 2>/dev/null
-sed -i -e 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
-service iptables stop 2>/dev/null
-chkconfig iptables off 2>/dev/null
+# Install a clean /etc/hosts for Rudder to operate properly (all)
+cat << EOF > /etc/hosts
+# /etc/hosts, built by rtf (Rudder Test Framwork)
+#
+# Format:
+# IP-Address  Full-Qualified-Hostname  Short-Hostname
+#
 
-# prepare hosts for rudder
-sed -ri "s/^127\.0\.1\.1[\t ]+(node[0-9]+)(.*)/127\.0\.1\.1\\t\1\.rudder\.local\2/" /etc/hosts
-echo "" >> /etc/hosts
-echo "${NET}.2 server.rudder.local rudder" >> /etc/hosts
-for i in $(seq 1 10) 
+# IPv4
+127.0.0.1       localhost
+
+EOF
+
+echo "${NET}.2    server.rudder.local server rudder" >> /etc/hosts
+for i in $(seq 1 10)
 do
   j=$(($i+2))
-  echo "${NET}.${j} agent${i}" >> /etc/hosts
+  echo "${NET}.${j}    agent${i}" >> /etc/hosts
 done
 
-# SLES specific
-if grep SUSE /etc/issue
+cat << EOF >> /etc/hosts
+
+# IPv6
+::1             localhost ipv6-localhost ipv6-loopback
+
+fe00::0         ipv6-localnet
+
+ff00::0         ipv6-mcastprefix
+ff02::1         ipv6-allnodes
+ff02::2         ipv6-allrouters
+ff02::3         ipv6-allhosts
+EOF
+
+# Setup Debian / Ubuntu packaging (debian/ubuntu)
+if hash apt-get 2>/dev/null
 then
-  if [ $(uname -m) = "x86_64" ]
+
+  # Old Ubuntu releases need to use the old-releases mirror instead of the default one
+  if hash lsb_release 2>/dev/null && [ "$(lsb_release -cs)" = "quantal" ]
   then
+    echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe" > /etc/apt/sources.list
+    echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
+  fi
+
+  apt-get update
+  apt-get install --force-yes -y apt-transport-https
+
+  # specific to debian7 / rudder server 2.11.6-4
+  apt-get install --force-yes -y libltdl7
+
+fi
+
+# Setup SLES packaging (suse)
+if [ -e /etc/SuSE-release ]
+then
+
+  if [ "$(uname -m)" = "x86_64" ]
+  then
+
+    # Install Java, and remove all Zypper repos
     rpm -ivh http://www.normation.com/tarball/java/jdk-7u71-linux-x64.rpm
-    if grep "11 SP1" /etc/issue
+    rm /etc/zypp/repos.d/*.repo
+
+    SLES_VERSION=$(grep "VERSION" /etc/SuSE-release|sed "s%VERSION\ *=\ *\(.*\)%\1%")
+    SLES_SERVICEPACK=$(grep "PATCHLEVEL" /etc/SuSE-release|sed "s%PATCHLEVEL\ *=\ *\(.*\)%\1%")
+
+    if [ ${SLES_VERSION} -eq 11 ] && [ ${SLES_SERVICEPACK} -eq 1 ]
     then
-      rm /etc/zypp/repos.d/SUSE-Linux-Enterprise-Server-11-SP1*.repo
-      cat > /etc/zypp/repos.d/SUSE-SP1.repo <<EOF
-[SUSE_SLES-11_SP1]
-name=Official released updates for SUSE Linux Enterprise 11 SP1
-type=yast2
-baseurl=https://ci.normation.com/sles-repo/SLES-11-SP1-64-SDK-DVD1/
-gpgcheck=0
-path=/
-enabled=1
-EOF
-      cat >  /etc/zypp/repos.d/SUSE_SLE-11_SP1_SDK.repo <<EOF
-[SUSE_SLE-11_SP1_SDK]
-name=Official SUSE Linux Enterprise 11 SP1 SDK
-type=yast2
-baseurl=https://ci.normation.com/sles-repo/SLES-11-SP1-DVD-x86_64-GM-DVD1/
-path=/
-enabled=1
-autorefresh=0
-keeppackages=0
-EOF
+      zypper ar -f "https://ci.normation.com/sles-repo/SLES-11-SP1-DVD-x86_64-GM-DVD1/" "SLES_11_SP1"
+      zypper ar -f "https://ci.normation.com/sles-repo/SLES-11-SP1-64-SDK-DVD1/" "SLES_11_SP1_SDK"
     fi
+
+    if [ ${SLES_VERSION} -eq 11 ] && [ ${SLES_SERVICEPACK} -eq 3 ]
+    then
+      zypper ar -f "https://ci.normation.com/sles-repo/SLES-11-SP3-DVD-x86_64-GM-DVD1/" "SUSE-Linux-Enterprise-Server-11-SP3_11.3.3-1.138"
+      zypper ar -f "https://ci.normation.com/sles-repo/SLES-11-SP3-DVD-x86_64-GM-DVD2/" "SLES-11-SP3-DVD-x86_64-GM-DVD2"
+    fi
+
   else
     rpm -ivh http://www.normation.com/tarball/java/jdk-7u71-linux-i586.rpm
   fi
+
 fi
 

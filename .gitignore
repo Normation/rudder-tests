@@ -1,5 +1,6 @@
 # Vagrant related
 Vagrantfile
+.vagrant/
 
 # Byte-compiled / optimized Python files
 __pycache__/
