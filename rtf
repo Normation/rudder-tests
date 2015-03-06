@@ -51,20 +51,26 @@ def host_lines(platform, hosts, pf_id):
   pf = platform.split('.')[0]
   lines=[]
   i=1
-  for hostname, host_obj in hosts.iteritems():
-    host = host_obj.info
+  host_list = sorted(hosts.keys(), reverse=True)
+  hostnames = " ".join(host_list)
+  for hostname in host_list:
+    host = hosts[hostname].info
     if host['run-with'] == 'vagrant':
       os = host['system']
+
       if host['rudder-setup'] == 'server':
         host_id = "0"
       else:
         host_id = str(i)
         i += 1
-      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", " + host_id + ", '" + host['rudder-version'] + "')\n"
-      if host['rudder-setup'] == 'server':
-        lines.insert(0, line)
-      else:
-        lines.append(line)
+
+      # Define server the node is pointing to
+      own_server = ""
+      if 'server' in host:
+        own_server = host['server']
+
+      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id + ", '" + host['rudder-setup'] + "', '" +  host['rudder-version'] + "', '" + own_server + "', '" + hostnames + "')\n"
+      lines.append(line)
   return lines
 
 def init_vagrantfile():
@@ -105,7 +111,7 @@ class Vagrant(Host):
 
   def run(self, command):
     """ Run a command as root on this host """
-    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo sudo PATH=$PATH:/vagrant/scripts " + command + "\" -- -q", shell=True)
+    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo PATH=$PATH:/vagrant/scripts " + command + "\" -- -q", shell=True)
     return value .rstrip()
 
   def get_url(self):
@@ -183,7 +189,7 @@ class Platform:
     default = platform_info['default']
     for hostname, host in platform_info.items():
       if hostname == "default":
-          continue
+        continue
       host_info = copy.deepcopy(default)
       host_info.update(host)
       host_info.update(override)
@@ -191,12 +197,34 @@ class Platform:
       # New host object (Vagrant/AWS/...)
       self.hosts[hostname] = host_types[class_name](name, hostname, host_info)
 
-  def setup(self):
+  def setup(self, client_path):
     """ Startup the full platform """
     for host_type in host_types.values():
       host_type.reset_platform(self.name, self.hosts)
+    for hostname in sorted(self.hosts.keys(), reverse=True):
+      self.hosts[hostname].start()
+    relay_list = []
+    # Find all relays uuid
     for host in self.hosts.values():
-      host.start()
+      if host.info['rudder-setup'] == 'relay':
+        uuid = host.run("cat /opt/rudder/etc/uuid.hive")
+        relay_list.append(uuid)
+    # Promote relays on servers
+    for host in self.hosts.values():
+      if host.info['rudder-setup'] == 'server':
+        # Treat inventory received on the server
+        print(host.run("/var/rudder/cfengine-community/bin/cf-agent -K"))
+        # Environment setup
+        rudder_url = host.get_url()
+        token = host.run('cat /root/rudder-token')
+        setenv(client_path, rudder_url, token)
+        for relay in relay_list:
+          # Accept the relay
+          rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
+          command = rcli + " nodes accept "+ relay
+          print(check_output(command, shell=True))
+          # Promote to relay
+          print(host.run("/opt/rudder/bin/rudder-node-to-relay "+relay))
 
   def teardown(self):
     """ Stop and destroy he full platform """
@@ -319,6 +347,13 @@ def list_scenarii():
 
 if __name__ == "__main__":
   args = docopt.docopt(__doc__)
+  # Hack nedded because there is not api client package yet
+  client_path = "rudder-api-client"
+  if not os.path.exists(client_path):
+    print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
+    print("If you want to use rudder-api-client from a local repository please type this command:")
+    print("ln -s ~/<path_to>/rudder-api-client")
+    exit(1)
   
   if args['platform']:
     if args['list']:
@@ -332,7 +367,7 @@ if __name__ == "__main__":
         if args['<version>'] is not None:
           override['rudder-version'] = args['<version>']
         platform = get_platform(args['<platform>'], override)
-        platform.setup()
+        platform.setup(client_path)
       elif args['destroy']:
         platform = get_platform(args['<platform>'])
         platform.teardown()
@@ -344,20 +379,12 @@ if __name__ == "__main__":
   elif args['host']:
     pass
   elif args['scenario']:
-    client_path = "rudder-api-client"
     if args['list']:
       list_scenarii()
     elif args['env']:
       platform = get_platform(args['<platform>'])
       platform.print_environment(client_path)
     elif args['run']:
-      # Hack nedded because there is not api client package yet
-      if not os.path.exists(client_path):
-        print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
-        print("If you want to use rudder-api-client from a local repository please type this command:")
-        print("ln -s ~/<path_to>/rudder-api-client")
-        exit(1)
-
       filter=args['--filter']
       if filter == []:
         filter = None
