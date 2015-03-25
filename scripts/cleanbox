@@ -115,3 +115,29 @@ then
 
 fi
 
+
+# add common usefull packages
+if hash apt-get 2> /dev/null
+then
+  export DEBIAN_FRONTEND=noninteractive
+  PM_INSTALL="apt-get -y install"
+elif hash yum 2> /dev/null
+then
+  PM_INSTALL="yum -y install"
+elif hash zypper 2> /dev/null
+then
+  PM_INSTALL="zypper --non-interactive install"
+fi
+${PM_INSTALL} zsh vim less curl tree htop nano git binutils rsync
+
+# add common useful files
+for user in root home/vagrant
+do
+  rsync -a /vagrant/scripts/files/vim/ /${user}/
+  rsync -a /vagrant/scripts/files/git/ /${user}/
+  rsync -a /vagrant/scripts/files/bash/ /${user}/
+  rsync -a /vagrant/scripts/files/zsh/ /${user}/
+done
+
+id > /tmp/xxx
+

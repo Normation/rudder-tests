@@ -1,0 +1,15 @@
+[user]
+	name = Test Developer
+	email = dont-use@normation.com
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+	ui = 1
+[push]
+	default = simple
+[help]
+	autocorrect = 10
+[alias]
+	co = checkout
+	sb = status -sb
