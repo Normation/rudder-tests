@@ -33,6 +33,7 @@ EOF
 
 COMMAND="$1"
 RUDDER_VERSION="$2"
+SERVER="$3"
 
 PREFIX=$(echo "${RUDDER_VERSION}" | cut -f 1 -d "/")
 if [ "${PREFIX}" = "ci" ]
@@ -49,7 +50,12 @@ case "${COMMAND}" in
     ;;
   "setup-agent")
     add_repo
-    setup_agent 
+    setup_agent
+    ;;
+  "setup-relay")
+    add_repo
+    setup_agent
+    setup_relay
     ;;
   "setup-server")
     add_repo

@@ -4,6 +4,7 @@
 # no set -e since some things are expected to fail
 
 NET="$1"
+HOSTS="$2"
 
 # force DNS server to an always valid one (all)
 cat << EOF > /etc/resolv.conf
@@ -43,10 +44,11 @@ cat << EOF > /etc/hosts
 EOF
 
 echo "${NET}.2    server.rudder.local server rudder" >> /etc/hosts
-for i in $(seq 1 10)
+i=2
+for host in ${HOSTS}
 do
-  j=$(($i+2))
-  echo "${NET}.${j}    agent${i}" >> /etc/hosts
+  echo "${NET}.${i}    ${host}" >> /etc/hosts
+  i=$((i+1))
 done
 
 cat << EOF >> /etc/hosts
