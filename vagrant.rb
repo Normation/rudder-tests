@@ -50,15 +50,13 @@ def configure(config, os, pf_name, pf_id, host_name, host_id, setup, version, se
   net = "192.168." + (pf_id+40).to_s
   ip = net + "." + (host_id+2).to_s
   forward = 100*(80+pf_id)+80
-  command  = '/vagrant/scripts/cleanbox ' + net + ' "' + host_list + '"\n'
-  if setup == "server" then
-    command += 'export ALLOWEDNETWORK=' + net + '.0/24\n'
-    command += '/vagrant/scripts/rudder-setup setup-server "' + version + '"\n'
-    command += '/vagrant/scripts/create-token\n'
-  else
-    command += '/vagrant/scripts/rudder-setup setup-' + setup + ' "' + version + '" "' + server + '"\n'
-  end
-  # onfigure
+  command = "
+/vagrant/scripts/cleanbox #{net} \"#{host_list}\"
+export ALLOWEDNETWORK=#{net}.0/24
+/vagrant/scripts/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"
+#{if setup == "server" then "/vagrant/scripts/create-token" end}
+"
+  # Configure
   config.vm.define (name).to_sym do |server_config|
     server_config.vm.box = os
     server_config.vm.provider :virtualbox do |vb|
