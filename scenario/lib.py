@@ -21,25 +21,16 @@ class Scenario:
     self.run_only = run_only
     self.run_finally = run_finally
 
-  def all_nodes(self):
-    """ List all nodes in this scenario's platform """
-    return self.platform.hosts.keys()
-
-  def agent_nodes(self):
-    """ List all agent nodes in this scenario's platform """
-    nodes = []
-    for hostname, host in self.platform.hosts.items():
-      if host.info['rudder-setup'] == 'agent':
-        nodes.append(hostname)
-    return nodes
-
-  def server_nodes(self):
-    """ List all server nodes in this scenario's platform """
-    nodes = []
-    for hostname, host in self.platform.hosts.items():
-      if host.info['rudder-setup'] == 'server':
-        nodes.append(hostname)
-    return nodes
+  def nodes(self, kind = "all"):
+    # kind not defined, return all nodes
+    if (kind == "all"):
+      return self.platform.hosts.keys()
+    else:
+      nodes = []
+      for hostname, host in self.platform.hosts.items():
+        if host.info['rudder-setup'] == kind:
+          nodes.append(hostname)
+      return nodes
 
 
 # Global variable that hold current scenario data
@@ -108,23 +99,10 @@ def run(target, test, error_mode, **kwargs):
     errors = True
 
 
-def run_on_all(*args, **kwargs):
-  """ Run a test on all nodes """
-  for host in scenario.all_nodes():
+def run_on(kind = "all", *args, **kwargs):
+  """ Run a test on nodes of type kind """
+  for host in scenario.nodes(kind):
     run(host, *args, **kwargs)
-
-
-def run_on_agents(*args, **kwargs):
-  """ Run a test on all agents node """
-  for host in scenario.agent_nodes():
-    run(host, *args, **kwargs)
-
-
-def run_on_servers(*args, **kwargs):
-  """ Run a test on all server nodes """
-  for host in scenario.server_nodes():
-    run(host, *args, **kwargs)
-
 
 def start():
   """ Start a scenario """
