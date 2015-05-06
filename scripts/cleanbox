@@ -91,7 +91,8 @@ then
   then
 
     # Install Java, and remove all Zypper repos
-    rpm -ivh http://www.normation.com/tarball/java/jdk-7u71-linux-x64.rpm
+    wget -q -O /tmp/jdk-7u71-linux-x64.rpm https://www.normation.com/tarball/java/jdk-7u71-linux-x64.rpm
+    rpm -ivh /tmp/jdk-7u71-linux-x64.rpm
     rm /etc/zypp/repos.d/*.repo
 
     # Get the running SLES version
