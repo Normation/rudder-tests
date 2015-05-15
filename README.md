@@ -10,9 +10,10 @@ To run Rudder Test Framework, first prepare the needed tools:
 - install ruby 2
 - install jq
 - install serverspec http://serverspec.org/ (gem install serverspec)
+- run `make` in the `script` directory
 
 Run the desired test platform:
-- ./rtf setup debian 
+- ./rtf platform setup debian 
 
 Run a test scenario:
 - ./rtf scenario run debian base
