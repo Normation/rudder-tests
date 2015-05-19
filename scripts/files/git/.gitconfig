@@ -6,8 +6,6 @@
 	status = auto
 	branch = auto
 	ui = 1
-[push]
-	default = simple
 [help]
 	autocorrect = 10
 [alias]
