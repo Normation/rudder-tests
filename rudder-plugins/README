@@ -1,0 +1,7 @@
+You must manually put proprietary plugins here to be able to test them.
+Available files are:
+- Rudder-agent-x64.exe: the 64 bit version of the windows agent
+- Rudder-agent-x86.exe: the 32 bit version of the windows agent
+- rudder-plugin-windows-server.zip: the server plugin for windows agent support
+- advanced-reporting.tgz: the advanced reporting plugin
+

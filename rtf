@@ -53,6 +53,20 @@ def host_lines(platform, hosts, pf_id):
   i=1
   host_list = sorted(hosts.keys(), reverse=True)
   hostnames = " ".join(host_list)
+
+  # detect the need for windows support
+  windows_support = False
+  for hostname in host_list:
+    if hosts[hostname].info['system'].startswith("win"):
+      windows_support = True
+
+  # detect default server node
+  server = ""
+  for hostname in host_list:
+    if hosts[hostname].info['rudder-setup'] == 'server':
+      server = hostname
+
+  # write a line for each host
   for hostname in host_list:
     host = hosts[hostname].info
     if host['run-with'] == 'vagrant':
@@ -68,8 +82,15 @@ def host_lines(platform, hosts, pf_id):
       own_server = ""
       if 'server' in host:
         own_server = host['server']
+      elif host['rudder-setup'] != 'server':
+        own_server = server
 
-      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id + ", '" + host['rudder-setup'] + "', '" +  host['rudder-version'] + "', '" + own_server + "', '" + hostnames + "')\n"
+      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id
+      line += ", setup:'" + host['rudder-setup'] + "', version:'" +  host['rudder-version'] + "', server:'" + own_server + "', host_list:'" + hostnames + "'"
+      # windows support
+      if host['rudder-setup'] == 'server' and windows_support:
+        line += ", windows_plugin:true"
+      line += ")\n"
       lines.append(line)
   return lines
 
