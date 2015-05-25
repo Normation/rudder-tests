@@ -38,11 +38,18 @@ $ubuntu14_04 = "ubuntu/trusty64"
 
 $solaris11 = "ruby-concurrency/oracle-solaris-11"
 
+$windows7 = "designerror/windows-7"
+#$windows2008 = "opentable/win-2008r2-standard-amd64-nocm"
+#$windows2008 = "ferventcoder/win2008r2-x64-nocm"
+$windows2008 = "opentable/win-2008-enterprise-amd64-nocm"
 
 def configure(config, os, pf_name, pf_id, host_name, host_id, setup, version, server, host_list)
+
   # Parameters
   if setup == "server" then
     memory = "1536"
+  elsif os == $windows7 or os == $windows2008 then
+    memory = "512"
   else
     memory = "256"
   end
@@ -50,12 +57,22 @@ def configure(config, os, pf_name, pf_id, host_name, host_id, setup, version, se
   net = "192.168." + (pf_id+40).to_s
   ip = net + "." + (host_id+2).to_s
   forward = 100*(80+pf_id)+80
-  command = "
-/vagrant/scripts/cleanbox #{net} \"#{host_list}\"
-export ALLOWEDNETWORK=#{net}.0/24
-/vagrant/scripts/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"
-#{if setup == "server" then "/vagrant/scripts/create-token" end}
-"
+  if os == $windows7 or os == $windows2008 then
+    command = "c:/vagrant/scripts/cleanbox.cmd #{net} \"#{host_list}\"\n"
+    if setup != "empty" then
+      command += "c:/vagrant/scripts/Rudder-agent-x64.exe /S\n"
+      command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
+    end
+  else
+    command = "/vagrant/scripts/cleanbox #{net} \"#{host_list}\"\n"
+    if setup != "empty" then
+      command += "ALLOWEDNETWORK=#{net}.0/24 /vagrant/scripts/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
+    end
+    if setup == "server" then
+      command += "/vagrant/scripts/create-token\n"
+    end
+  end
+
   # Configure
   config.vm.define (name).to_sym do |server_config|
     server_config.vm.box = os
