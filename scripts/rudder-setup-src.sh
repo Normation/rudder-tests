@@ -27,6 +27,8 @@ EOF
 
 # Include: setup-server.sh
 
+# Include: setup-plugins.sh
+
 ########
 # MAIN #
 ########
@@ -71,6 +73,12 @@ case "${COMMAND}" in
     ;;
   "upgrade-techniques")
     upgrade_techniques
+    ;;
+  "windows-plugin")
+    install_windows_plugin "$2"
+    ;;
+  "reporting-plugin")
+    install_advanced_reporting "$2"
     ;;
   *)
     usage

@@ -43,25 +43,35 @@ $windows7 = "designerror/windows-7"
 #$windows2008 = "ferventcoder/win2008r2-x64-nocm"
 $windows2008 = "opentable/win-2008-enterprise-amd64-nocm"
 
-def configure(config, os, pf_name, pf_id, host_name, host_id, setup, version, server, host_list)
+def configure(config, os, pf_name, pf_id, host_name, host_id, setup:'empty', version:nil, server:nil, host_list:'', windows_plugin:false, advanced_reporting:false)
 
   # Parameters
   if setup == "server" then
-    memory = "1536"
+    memory = 1536
+    if windows_plugin then
+      memory += 512
+    end
+    if advanced_reporting then
+      memory += 512
+    end
   elsif os == $windows7 or os == $windows2008 then
-    memory = "512"
+    memory = 512
   else
-    memory = "256"
+    memory = 256
   end
+  memory = memory.to_s
   name = pf_name + "_" + host_name
   net = "192.168." + (pf_id+40).to_s
   ip = net + "." + (host_id+2).to_s
   forward = 100*(80+pf_id)+80
+
+  # provisioning script
   if os == $windows7 or os == $windows2008 then
-    command = "c:/vagrant/scripts/cleanbox.cmd #{net} \"#{host_list}\"\n"
+    command = "c:/vagrant/scripts/cleanbox.cmd #{net} #{host_list}\n"
     if setup != "empty" then
-      command += "c:/vagrant/scripts/Rudder-agent-x64.exe /S\n"
+      command += "mkdir \"c:/Program Files/Cfengine\"\n"
       command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
+      command += "c:/vagrant/rudder-plugins/Rudder-agent-x64.exe /S\n"
     end
   else
     command = "/vagrant/scripts/cleanbox #{net} \"#{host_list}\"\n"
@@ -70,6 +80,12 @@ def configure(config, os, pf_name, pf_id, host_name, host_id, setup, version, se
     end
     if setup == "server" then
       command += "/vagrant/scripts/create-token\n"
+      if windows_plugin then
+        command += "/vagrant/scripts/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
+      end
+      if advanced_reporting then
+        command += "/vagrant/scripts/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
+      end
     end
   end
 
