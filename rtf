@@ -10,6 +10,9 @@ Usage:
     rtf platform destroy <platform>
     rtf platform share <platform>
     rtf platform export <platform>
+    rtf platform shutdown <platform>
+    rtf platform snapshot <platform>
+    rtf platform rollback <platform>
     rtf platform update-rudder <platform> <version>
     rtf platform update-os <platform> <version>
     rtf host list <platform>
@@ -17,14 +20,15 @@ Usage:
     rtf host update-os <host> <version>
     rtf scenario list
     rtf scenario env <platform>
-    rtf scenario run <platform> <scenario> [--no-finally] [--filter=<test1>,<test2>,...] [--format=<format>]
+    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
     rtf test from-rule <platform> <uuid> <test_name> [--with-scenario]
 
 Options:
     --no-finally       Do not run tests tagged FINALLY in the scenario, to avoid coming back to initial state
+    --stop             Stop test on first error
     --filter=...       Only run provided test list from scenario
     --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
-    --create-scenario    Generate a sample scenario file to use this test independantly
+    --create-scenario  Generate a sample scenario file to use this test independantly
 """
 
 from __future__ import print_function
@@ -171,8 +175,8 @@ class Vagrant(Host):
         if running:
           os.system("VBoxManage startvm " + uuid + " --type headless")
 
-  # get ssh configuration to connect to this machine
   def ssh_config(self, key_directory):
+    """ get ssh configuration to connect to this machine """
     try:
       output = check_output("vagrant ssh-config " + self.hostid, shell=True)
     except CalledProcessError:
@@ -187,9 +191,23 @@ class Vagrant(Host):
       shutil.copy(src, key_directory+'/'+self.hostid)
     return output
 
+  def halt(self):
+    """ Halt this host """
+    os.system("vagrant halt " + self.hostid)
+
+  def snapshot(self):
+    """ Snapshot this host """
+    # remove existing snapshot before creating a new one
+    os.system("vagrant snapshot list " + self.hostid + " 2>/dev/null && vagrant snapshot delete " + self.hostid + " RTF_SNAPSHOT")
+    os.system("vagrant snapshot take " + self.hostid + " RTF_SNAPSHOT")
+
+  def rollback(self):
+    """ Go to last snapshot on this host """
+    os.system("vagrant snapshot back " + self.hostid)
+
   def run(self, command):
     """ Run a command as root on this host """
-    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo PATH=$PATH:/vagrant/scripts " + command + "\" -- -q", shell=True)
+    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo PATH=$PATH:/vagrant/scripts LANG=C " + command + "\" -- -q", shell=True)
     return value .rstrip()
 
   def share(self, password):
@@ -378,8 +396,23 @@ class Platform:
     os.system("tar czf rtf-" + self.name + ".tgz " + os.path.basename(dirname))
     shutil.rmtree(dirname)
 
+  def shutdown(self):
+    """ Stop the full platform """
+    for host in self.hosts.values():
+      host.halt()
+
+  def snapshot(self):
+    """ Snapshot the full platform """
+    for host in self.hosts.values():
+      host.snapshot()
+
+  def rollback(self):
+    """ Snapshot the full platform """
+    for host in self.hosts.values():
+      host.rollback()
+
   def teardown(self):
-    """ Stop and destroy he full platform """
+    """ Stop and destroy the full platform """
     for host in self.hosts.values():
       host.stop()
 
@@ -448,7 +481,7 @@ class Platform:
     return (rudder_url, token)
 
 
-  def run_scenario(self, name, frmt, run_finally, run_only, client_path):
+  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path):
     """ Run a scenario on this platform """
     # test ruby binary
     rubyver = check_output("ruby --version", shell=True)
@@ -469,7 +502,7 @@ class Platform:
     rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
 
     # load and run
-    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally)
+    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop)
     setenv(client_path, rudder_url, token)
     importlib.import_module("scenario." + name)
 
@@ -548,7 +581,12 @@ def load_json(filename):
   data = file.read()
   file.close()
   data = re.sub("\\/\\/.*", "", data)
-  return json.loads(data)
+  try:
+    return json.loads(data)
+  except Exception,e:
+    print("JSON syntax error in " + filename)
+    print e.message
+    exit(3)
 
 _platform = None
 def get_platform(name, override={}):
@@ -767,6 +805,15 @@ if __name__ == "__main__":
           override['rudder-version'] = args['<version>']
         platform = get_platform(args['<platform>'], override)
         platform.setup(client_path)
+      elif args['shutdown']:
+        platform = get_platform(args['<platform>'])
+        platform.shutdown()
+      elif args['snapshot']:
+        platform = get_platform(args['<platform>'])
+        platform.snapshot()
+      elif args['rollback']:
+        platform = get_platform(args['<platform>'])
+        platform.rollback()
       elif args['destroy']:
         platform = get_platform(args['<platform>'])
         platform.teardown()
@@ -794,7 +841,7 @@ if __name__ == "__main__":
       if filter == []:
         filter = None
       platform = get_platform(args['<platform>'])
-      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], filter, client_path)
+      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path)
   elif args['test']:
     if args['from-rule']:
       platform = get_platform(args['<platform>'])

@@ -11,7 +11,7 @@ class Scenario:
   """ Holds a scenario data 
   Most scenario related methods are global and not in this class to make scenario writing look like script writing
   """
-  def __init__(self, platform, rspec, rcli, frmt, run_only, run_finally):
+  def __init__(self, platform, rspec, rcli, frmt, run_only, run_finally, err_stop):
     self.errors = False
     self.platform = platform
     self.pf = platform.name
@@ -20,6 +20,7 @@ class Scenario:
     self.frmt = frmt
     self.run_only = run_only
     self.run_finally = run_finally
+    self.err_stop = err_stop
 
   def nodes(self, kind = "all"):
     # kind not defined, return all nodes
@@ -48,12 +49,14 @@ Err = enum('CONTINUE', 'BREAK', 'FINALLY')
 def dont_run(test, mode):
   """ Return True when the test must not be run """
   # Beware, negative logic
-  if mode != Err.FINALLY and scenario.errors:
+  if scenario.err_stop and scenario.errors:   # stop everything after error if 'err_stop'
     return True
-  if scenario.run_only is not None:
+  if mode != Err.FINALLY and scenario.errors: # stop everything not Finally after errors
+    return True
+  if scenario.run_only is not None:           # do not run filtered out tests
     if test not in scenario.run_only:
       return True
-  if mode == Err.FINALLY and not scenario.run_finally:
+  if mode == Err.FINALLY and not scenario.run_finally: # do not run finally unless 'run_finally'
     return True
   return False
 
@@ -65,7 +68,7 @@ def dont_run(test, mode):
 def run(target, test, error_mode, **kwargs):
   """ Run one test in a scenario 
   error_mode can be : 
-   - CONTINUE: continue testing even if this fail, should ne the default
+   - CONTINUE: continue testing even if this fail, should be the default
    - BREAK: stop the scenario if this fail, for tests that change a state
    - FINALLY: always run this test, for leaning after a scenario, broken or not
   """
@@ -95,8 +98,8 @@ def run(target, test, error_mode, **kwargs):
   else:
     print("")
 
-  if retcode != 0 and error_mode == Err.BREAK:
-    errors = True
+  if retcode != 0 and (error_mode == Err.BREAK or scenario.err_stop):
+    scenario.errors = True
 
 
 def run_on(kind = "all", *args, **kwargs):
@@ -120,7 +123,7 @@ def shell_on(hostname, command):
   """ Run a shell command on a host and return its output without failing if there is an error """
   try:
     if hostname == 'localhost':
-      return check_output(command, shell=True)
+      return check_output("LANG=C " + command, shell=True)
     else:
       if hostname not in scenario.platform.hosts:
         print("ERROR: No host named " + hostname)
@@ -148,6 +151,9 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
     return
   time=0
   while True:
+    time += 1
+    if time >= timeout:
+      break
     sleep(1)
     print("Waiting for " + agent_uuid + " rule generation")
     datestr = shell_on(server, "cat /var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder_promises_generated 2>/dev/null")
@@ -158,9 +164,6 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
     else:
       date = shell("date -d " + datestr + " +%s")
     if int(date) > int(date0):
-      break
-    time += 1
-    if time >= timeout:
       break
   if time >= timeout:
     print("ERROR: Timeout in promise generation (>" + str(timeout) + "s)")
