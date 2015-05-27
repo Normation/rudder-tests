@@ -9,6 +9,7 @@ Usage:
     rtf platform setup <platform> [<version>]
     rtf platform destroy <platform>
     rtf platform share <platform>
+    rtf platform export <platform>
     rtf platform update-rudder <platform> <version>
     rtf platform update-os <platform> <version>
     rtf host list <platform>
@@ -30,6 +31,8 @@ from __future__ import print_function
 import argparse
 import json
 import os
+import tempfile
+import shutil
 import copy
 import re
 import scenario.lib
@@ -37,7 +40,7 @@ import importlib
 import docopt
 import pexpect
 import signal
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError
 from pprint import pprint
 # Hack to import rudder lib, remove, some day ...
 import sys
@@ -139,6 +142,50 @@ class Vagrant(Host):
   def stop(self):
     """ Destroy this host """
     os.system("vagrant destroy -f " + self.hostid)
+
+  def export(self, directory):
+    """ Export this VM using Virtualbox commads """
+    fullname = os.path.basename(os.getcwd()).replace('.', '') + '_' + self.hostid
+    # List VMs and do something on the one we are working on
+    for line in os.popen("VBoxManage list vms"):
+      m = re.match(r'"' + fullname + r'[0-9_]+" \{(.*)\}', line)
+      if m:
+        uuid = m.group(1)
+        running = False
+        print("Exporting " + fullname + " / " + uuid + " to directory " + directory)
+        # If the VM is running, pause it (and save its state) and rerun it later
+        for running_line in os.popen("VBoxManage list runningvms"):
+          if re.search(uuid, running_line):
+            running = True
+        if running:
+          os.system("VBoxManage controlvm " + uuid + " savestate")
+        os.system("VBoxManage clonevm " + uuid + " --options keepallmacs --options keepdisknames --name " + self.hostid + " --basefolder " + directory)
+        disk_uuid = ""
+        # work around a virtualbox bug, when you clone a vm, the new disk is registered, whateverthe parameters -> unregiser it
+        for disk_line in os.popen("VBoxManage list hdds"):
+          m = re.match(r'UUID:\s+([0-9a-f\-]+)', disk_line)
+          if m:
+            disk_uuid = m.group(1)
+          if re.match(r'Location:\s+'+directory+'/'+self.hostid, disk_line):
+            os.system("VBoxManage closemedium disk " + disk_uuid)
+        if running:
+          os.system("VBoxManage startvm " + uuid + " --type headless")
+
+  # get ssh configuration to connect to this machine
+  def ssh_config(self, key_directory):
+    try:
+      output = check_output("vagrant ssh-config " + self.hostid, shell=True)
+    except CalledProcessError:
+      print("Cannot get ssh-configuration for " + self.hostid)
+      print("A patch for vagrant is available here https://github.com/peckpeck/vagrant/commit/93c5b853511548087fba7e8813c34ee45226e1cc")
+      print("Halting!")
+      exit(14)
+    m = re.search(r'\sIdentityFile\s+(\S+)', output)
+    if m:
+      src = m.group(1)
+      output = re.sub(r'(\sIdentityFile)\s+\S+', r'\1 '+os.path.basename(key_directory)+'/'+self.hostid, output)
+      shutil.copy(src, key_directory+'/'+self.hostid)
+    return output
 
   def run(self, command):
     """ Run a command as root on this host """
@@ -282,6 +329,54 @@ class Platform:
             print(check_output(command, shell=True))
             # Promote to relay
             print(host.run("/opt/rudder/bin/rudder-node-to-relay "+relay))
+
+  def export(self):
+    """ Export the full platform in a tgz """
+    # This is virtualbox/vagrant specific and should be refactored when we add a new provider
+    dirname = os.getcwd() + "/rtf-" + self.name
+    if not os.path.exists(dirname):
+      os.mkdir(dirname)
+
+    # create ssh configuration early since it can fail (fail early)
+    keydir = dirname + "/keys"
+    if not os.path.exists(keydir):
+      os.mkdir(keydir)
+    with open(dirname+'/ssh_config', 'w') as outfile:
+      for host in self.hosts.values():
+        outfile.write(host.ssh_config(keydir))
+      
+    # create vm dumps
+    for host in self.hosts.values():
+      host.export(dirname)
+
+    print("Creating package")
+    # create startup script
+    with open(dirname+'/run', 'w') as outfile:
+      outfile.write("#!/bin/sh\n")
+      for host in self.hosts.values():
+        outfile.write("VBoxManage registervm $(pwd)/" + host.hostid + "/" + host.hostid + ".vbox\n")
+        outfile.write('UUID=$(VBoxManage list vms | grep "\\"' + host.hostid + '\\"" | ' + "perl -pe 's/.*\{(.*)\}.*/$1/')\n")
+        outfile.write("VBoxManage startvm $UUID --type headless\n")
+      outfile.write("echo ''\n")
+      outfile.write("echo 'You can now connect to VMs using ssh -F ssh_config <vmname>'\n")
+      outfile.write("echo 'Available VMs are: '\n")
+      for host in self.hosts.values():
+        outfile.write("echo '"+host.hostid+"'\n")
+      outfile.write("echo ''\n")
+    os.chmod(dirname+'/run', 0755)
+    # create shutdown script
+    with open(dirname+'/terminate', 'w') as outfile:
+      outfile.write("#!/bin/sh\n")
+      for host in self.hosts.values():
+        outfile.write('UUID=$(VBoxManage list vms | grep "\\"' + host.hostid + '\\"" | ' + "perl -pe 's/.*\{(.*)\}.*/$1/')\n")
+        outfile.write("[ -n \"$UUID\" ] && VBoxManage controlvm $UUID poweroff\n")
+        outfile.write("[ -n \"$UUID\" ] && VBoxManage unregistervm $UUID\n")
+      outfile.write("echo 'You can now safely remove this directory!'\n")
+    os.chmod(dirname+'/terminate', 0755)
+
+    # Create tgz
+    os.system("tar czf rtf-" + self.name + ".tgz " + os.path.basename(dirname))
+    shutil.rmtree(dirname)
 
   def teardown(self):
     """ Stop and destroy he full platform """
@@ -678,6 +773,9 @@ if __name__ == "__main__":
       elif args['share']:
         platform = get_platform(args['<platform>'])
         platform.share()
+      elif args['export']:
+        platform = get_platform(args['<platform>'])
+        platform.export()
       elif args['update-rudder']:
         platform = get_platform(args['<platform>'])
         platform.update_rudder(args['<version>'])
