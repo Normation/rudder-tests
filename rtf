@@ -8,6 +8,7 @@ Usage:
     rtf platform status <platform>
     rtf platform setup <platform> [<version>]
     rtf platform destroy <platform>
+    rtf platform share <platform>
     rtf platform update-rudder <platform> <version>
     rtf platform update-os <platform> <version>
     rtf host list <platform>
@@ -25,6 +26,7 @@ Options:
     --create-scenario    Generate a sample scenario file to use this test independantly
 """
 
+from __future__ import print_function
 import argparse
 import json
 import os
@@ -33,6 +35,8 @@ import re
 import scenario.lib
 import importlib
 import docopt
+import pexpect
+import signal
 from subprocess import check_output
 from pprint import pprint
 # Hack to import rudder lib, remove, some day ...
@@ -140,6 +144,26 @@ class Vagrant(Host):
     """ Run a command as root on this host """
     value = check_output("vagrant ssh " + self.hostid + " -c \"sudo PATH=$PATH:/vagrant/scripts " + command + "\" -- -q", shell=True)
     return value .rstrip()
+
+  def share(self, password):
+    """ Shares this box via vagrant cloud """
+    # make sure the VM is running
+    os.system("vagrant up " + self.hostid)
+    # run vagrant share, provide a password, print its output and extract the command to run
+    process = pexpect.spawn("/usr/bin/vagrant share --disable-http --ssh "+ self.hostid)
+    process.expect("Please enter a password to encrypt the key: ")
+    print(process.before, end='')
+    process.sendline(password)
+    process.expect("Repeat the password to confirm: ")
+    print(process.before, end='')
+    process.sendline(password)
+    process.expect(r'==> \w+: simply has to run `(vagrant connect --ssh .*?)`')
+    command = process.match.group(1)
+    print(process.before, end='')
+    process.expect(r'in some secure way..*')
+    print(process.before, end='')
+    print(process.after, end='')
+    return (self.hostid, command, process)
 
   def get_url(self):
     """ Get matching server URL """
@@ -264,6 +288,43 @@ class Platform:
     for host in self.hosts.values():
       host.stop()
 
+  def share(self):
+    """ Share the platform via vagrant cloud """
+    # Some of this is vagrant specific, it should be refactored when we add a new provider
+    password = "password" # this can be a security risk, but:
+                          #    it's only test machines
+                          #    you need to know they are running
+                          #    you need to know their share ID
+    # Check that the user is logged in
+    code = os.system("vagrant login -c")
+    if code != 0:
+      print("You need an atlas hashicorp login to use this feature.")
+      print("Go to https://atlas.hashicorp.com/ to create one.")
+      print("")
+      print("If you already have an account, type 'vagrant login' and then re-run this command.")
+      exit(4)
+    signal.signal(signal.SIGINT, empty_handler)
+    signal.signal(signal.SIGTERM, empty_handler)
+    # share
+    shared_process = []
+    for host in self.hosts.values():
+      shared_process.append(host.share(password))
+    # display info
+    print("")
+    print("Now you can tell your coworker to run the following commands (he needs atlas account too):")
+    print("")
+    print("vagrant login")
+    for (hostid, cmd, process) in shared_process:
+      print(cmd + "   # " + hostid)
+    print("")
+    # wait for ctrl-c and propagate it to stop sharing
+    print("Press ctrl-c to stop sharing")
+    signal.pause()
+    print("Unsharing")
+    for (hostid, cmd, process) in shared_process:
+      process.sendintr()
+      process.wait()
+
   def update_rudder(self, version):
     """ Update rudder version on all hosts """
     for host in self.hosts.values():
@@ -373,6 +434,9 @@ Add the test to an existing scenario:
 ###################
 # Utility methods #
 ###################
+
+def empty_handler(signum, frame):
+  pass
 
 def setenv(client_path, url, token):
   """ Set environment variables for command calls """
@@ -611,6 +675,9 @@ if __name__ == "__main__":
       elif args['destroy']:
         platform = get_platform(args['<platform>'])
         platform.teardown()
+      elif args['share']:
+        platform = get_platform(args['<platform>'])
+        platform.share()
       elif args['update-rudder']:
         platform = get_platform(args['<platform>'])
         platform.update_rudder(args['<version>'])
