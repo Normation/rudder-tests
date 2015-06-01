@@ -16,11 +16,13 @@ Usage:
     rtf scenario list
     rtf scenario env <platform>
     rtf scenario run <platform> <scenario> [--no-finally] [--filter=<test1>,<test2>,...] [--format=<format>]
+    rtf test from-rule <platform> <uuid> <test_name> [--with-scenario]
 
 Options:
     --no-finally       Do not run tests tagged FINALLY in the scenario, to avoid coming back to initial state
     --filter=...       Only run provided test list from scenario
     --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
+    --create-scenario    Generate a sample scenario file to use this test independantly
 """
 
 import argparse
@@ -33,6 +35,10 @@ import importlib
 import docopt
 from subprocess import check_output
 from pprint import pprint
+# Hack to import rudder lib, remove, some day ...
+import sys
+sys.path.insert(0,"./rudder-api-client/lib.python")
+from rudder import RudderEndPoint, RudderError
 
 
 class Host:
@@ -272,6 +278,20 @@ class Platform:
           host_list.append(hostname)
       host_type.status(self.name, host_list)
 
+  def api_connection_info(self):
+    """ Get informations to connect to the server via the api """
+    rudder_url = None
+    token = None
+    for hostname, host in self.hosts.items():
+      if host.info['rudder-setup'] == "server":
+        rudder_url = host.get_url()
+        token = host.run('cat /root/rudder-token')
+    if rudder_url is None or token is None:
+      print("This platform has no rudder server, can't run this command")
+      exit(2)
+    return (rudder_url, token)
+
+
   def run_scenario(self, name, frmt, run_finally, run_only, client_path):
     """ Run a scenario on this platform """
     # test ruby binary
@@ -287,17 +307,9 @@ class Platform:
     # Test rspec command
     rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
     check_output(rspec, shell=True)
-  
-    # Get server info
-    rudder_url = None
-    token = None
-    for hostname, host in self.hosts.items():
-      if host.info['rudder-setup'] == "server":
-        rudder_url = host.get_url()
-        token = host.run('cat /root/rudder-token')
-    if rudder_url is None or token is None:
-      print("This platform has no rudder server, can't run scenario")
-      exit(2)
+
+    # Get api command line
+    (rudder_url, token) = self.api_connection_info()
     rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
 
     # load and run
@@ -307,19 +319,55 @@ class Platform:
 
   def print_environment(self, client_path):
     """ Print environment used to run tests on this platform """
-    # Get server info
-    rudder_url = None
-    token = None
-    for hostname, host in self.hosts.items():
-      if host.info['rudder-setup'] == "server":
-        rudder_url = host.get_url()
-        token = host.run('cat /root/rudder-token')
+    (rudder_url, token) = self.get_server_info()
     setenv(client_path, rudder_url, token)
     print("export PATH=" + os.environ['PATH'])
     print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
     print("export RUDDER_SERVER=" + os.environ['RUDDER_SERVER'])
     print("export RUDDER_TOKEN=" + os.environ['RUDDER_TOKEN'])
     print("alias rcli='./rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token + "'")
+
+  def export_test(self, rule_uuid, test_name, scenario=False):
+    """ Export a given rule, for use in a test or a scenario """
+    # Retrieve data
+    (rudder_url, token) = self.get_server_info()
+    endpoint = RudderEndPoint(rudder_url, token, verify=False)
+    rule = endpoint.rule_details(rule_uuid)['rules'][0]
+    directives = []
+    for directive_uuid in rule['directives']:
+      directive = endpoint.directive_details(directive_uuid)['directives'][0]
+      del directive['id']
+      directives.append(directive)
+
+    # create test files
+    rule_file = "spec/tests/"+test_name+"_rule.rb"
+    test_file = "spec/tests/"+test_name+"_test.rb"
+    scenario_file = "scenario/"+test_name+".py"
+
+    make_rule_testfile(rule_file, rule, directives)
+    make_user_testfile(test_file)
+    print("""
+A test file to add the rule via the API has been created in %(rule_file)s
+This file is where you can make change to the generated rule or directive, but it works as is.
+
+A generic test file to test if the rule has been properly applied has been created in %(test_file)s
+It contains demo code, but since we don't know what the rule does it doesn't contain code.
+-> Pleas edit %(rule_file)s !
+
+Add the test to an existing scenario:
+- Add the following line before the call to wait_for_generation on all agents
+    run('localhost', '%(test_name)s_rule', Err.BREAK, NAME="Test %(test_name)s", GROUP="special:all")
+- Add the following line after the call to wait_for_generation
+    run_on_agents('%(test_name)s_test', Err.CONTINUE)
+- Add the following lines before the removal of the agent nodes
+    run('localhost', 'directive_delete', Err.FINALLY, DELETE="%(directive_name)s", GROUP="special:all")
+    run('localhost', 'rule_delete', Err.FINALLY, DELETE="%(rule_name)s", GROUP="special:all")
+""" % { 'rule_file': rule_file, 'test_file': test_file, 'test_name': test_name, 
+        'directive_name': directive['displayName'], 'rule_name': rule['displayName'] 
+        } )
+    if scenario:
+      make_scenario_file(scenario_file, test_name)
+      print("Additionnaly, a scenario has been created in " + scenario_file)
 
 
 ###################
@@ -368,6 +416,170 @@ def list_scenarii():
     if file != "__init__" and file != "lib":
       print(file)
 
+def make_rule_testfile(filename, rule, directives):
+  with open(filename, "w") as fd:
+    data = """# File generated using rtf test from-rule
+# This test creates a rule named '%(displayName)s' and its directive(s)
+# And is checks that the api returned correctly
+
+require 'spec_helper'
+
+group = $params['GROUP']
+
+directiveFile = "/tmp/directive.json"
+ruleFile = "/tmp/rule.json"
+
+describe "Add a test directive and a rule"  do
+      """ % { 'displayName': rule['displayName'] }
+    for idx,directive in enumerate(directives):
+      data += """
+  # Add directive
+  describe command($rudderCli + " directive create --json=" + directiveFile + " %(technique)s %(name)s") do
+    before(:all) {
+      File.open(directiveFile, 'w') { |file|
+        file << <<EOF
+%(directive)s
+EOF
+      }
+    }
+    after(:all) {
+      File.delete(directiveFile)
+    }
+    its(:exit_status) { should eq 0 }
+    its(:stdout) { should match /^"[0-9a-f\\-]+"$/ }
+    it {
+      # register output uuid for next command
+      $uuid%(id)i = subject.stdout.gsub(/^"|"$/, "").chomp()
+    }
+  end
+
+""" % { 'technique': directive['techniqueName'], 'name': directive['displayName'], 'directive': json.dumps(directive, indent=2), 'id': idx }
+    data += """
+  # create a rule
+  describe command($rudderCli + " rule create --json=" + ruleFile + " testRule") do
+    before(:all) {
+      File.open(ruleFile, 'w') { |file|
+        file << <<EOF
+{
+  "directives": [
+"""
+    data += ",".join([ '"#{$uuid' + str(i) + '}"' for i in range(0, len(directives)) ])
+    data += """
+  ],
+  "displayName": "%(displayName)s Rule",
+  "longDescription": "%(longDescription)s ",
+  "shortDescription": "%(shortDescription)s",
+  "targets": [
+    {
+      "exclude": {
+        "or": []
+      },
+      "include": {
+        "or": [
+          "#{group}"
+        ]
+      }
+    }
+  ]
+}
+EOF
+      }
+    }
+    after(:all) {
+      File.delete(ruleFile)
+    }
+    its(:exit_status) { should eq 0 }
+    its(:stdout) { should match /^"[0-9a-f\\-]+"$/ }
+    it {
+      # register output uuid for next command
+      $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
+    }
+  end
+
+end
+""" % { 'displayName': rule['displayName'], 'longDescription': rule['longDescription'], 'shortDescription': rule['shortDescription'] }
+    fd.write(data)
+
+def make_user_testfile(filename):
+  with open(filename, "w") as fd:
+    fd.write("""# Sample file generated using rtf test from-rule
+# This is where you test your rule
+
+require 'spec_helper'
+
+# Please add your test here
+# see http://serverspec.org/resource_types.html for a full documentation of available tests
+
+## Ex: Test that a a package has been installed
+#describe package'apache2') do
+#  it { should be_installed }
+#  it { should be_installed.with_version('2.4.10') }
+#end
+
+## Ex: Test that a user exist
+#describe user('testuser') do
+#  it { should exist }
+#  it { should have_home_directory '/home/testuser' }
+#end
+
+## Ex: Test that a file exists
+#describe file('/etc/passwd') do
+#  it { should be_file }
+#  it { should be_mode 640 }
+#  it { should be_owned_by 'root' }
+#  its(:content) { should match /regex to match/ }
+#end
+
+## Ex: Test the output of a command
+#describe command('ls -al /') do
+#  its(:stdout) { should match /bin/ }
+#  its(:stderr) { should match /No such file or directory/ }
+#  its(:exit_status) { should eq 0 }
+#end
+""")
+
+def make_scenario_file(filename, test_name):
+  with open(filename, "w") as fd:
+    fd.write("""# File generated using rtf test from-rule
+from scenario.lib import *
+
+# test begins, register start time
+start()
+
+run_on_all('agent', Err.CONTINUE)
+
+# force inventory
+run_on_agents('run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
+run_on_servers('run_agent', Err.CONTINUE, PARAMS="")
+
+# accept nodes
+for host in scenario.agent_nodes():
+  run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
+
+# Add a rule 
+date0 = host_date('wait', Err.CONTINUE, "server")
+run('localhost', '%(test_name)s_rule', Err.BREAK, NAME="Test %(test_name)s", GROUP="special:all")
+for host in scenario.agent_nodes():
+  wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
+
+# Run agent
+run_on_agents('run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
+run_on_agents('run_agent', Err.CONTINUE, PARAMS="")
+
+# Test rule result
+run_on_agents('%(test_name)s_test', Err.CONTINUE)
+
+# remove rule/directive
+run('localhost', 'directive_delete', Err.FINALLY, DELETE="Test %(test_name)s Directive", GROUP="special:all")
+run('localhost', 'rule_delete', Err.FINALLY, DELETE="Test %(test_name)s Rule", GROUP="special:all")
+
+# remove agent
+for host in scenario.agent_nodes():
+  run('localhost', 'agent_delete', Err.FINALLY, DELETE=host)
+
+# test end, print summary
+finish()
+""" % { 'test_name': test_name } )
 
 ##########################
 # Command line interface #
@@ -416,7 +628,10 @@ if __name__ == "__main__":
       filter=args['--filter']
       if filter == []:
         filter = None
-
       platform = get_platform(args['<platform>'])
       platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], filter, client_path)
+  elif args['test']:
+    if args['from-rule']:
+      platform = get_platform(args['<platform>'])
+      platform.export_test(args['<uuid>'], args['<test_name>'], args['--create-scenario'])
 
