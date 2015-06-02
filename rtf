@@ -585,7 +585,7 @@ def load_json(filename):
     return json.loads(data)
   except Exception,e:
     print("JSON syntax error in " + filename)
-    print e.message
+    print(e.message)
     exit(3)
 
 _platform = None
