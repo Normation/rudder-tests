@@ -32,6 +32,7 @@ $debian6 = "dene/debian-squeeze"
 $debian7 = "cargomedia/debian-7-amd64-default"
 $debian8 = "oar-team/debian8"
 
+$ubuntu10_04 = "chef/ubuntu-10.04"
 $ubuntu12_04 = "ubuntu/precise64"
 $ubuntu12_10 = "chef/ubuntu-12.10"
 $ubuntu14_04 = "ubuntu/trusty64"
