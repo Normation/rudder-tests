@@ -505,6 +505,9 @@ class Platform:
     scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop)
     setenv(client_path, rudder_url, token)
     importlib.import_module("scenario." + name)
+    if scenario.lib.scenario.errors:
+      print("Test scenario '"+ name +"' failed on platform '" + self.name + "'")
+      exit(5)
 
   def print_environment(self, client_path):
     """ Print environment used to run tests on this platform """
