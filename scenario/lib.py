@@ -98,7 +98,7 @@ def run(target, test, error_mode, **kwargs):
   else:
     print("")
 
-  if retcode != 0 and (error_mode == Err.BREAK or scenario.err_stop):
+  if retcode != 0:
     scenario.errors = True
 
 
