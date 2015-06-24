@@ -27,7 +27,7 @@ $oracle6 = "kikitux/oracle6"
 
 $sles11 = "idar/sles11sp3"
 
-$debian5 = "pelavinz/debian-lenny"
+$debian5 = "felipelavinz/debian-lenny"
 $debian6 = "dene/debian-squeeze"
 $debian7 = "cargomedia/debian-7-amd64-default"
 $debian8 = "oar-team/debian8"
