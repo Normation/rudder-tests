@@ -50,7 +50,7 @@ echo "${NET}.2    server.rudder.local server rudder" >> /etc/hosts
 i=2
 for host in ${HOSTS}
 do
-  echo "${NET}.${i}    ${host}" >> /etc/hosts
+  echo "${NET}.${i}    ${host} ${host}.normation.com" >> /etc/hosts
   i=$((i+1))
 done
 
