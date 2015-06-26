@@ -70,6 +70,10 @@ EOF
 # Setup Debian / Ubuntu packaging (debian/ubuntu)
 if hash apt-get 2>/dev/null
 then
+  export DEBIAN_FRONTEND=noninteractive  
+
+  apt-get update
+
   # make sure lsb_release command is available
   apt-get install --force-yes -y lsb-release
 
@@ -80,8 +84,11 @@ then
     echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
   fi
 
-  export DEBIAN_FRONTEND=noninteractive
-  apt-get update
+  if ! hash service 2>/dev/null
+  then
+    apt-get install --force-yes -y sysvconfig
+  fi
+
   apt-get install --force-yes -y apt-transport-https
 
   # specific to debian7 / rudder server 2.11.6-4
