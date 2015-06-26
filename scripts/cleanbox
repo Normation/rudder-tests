@@ -70,6 +70,8 @@ EOF
 # Setup Debian / Ubuntu packaging (debian/ubuntu)
 if hash apt-get 2>/dev/null
 then
+  # make sure lsb_release command is available
+  apt-get install --force-yes -y lsb-release
 
   # Old Ubuntu releases need to use the old-releases mirror instead of the default one
   if hash lsb_release 2>/dev/null && [ "$(lsb_release -cs)" = "quantal" ]
