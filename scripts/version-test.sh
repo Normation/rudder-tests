@@ -175,6 +175,7 @@ version_spec() {
   test_spec ko "2.10" "2.11"
   test_spec ko "2.10-rc1" "[2.11.1 2.11.3]" 
   test_spec ko "2.11" "[2.12 *]" 
+  test_spec ok "3.1" "[3.0 4.0]" 
 }
 
 

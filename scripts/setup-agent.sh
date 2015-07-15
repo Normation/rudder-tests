@@ -22,7 +22,7 @@ setup_agent() {
   #${PM_INSTALL} pcre openssl db4-devel
 
   # TODO rudder < 2.11 only
-  echo "${SERVER}" > /var/rudder/cfengine-community/policy_server.dat
+  echo "${SERVER}.rudder.local" > /var/rudder/cfengine-community/policy_server.dat
 
   service rudder-agent start
 
@@ -43,6 +43,34 @@ upgrade_agent() {
 }
 
 setup_relay() {
+
+  if is_version_valid "${RUDDER_VERSION}" "[3.0 3.10]"; then
+    ${PM_INSTALL} rudder-server-relay
+  else
+    setup_relay_old
+  fi
+}
+
+upgrade_relay() {
+
+  if is_version_valid "${RUDDER_VERSION}" "[3.0 3.10]"; then
+    # Upgrade via package manager only
+    if [ -z "${PM}" ]
+    then
+      echo "Sorry your System is not *yet* supported !"
+      exit 4
+    fi
+
+    # If you upgrade from a 2.11 relay you will need to install the package
+    # Since it's easier to install then update than checking the installed package
+    # we decided to go that way
+    ${PM_INSTALL} rudder-server-relay
+    ${PM_UPGRADE} rudder-server-relay
+  fi
+}
+
+
+setup_relay_old() {
 
   # Install relay dependencies
   if [ "${PM}" = "apt" ]
