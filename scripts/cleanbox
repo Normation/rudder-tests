@@ -15,7 +15,7 @@ nameserver 8.8.4.4
 EOF
 
 # remove "stdin: not a tty" error on some box
-sed -i 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile
+sed -e 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile > /root/.profile2 && mv /root/.profile2 /root/.profile
 
 # Disable SELinux (all)
 if [ -e /etc/sysconfig/selinux ]
