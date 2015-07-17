@@ -17,11 +17,11 @@ EOF
 # remove "stdin: not a tty" error on some box
 sed -e 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile > /root/.profile2 && mv /root/.profile2 /root/.profile
 
-# Disable SELinux (all)
+# Enable SELinux (all)
 if [ -e /etc/sysconfig/selinux ]
 then
-  setenforce 0 2>/dev/null
-  sed -i -e 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
+  setenforce 1 2>/dev/null
+  sed -i -e 's/^SELINUX=.*/SELINUX=enabled/' /etc/sysconfig/selinux
 fi
 
 # Disable firewall (RHEL)

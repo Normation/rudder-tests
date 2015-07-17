@@ -3,6 +3,15 @@
 #######################
 setup_server() {
 
+  if is_version_valid "${RUDDER_VERSION}" "[1.0 3.0]"; then
+    # Disable SELinux on Rudder server < 3.1
+    if [ -e /etc/sysconfig/selinux ]
+    then
+      setenforce 0 2>/dev/null
+      sed -i -e 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
+    fi
+  fi
+
   # Install via package manager only
   if [ -z "${PM}" ]
   then
