@@ -26,8 +26,12 @@ get_component() {
     cut -d' ' -f${id} # keep the one we want
 }
 
-# Return true if a version component matches a specification component
+# Return if a version component matches a specification component
 # Operator can be "-le" "-eq" or "-ge" 
+# Return codes:
+#  "no"  -> component doesn't match specification
+#  "yes" -> component matches specification and is different from it
+#  "continue" -> component is equal to specification (so you must check the next component)
 component_cmp() {
   $local version_component="$1"
   $local operator="$2"
@@ -36,22 +40,40 @@ component_cmp() {
   $local alpha_spec=`echo -n "${spec_component}" | grep "[^0-9]" || true`
   if [ -z "${spec_component}" ] # no spec -> match
   then
-    return 0
+    echo "yes"
   elif [ -z "${version_component}" ] # no version -> doesn't match
   then
-    return 1
+    echo "no"
   elif [ -z "${alpha_spec}" ] && [ -z "${alpha_version}" ] # both are numeric
   then
-    [ "${version_component}" "${operator}" "${spec_component}" ]
-  elif [ -z "${alpha_spec}" ] # numeric spec, alpha version -> version is inferior to spec
+    if [ "${version_component}" -eq "${spec_component}" ]  # go to next component if this one is equal
+    then
+      echo "continue"
+    elif [ "${version_component}" "${operator}" "${spec_component}" ] # match
+    then
+      echo "yes"
+    else # doesn't match
+      echo "no"
+    fi
+  elif [ -z "${alpha_spec}" ] # numeric spec, alpha version -> version is strictly inferior to spec
   then
-    [ "${operator}" = "-le" ] # true only for "less than"
+    if [ "${operator}" = "-le" ] # true only for "less than"
+    then
+      echo "yes"
+    else
+      echo "no"
+    fi
   else # alpha spec (beta, rc, ...)
-    # hack (alpha < beta < rc) but I see no better way for now
-    [ "${operator}" = "-le" ] && op=">"  # Beware !
-    [ "${operator}" = "-eq" ] && op="!=" # Beware this is reversed to keep a shell behaviour (0=true)
-    [ "${operator}" = "-ge" ] && op="<"  # Beware !
-    echo "${version_component} ${spec_component}" | awk "{ exit(\$1 ${op} \$2) }"
+    if [ "${version_component}" = "${spec_component}" ] # same value -> continue
+    then
+      echo "continue"
+    else
+      # hack (alpha < beta < rc) but I see no better way for now
+      [ "${operator}" = "-le" ] && op="<="
+      [ "${operator}" = "-eq" ] && op="=="
+      [ "${operator}" = "-ge" ] && op=">="
+      echo "${version_component} ${spec_component}" | awk "{ if(\$1 ${op} \$2) print \"yes\"; else print \"no\" }"
+    fi
   fi
 }
 
@@ -74,11 +96,15 @@ version_cmp() {
     # if we have a spec component, test against the matching one in version
     if [ -n "${spec_component}" ]
     then
-      if component_cmp "${version_component}" "${operator}" "${spec_component}"
+      cmp=`component_cmp "${version_component}" "${operator}" "${spec_component}"`
+      if [ "${cmp}" = "yes" ]
       then
-        : # continue
+        return 0 # match
+      elif [ "${cmp}" = "no" ]
+      then
+        return 1 # doesn't match
       else
-        return 1 # stop on error
+        :        # go to next component 
       fi
     else # given version is more precise than spec -> match
       return 0
@@ -107,13 +133,9 @@ is_version_valid() {
 
 # test function for component specification
 test_component() {
-  $local retval=1
-  if [ "$1" = "ok" ]
-  then
-    retval=0
-  fi
-  component_cmp "$2" "$3" "$4"
-  if [ $? -eq ${retval} ]
+  $local retval="$1"
+  $local ret=`component_cmp "$2" "$3" "$4"`
+  if [ "${ret}" = "${retval}" ]
   then
     echo "$2 $3 $4 = $1 -> PASS" 
   else
@@ -140,28 +162,29 @@ test_spec() {
 # This is the test for version comparison
 # This test acts as a definition of version specification
 version_spec() {
-  test_component ok 2 -le 2
-  test_component ok 11 -le 12
-  test_component ko 12 -le 11
-  test_component ok rc -le rc
-  test_component ok beta -le rc
-  test_component ko beta -le alpha
-  test_component ok 2 -eq 2
-  test_component ko 11 -eq 12
-  test_component ok rc -eq rc
-  test_component ko beta -eq rc
-  test_component ok 2 -ge 2
-  test_component ok 12 -ge 11
-  test_component ko 11 -ge 12
-  test_component ok rc -ge rc
-  test_component ko beta -ge rc
-  test_component ok beta -ge alpha
+  test_component continue 2 -le 2
+  test_component yes 11 -le 12
+  test_component no 12 -le 11
+  test_component continue rc -le rc
+  test_component yes beta -le rc
+  test_component no beta -le alpha
+  test_component continue 2 -eq 2
+  test_component no 11 -eq 12
+  test_component continue rc -eq rc
+  test_component no beta -eq rc
+  test_component continue 2 -ge 2
+  test_component yes 12 -ge 11
+  test_component no 11 -ge 12
+  test_component continue rc -ge rc
+  test_component no beta -ge rc
+  test_component yes beta -ge alpha
 
 
   test_spec ok "2.11" "2.11" 
   test_spec ok "2.11.2" "2.11" 
   test_spec ok "2.11" "[2.11 2.12]"
   test_spec ok "2.12" "[2.11 2.12]" 
+  test_spec ok "2.12" "[2.11 3.1]" 
   test_spec ok "2.11.2" "[2.11.1 2.11.3]" 
   test_spec ok "2.11-rc1" "2.11"
   test_spec ok "2.11-rc1" "2.11-rc"
