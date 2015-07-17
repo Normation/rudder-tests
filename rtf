@@ -456,7 +456,7 @@ class Platform:
   def update_rudder(self, version):
     """ Update rudder version on all hosts """
     for host in self.hosts.values():
-      print(host.run("rudder-setup upgrade-" + host.info['rudder-setup'] + " " + version))
+      print(host.run("/vagrant/scripts/rudder-setup upgrade-" + host.info['rudder-setup'] + " " + version))
 
   def status(self):
     """ Show platform status """

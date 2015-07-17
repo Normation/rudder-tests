@@ -21,6 +21,8 @@ EOF
 
 # Include: detect-os.sh
 
+# Include: version-test.sh
+
 # Include: add-repo.sh
 
 # Include: setup-agent.sh
@@ -66,6 +68,11 @@ case "${COMMAND}" in
   "upgrade-agent")
     add_repo
     upgrade_agent
+    ;;
+  "upgrade-relay")
+    add_repo
+    upgrade_agent
+    upgrade_relay
     ;;
   "upgrade-server")
     add_repo
