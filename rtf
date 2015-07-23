@@ -9,7 +9,7 @@ Usage:
     rtf platform setup <platform> [<version>]
     rtf platform destroy <platform>
     rtf platform share <platform>
-    rtf platform export <platform>
+    rtf platform export <platform> [--ova]
     rtf platform shutdown <platform>
     rtf platform snapshot <platform>
     rtf platform rollback <platform>
@@ -24,6 +24,7 @@ Usage:
     rtf test from-rule <platform> <uuid> <test_name> [--with-scenario]
 
 Options:
+    --ova              Export in ova format (the platform status is not kept)
     --no-finally       Do not run tests tagged FINALLY in the scenario, to avoid coming back to initial state
     --stop             Stop test on first error
     --filter=...       Only run provided test list from scenario
@@ -165,7 +166,7 @@ class Vagrant(Host):
           os.system("VBoxManage controlvm " + uuid + " savestate")
         os.system("VBoxManage clonevm " + uuid + " --options keepallmacs --options keepdisknames --name " + self.hostid + " --basefolder " + directory)
         disk_uuid = ""
-        # work around a virtualbox bug, when you clone a vm, the new disk is registered, whateverthe parameters -> unregiser it
+        # work around a virtualbox bug, when you clone a vm, the new disk is registered, whateverthe parameters -> unregister it
         for disk_line in os.popen("VBoxManage list hdds"):
           m = re.match(r'UUID:\s+([0-9a-f\-]+)', disk_line)
           if m:
@@ -395,6 +396,57 @@ class Platform:
     # Create tgz
     os.system("tar czf rtf-" + self.name + ".tgz " + os.path.basename(dirname))
     shutil.rmtree(dirname)
+
+  def export_ova(self):
+    """ Export each machines in the platform as a separate ova """
+    # This is virtualbox/vagrant specific and should be refactored when we add a new provider
+    dirname = os.getcwd() + "/vms-" + self.name
+    if not os.path.exists(dirname):
+      os.mkdir(dirname)
+
+    for host in self.hosts.values():
+      # no selinux to avoid nasty bugs
+      #host.run("sed -i 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config || true")
+      # reconfigure network ?
+      # stop
+      host.halt()
+
+    i = 0
+    for host in self.hosts.values():
+      uuid = os.popen("VBoxManage list vms | grep '" + host.hostid + "' | perl -pe 's/.*\{(.*)\}.*/$1/'").read().strip()
+      host.uuid = uuid
+
+      # configure host network ?
+
+      for line in os.popen("VBoxManage showvminfo " + uuid + " --machinereadable"):
+        # remove vagrant share
+        match = re.match(r'SharedFolderName.*="(.*)"', line)
+        if match:
+          os.system("VBoxManage sharedfolder remove " + uuid + " --name " + match.group(1))
+        # remove redirects
+        match = re.match(r'Forwarding.*="(.*?),.*"', line)
+        if match:
+          os.system("VBoxManage modifyvm " + uuid + " --natpf1 delete " + match.group(1))
+      # reconfigure redirects
+      port = 2022+i
+      i += 1
+      os.system("VBoxManage modifyvm " + uuid + " --natpf1 \"ssh,tcp,127.0.0.1," + str(port) + ",,22\"")
+      if host.info['rudder-setup'] == 'server':
+        os.system("VBoxManage modifyvm " + uuid + " --natpf1 \"tcp80,tcp,,8080,,80\"")
+        os.system("VBoxManage modifyvm " + uuid + " --natpf1 \"tcp443,tcp,,8081,,443\"")
+
+      # add video memory and rename
+      os.system("VBoxManage modifyvm " + uuid + " --name " + host.name + " --vram 32")
+
+      # export
+      os.system("VBoxManage export " + uuid + " -o " + dirname + "/" + host.name + ".ova --ovf09 --manifest")
+
+    # cleanup, those VMs are not suitable anymore for rtf
+    # Just comment since the user may want to do things again and reexport
+    print("The platform " + self.name + " is not suitable for use with rtf anymore.")
+    print("Please destroy the VMs when you don't need them anymore, either with virtualbox interface or via those commands:")
+    for host in self.hosts.values():
+      print("VBoxManage unregistervm " + host.uuid + " --delete")
 
   def shutdown(self):
     """ Stop the full platform """
@@ -825,7 +877,10 @@ if __name__ == "__main__":
         platform.share()
       elif args['export']:
         platform = get_platform(args['<platform>'])
-        platform.export()
+        if args['--ova']:
+          platform.export_ova()
+        else:
+          platform.export()
       elif args['update-rudder']:
         platform = get_platform(args['<platform>'])
         platform.update_rudder(args['<version>'])

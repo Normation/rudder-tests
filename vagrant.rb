@@ -19,8 +19,10 @@
 #
 #####################################################################################
 
+# find more : https://atlas.hashicorp.com/boxes/search
 $centos5 = "hfm4/centos5"
 $centos6 = "geerlingguy/centos6"
+$centos6x32 = "kusold/centos-6-i386-puppet"
 $centos7 = "chef/centos-7.0"
 
 $oracle6 = "kikitux/oracle6"
