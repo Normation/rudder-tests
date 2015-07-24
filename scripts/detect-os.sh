@@ -24,28 +24,33 @@ detect_os() {
   OS_VERSION=""
   OS_COMPATIBLE_VERSION=""
   PM=""
-  PM_INSTALL="echo 'Your package manager is not yet supported; false"
-  PM_UPGRADE="echo 'Your package manager is not yet supported; false"
+  PM_INSTALL="echo Your package manager is not yet supported"
+  PM_UPGRADE="echo Your package manager is not yet supported"
+  PM_LOCAL_INSTALL="echo Your package manager is not yet supported for local install"
   
   # detect package manager
   ########################
   # TODO macports, homebrew, portage
-  if hash apt-get 2> /dev/null
+  if exists apt-get
   then
     PM="apt"
     export DEBIAN_FRONTEND=noninteractive
     PM_INSTALL="apt-get -y install"
     PM_UPGRADE="apt-get -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold -y install"
-  elif hash yum 2> /dev/null
+  elif exists yum
   then
     PM="yum"
     PM_INSTALL="yum -y install"
     PM_UPGRADE="yum -y update"
-  elif hash zypper 2> /dev/null
+  elif exists zypper
   then
     PM="zypper"
     PM_INSTALL="zypper --non-interactive install"
     PM_UPGRADE="zypper --non-interactive update"
+  elif exists pkgadd
+  then
+    PM="pkg"
+    PM_LOCAL_INSTALL="pkgadd -n -d"
   fi
 
 
@@ -61,7 +66,7 @@ detect_os() {
     OS_VERSION="$(uname -v).$(uname -r)"
 
   # try with lsb_release
-  elif hash lsb_release 2> /dev/null; then
+  elif exists lsb_release; then
     OS_NAME=`lsb_release -is`
     OS_VERSION=`lsb_release -rs`
 
@@ -87,7 +92,7 @@ detect_os() {
 
   # Detect compatibility
   ######################
-  OS_COMPATIBLE=`echo "${OS_NAME}" | tr '[:lower:]' '[:upper:]'`
+  OS_COMPATIBLE=`echo "${OS_NAME}" | tr '[a-z]' '[A-Z]'`
   OS_COMPATIBLE_VERSION="${OS_VERSION}"
   case "${OS_NAME}" in
     RedHat) OS_COMPATIBLE="RHEL" ;;

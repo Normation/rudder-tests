@@ -2,6 +2,11 @@
 # Add rudder repository to package manager #
 ############################################
 add_repo() {
+  # if the version is a file or a URL stop here
+  if [ -f "${RUDDER_VERSION}" ] || echo "${RUDDER_VERSION}" | grep "^http" > /dev/null
+  then
+    return
+  fi
 
   # Make Repository URL
   [ "${PM}" = "apt" ] && REPO_TYPE="apt"
@@ -56,6 +61,11 @@ EOF
     zypper addrepo -n "Rudder repository" "${URL_BASE}" Rudder || true
     zypper refresh
     return 0
+  elif [ "${PM}" = "pkg" ]
+  then
+    # when we have a public repo
+    echo "No public repository for Solaris"
+    exit 1
   fi
 
   # TODO pkgng emerge pacman smartos

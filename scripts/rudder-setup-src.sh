@@ -35,6 +35,8 @@ EOF
 # MAIN #
 ########
 
+setlocal || re_exec "$@"
+
 COMMAND="$1"
 RUDDER_VERSION="$2"
 SERVER="$3"
@@ -45,6 +47,7 @@ then
   USE_CI=yes
   RUDDER_VERSION=$(echo "${RUDDER_VERSION}" | cut -f 2 -d "/")
 fi
+
 
 detect_os
 
