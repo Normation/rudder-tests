@@ -12,8 +12,25 @@ setup_agent() {
     exit 4
   fi
 
-  # Install
-  ${PM_INSTALL} rudder-agent
+  # The version given is a file or a URL
+  if [ -f "${RUDDER_VERSION}" ] || echo "${RUDDER_VERSION}" | grep "^http" > /dev/null || echo "${RUDDER_VERSION}" | grep "^ftp" > /dev/null
+  then
+    # localinstall
+    if [ "${PM}" = "pkg" ] && LANG=C file "${RUDDER_VERSION}" | grep "gzip compressed data" > /dev/null
+    then
+      cd /tmp
+      gunzip -c "${RUDDER_VERSION}" | tar -xf
+      ${PM_LOCAL_INSTALL} /tmp "${RUDDER_VERSION}"
+    elif [ "${PM}" = "pkg" ]
+    then
+      ${PM_LOCAL_INSTALL} "${RUDDER_VERSION}" RudderAgent
+    else
+      ${PM_LOCAL_INSTALL} "${RUDDER_VERSION}"
+    fi
+  else
+    # Install
+    ${PM_INSTALL} rudder-agent
+  fi
 
   # System specific behavior
   #######

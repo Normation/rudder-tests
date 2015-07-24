@@ -37,6 +37,8 @@ $ubuntu12_04 = "ubuntu/precise64"
 $ubuntu12_10 = "chef/ubuntu-12.10"
 $ubuntu14_04 = "ubuntu/trusty64"
 
+$solaris10 = "uncompiled/solaris-10"
+#$solaris10 = "tnarik/solaris10-minimal"
 $solaris11 = "ruby-concurrency/oracle-solaris-11"
 
 $windows7 = "designerror/windows-7"
@@ -57,6 +59,8 @@ def configure(config, os, pf_name, pf_id, host_name, host_id, setup:'empty', ver
     end
   elsif os == $windows7 or os == $windows2008 then
     memory = 512
+  elsif os == $solaris10 or os == $solaris11 then
+    memory = 1024
   else
     memory = 256
   end

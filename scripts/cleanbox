@@ -18,14 +18,39 @@ EOF
 sed -e 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile > /root/.profile2 && mv /root/.profile2 /root/.profile
 
 # Enable SELinux (all)
-if [ -e /etc/sysconfig/selinux ]
+if [ -f /etc/sysconfig/selinux ]
 then
   setenforce 1 2>/dev/null
   sed -i -e 's/^SELINUX=.*/SELINUX=enabled/' /etc/sysconfig/selinux
 fi
 
+# French keyboard on console
+if [ -f /etc/sysconfig/keyboard ]
+then
+  cat > /etc/sysconfig/keyboard <<EOF
+KEYTABLE="fr"
+MODEL="pc105+inet"
+LAYOUT="fr"
+KEYBOARDTYPE="pc"
+EOF
+elif [ -f /etc/default/keyboard ]
+then
+  cat >/etc/default/keyboard <<EOF
+XKBMODEL="pc105"
+XKBLAYOUT="fr"
+XKBVARIANT="latin9"
+XKBOPTIONS=""
+
+BACKSPACE="guess"
+EOF
+fi
+loadkeys fr
+
+# force root password to root
+sed -e 's|^root.*|root:$6$5.6rg6Xl$be5jxAm7/HyoL.3xmgwZRv7XkyqChB1vc.v7VgMeX7Di8C3TtKSgt5DmTFE0PsJxTI8d4eAtE5IRFToFsn4vF/:16638:0:99999:7:::|' /etc/shadow > /etc/shadow2 && mv /etc/shadow2 /etc/shadow
+
 # Disable firewall (RHEL)
-if [ -e /etc/redhat-release ]
+if [ -f /etc/redhat-release ]
 then
   chkconfig iptables off 2>/dev/null
   chkconfig firewalld off 2>/dev/null
@@ -50,7 +75,7 @@ i=2
 for host in ${HOSTS}
 do
   echo "${NET}.${i}    ${host}.rudder.local ${host}" >> /etc/hosts
-  i=$((i+1))
+  i=`expr $i + 1`
 done
 
 cat << EOF >> /etc/hosts
@@ -67,7 +92,7 @@ ff02::3         ipv6-allhosts
 EOF
 
 # Setup Debian / Ubuntu packaging (debian/ubuntu)
-if hash apt-get 2>/dev/null
+if type apt-get 2>/dev/null
 then
   export DEBIAN_FRONTEND=noninteractive  
 
@@ -83,8 +108,10 @@ then
     echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
   fi
 
-  if ! hash service 2>/dev/null
+  if hash service 2>/dev/null
   then
+    :
+  else
     apt-get install --force-yes -y sysvconfig
   fi
 
@@ -92,11 +119,10 @@ then
 
   # specific to debian7 / rudder server 2.11.6-4
   apt-get install --force-yes -y libltdl7
-
 fi
 
 # Setup SLES packaging (suse)
-if [ -e /etc/SuSE-release ]
+if [ -f /etc/SuSE-release ]
 then
 
   if [ "$(uname -m)" = "x86_64" ]
@@ -108,8 +134,8 @@ then
     rm /etc/zypp/repos.d/*.repo
 
     # Get the running SLES version
-    SLES_VERSION=$(grep "VERSION" /etc/SuSE-release|sed "s%VERSION\ *=\ *\(.*\)%\1%")
-    SLES_SERVICEPACK=$(grep "PATCHLEVEL" /etc/SuSE-release|sed "s%PATCHLEVEL\ *=\ *\(.*\)%\1%")
+    SLES_VERSION=`grep "VERSION" /etc/SuSE-release|sed "s%VERSION\ *=\ *\(.*\)%\1%"`
+    SLES_SERVICEPACK=`grep "PATCHLEVEL" /etc/SuSE-release|sed "s%PATCHLEVEL\ *=\ *\(.*\)%\1%"`
 
     # Add the repositories corresponding to the running SLES version
     if [ ${SLES_VERSION} -eq 11 ] && [ ${SLES_SERVICEPACK} -eq 1 ]
@@ -132,18 +158,28 @@ fi
 
 
 # add common usefull packages
-if hash apt-get 2> /dev/null
+if type apt-get 2> /dev/null
 then
   export DEBIAN_FRONTEND=noninteractive
   PM_INSTALL="apt-get -y install"
-elif hash yum 2> /dev/null
+elif type yum 2> /dev/null
 then
   PM_INSTALL="yum -y install"
-elif hash zypper 2> /dev/null
+elif type zypper 2> /dev/null
 then
   PM_INSTALL="zypper --non-interactive install"
+elif [ -x /opt/csw/bin/pkgutil ] 2> /dev/null
+then
+  PM_INSTALL="/opt/csw/bin/pkgutil -i -y"
+else
+  PM_INSTALL="echo TODO install "
 fi
-${PM_INSTALL} zsh vim less curl tree htop nano git binutils rsync
+# this can be very long, we should make it optional
+
+# package that should exist everywhere
+${PM_INSTALL} zsh vim less curl tree nano git binutils rsync
+# install that may fail
+${PM_INSTALL} htop
 
 # add common useful files
 for user in root home/vagrant
