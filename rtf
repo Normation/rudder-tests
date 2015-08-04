@@ -569,7 +569,7 @@ class Platform:
     print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
     print("export RUDDER_SERVER=" + os.environ['RUDDER_SERVER'])
     print("export RUDDER_TOKEN=" + os.environ['RUDDER_TOKEN'])
-    print("alias rcli='./rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token + "'")
+    print("alias rcli='rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token + "'")
 
   def export_test(self, rule_uuid, test_name, scenario=False):
     """ Export a given rule, for use in a test or a scenario """

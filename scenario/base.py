@@ -6,7 +6,7 @@ start()
 # Generic tests
 for host in scenario.nodes():
   hostinfo = scenario.platform.hosts[host].info
-  osname = hostinfo['osname'] if 'osname' in hostinfo else ""
+  osname = hostinfo['inventory-os'] if 'inventory-os' in hostinfo else ""
   run(host, 'fusion', Err.CONTINUE, OSNAME=osname)
 
 run_on("all", 'agent', Err.CONTINUE)

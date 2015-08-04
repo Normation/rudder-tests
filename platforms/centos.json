@@ -1,5 +1,5 @@
 {
-  "default":{ "run-with": "vagrant", "rudder-version": "2.11", "system": "centos6", "osname": "centos" },
+  "default":{ "run-with": "vagrant", "rudder-version": "2.11", "system": "centos6", "inventory-os": "centos" },
   "server": { "rudder-setup": "server" },
   "agent1": { "rudder-setup": "relay" },
   "agent2": { "rudder-setup": "agent", "server": "agent1" }
