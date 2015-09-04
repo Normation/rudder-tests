@@ -59,7 +59,7 @@ EOF
     rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xADAB3BD36F07D355"
     zypper removerepo Rudder || true
     zypper addrepo -n "Rudder repository" "${URL_BASE}" Rudder || true
-    zypper refresh
+    zypper --no-gpg-checks refresh
     return 0
   elif [ "${PM}" = "pkg" ]
   then
