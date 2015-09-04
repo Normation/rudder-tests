@@ -40,6 +40,9 @@ sun-java6-jre   shared/accepted-sun-dlj-v1-1    boolean true
 EOF
   fi
 
+  wget "http://www.rudder-project.org/rpm-3.1/SLES_11_SP1/x86_64/apache2-mod_wsgi-3.4-34.1.x86_64.rpm"
+  ${PM_INSTALL} "apache2-mod_wsgi-3.4-34.1.x86_64.rpm"
+
   # Install rudder-server-root
   ${PM_INSTALL} rudder-server-root
 

@@ -45,8 +45,8 @@ detect_os() {
   elif exists zypper
   then
     PM="zypper"
-    PM_INSTALL="zypper --non-interactive install"
-    PM_UPGRADE="zypper --non-interactive update"
+    PM_INSTALL="zypper --no-gpg-checks --non-interactive install"
+    PM_UPGRADE="zypper --no-gpg-checks --non-interactive update"
   elif exists pkgadd
   then
     PM="pkg"
