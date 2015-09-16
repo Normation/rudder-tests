@@ -6,7 +6,7 @@ Rudder test framework
 Usage:
     rtf platform list
     rtf platform status <platform>
-    rtf platform setup <platform> [<version>]
+    rtf platform setup <platform> [<key>=<value> ...] [<version>]
     rtf platform destroy <platform>
     rtf platform share <platform>
     rtf platform export <platform>
@@ -102,8 +102,16 @@ def host_lines(platform, hosts, pf_id):
       elif host['rudder-setup'] != 'server':
         own_server = server
 
-      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id
-      line += ", setup:'" + host['rudder-setup'] + "', version:'" +  host['rudder-version'] + "', server:'" + own_server + "', host_list:'" + hostnames + "'"
+      # generic host
+      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id 
+      line += ", setup:'" + host['rudder-setup']  + "', host_list:'" + hostnames + "'"
+      # rudder host
+      if host['rudder-setup'] != 'ncf' and host['rudder-setup'] != 'empty':
+        line += "', version:'" +  host['rudder-version'] + "', server:'" + own_server
+      # ncf host
+      if host['rudder-setup'] == 'ncf':
+        line += ", ncf_version:'" + host['ncf-version'] + "', cfengine_version:'" +  host['cfengine-version'] + "'"
+
       # windows support
       if host['rudder-setup'] == 'server' and windows_support:
         line += ", windows_plugin:true"
@@ -804,8 +812,12 @@ if __name__ == "__main__":
         platform.status()
       elif args['setup']:
         override = {}
-        if args['<version>'] is not None:
-          override['rudder-version'] = args['<version>']
+        for kv in args['<key>=<value>']:
+          if '=' in kv:
+            (key, value) = kv.split('=')
+            override[key] = value
+          else:
+            override['rudder-version'] = kv
         platform = get_platform(args['<platform>'], override)
         platform.setup(client_path)
       elif args['shutdown']:

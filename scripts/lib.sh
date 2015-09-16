@@ -58,3 +58,13 @@ which() {
   return 1
 }
 
+get() {
+  WGET="wget -q -O"
+  CURL="curl -s -o"
+  if type curl >/dev/null 2>/dev/null
+  then
+    ${CURL} "$@"
+  else
+    ${WGET} "$@"
+  fi
+}

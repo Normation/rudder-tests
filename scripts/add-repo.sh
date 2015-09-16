@@ -74,3 +74,15 @@ EOF
   return 1
 }
 
+remove_repo() {
+  if [ "${PM}" = "apt" ]
+  then
+    rm -f /etc/apt/sources.list.d/rudder.list
+  elif [ "${PM}" = "yum" ]
+  then
+    rm -f /etc/yum.repos.d/rudder.repo
+  elif [ "${PM}" = "zypper" ]
+  then
+    zypper removerepo Rudder || true
+  fi
+}

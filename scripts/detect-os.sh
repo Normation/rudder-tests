@@ -37,16 +37,19 @@ detect_os() {
     export DEBIAN_FRONTEND=noninteractive
     PM_INSTALL="apt-get -y install"
     PM_UPGRADE="apt-get -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold -y install"
+    PM_LOCAL_INSTALL="dpkg -i"
   elif exists yum
   then
     PM="yum"
     PM_INSTALL="yum -y install"
     PM_UPGRADE="yum -y update"
+    PM_LOCAL_INSTALL="rpm -i"
   elif exists zypper
   then
     PM="zypper"
     PM_INSTALL="zypper --non-interactive install"
     PM_UPGRADE="zypper --non-interactive update"
+    PM_LOCAL_INSTALL="rpm -i"
   elif exists pkgadd
   then
     PM="pkg"
