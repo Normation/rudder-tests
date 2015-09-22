@@ -50,7 +50,7 @@ detect_os() {
   elif exists pkgadd
   then
     PM="pkg"
-    PM_LOCAL_INSTALL="pkgadd -n -d"
+    PM_LOCAL_INSTALL="eval yes | pkgadd -d"
   fi
 
 

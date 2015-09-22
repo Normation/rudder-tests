@@ -19,8 +19,8 @@ setup_agent() {
     if [ "${PM}" = "pkg" ] && LANG=C file "${RUDDER_VERSION}" | grep "gzip compressed data" > /dev/null
     then
       cd /tmp
-      gunzip -c "${RUDDER_VERSION}" | tar -xf
-      ${PM_LOCAL_INSTALL} /tmp "${RUDDER_VERSION}"
+      gzip -d -c "${RUDDER_VERSION}" | tar xf -
+      ${PM_LOCAL_INSTALL} /tmp RudderAgent
     elif [ "${PM}" = "pkg" ]
     then
       ${PM_LOCAL_INSTALL} "${RUDDER_VERSION}" RudderAgent

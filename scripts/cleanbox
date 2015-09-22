@@ -14,6 +14,8 @@ nameserver 8.8.8.8
 nameserver 8.8.4.4
 EOF
 
+chattr +i /etc/resolv.conf
+
 # remove "stdin: not a tty" error on some box
 sed -e 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile > /root/.profile2 && mv /root/.profile2 /root/.profile
 
@@ -170,7 +172,7 @@ then
   PM_INSTALL="zypper --non-interactive install"
 elif [ -x /opt/csw/bin/pkgutil ] 2> /dev/null
 then
-  PM_INSTALL="/opt/csw/bin/pkgutil -i -y"
+  PM_INSTALL="/opt/csw/bin/pkgutil --install --parse --yes"
 else
   PM_INSTALL="echo TODO install "
 fi
@@ -182,12 +184,13 @@ ${PM_INSTALL} zsh vim less curl tree nano git binutils rsync
 ${PM_INSTALL} htop
 
 # add common useful files
-for user in root home/vagrant
+for user in root vagrant
 do
-  rsync -a /vagrant/scripts/files/vim/ /${user}/
-  rsync -a /vagrant/scripts/files/git/ /${user}/
-  rsync -a /vagrant/scripts/files/bash/ /${user}/
-  rsync -a /vagrant/scripts/files/zsh/ /${user}/
+  home=`getent passwd ${user} | cut -d: -f6`
+  rsync -a /vagrant/scripts/files/vim/ "${home}"/
+  rsync -a /vagrant/scripts/files/git/ "${home}"/
+  rsync -a /vagrant/scripts/files/bash/ "${home}"/
+  rsync -a /vagrant/scripts/files/zsh/ "${home}"/
 done
 
 id > /tmp/xxx
