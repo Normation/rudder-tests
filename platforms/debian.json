@@ -1,5 +1,6 @@
 {
-  "default":{ "run-with": "vagrant", "rudder-version": "2.11", "system": "debian7", "osname": "debian" },
+  "default":{ "run-with": "vagrant", "rudder-version": "3.0", "system": "debian7", "inventory-os": "debian" },
   "server": { "rudder-setup": "server" },
-  "agent1": { "rudder-setup": "agent" }
+  "agent1": { "rudder-setup": "agent" },
+  "agent2": { "rudder-setup": "agent" }
 }

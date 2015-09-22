@@ -1,5 +1,5 @@
 {
   "default":{ "run-with": "vagrant" },
-  "server": { "rudder-setup": "server", "system": "debian7", "osname": "debian", "rudder-version": "3.1" },
-  "agent1": { "rudder-setup": "agent", "system": "solaris10", "osname": "solaris", "rudder-version": "/vagrant/rudder-plugins/RudderAgent.3.2.0.alpha1.git201507291603.i386.pkg.tar.gz" }
+  "server": { "rudder-setup": "server", "system": "debian7", "inventory-os": "debian", "rudder-version": "3.1" },
+  "agent1": { "rudder-setup": "agent", "system": "solaris10", "inventory-os": "solaris", "rudder-version": "/vagrant/rudder-plugins/RudderAgent.3.2.0.alpha1.git201507291603.i386.pkg.tar.gz" }
 }
