@@ -48,8 +48,11 @@ $windows7 = "designerror/windows-7"
 #$windows2008 = "ferventcoder/win2008r2-x64-nocm"
 $windows2008 = "opentable/win-2008-enterprise-amd64-nocm"
 
-def configure(config, os, pf_name, pf_id, host_name, host_id, setup:'empty', version:nil, server:nil, host_list:'', windows_plugin:false, advanced_reporting:false)
-
+def configure(config, os, pf_name, pf_id, host_name, host_id, 
+              setup:'empty', version:nil, server:nil, host_list:'', 
+              windows_plugin:false, advanced_reporting:false,
+              ncf_version:nil, cfengine_version:nil
+             )
   # Parameters
   if setup == "server" then
     memory = 1536
@@ -75,15 +78,18 @@ def configure(config, os, pf_name, pf_id, host_name, host_id, setup:'empty', ver
   # provisioning script
   if os == $windows7 or os == $windows2008 then
     command = "c:/vagrant/scripts/cleanbox.cmd #{net} #{host_list}\n"
-    if setup != "empty" then
+    if setup != "empty" and setup != "ncf" then
       command += "mkdir \"c:/Program Files/Cfengine\"\n"
       command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
       command += "c:/vagrant/rudder-plugins/Rudder-agent-x64.exe /S\n"
     end
   else
     command = "/vagrant/scripts/cleanbox #{net} \"#{host_list}\"\n"
-    if setup != "empty" then
+    if setup != "empty" and setup != "ncf" then
       command += "ALLOWEDNETWORK=#{net}.0/24 /vagrant/scripts/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
+    end
+    if setup == "ncf" then
+      command += "/vagrant/scripts/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
     end
     if setup == "server" then
       command += "/vagrant/scripts/create-token\n"
@@ -111,5 +117,4 @@ def configure(config, os, pf_name, pf_id, host_name, host_id, setup:'empty', ver
     server_config.vm.provision :shell, :inline => command
   end
 end
-
 

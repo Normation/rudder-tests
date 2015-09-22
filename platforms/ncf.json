@@ -1,0 +1,5 @@
+{
+  "default":{ "run-with": "vagrant", "system": "debian7" },
+  "agent1": { "rudder-setup": "ncf", "ncf-version": "rudder-3.0", "cfengine-version": "rudder-3.0" },
+  "agent2": { "rudder-setup": "ncf", "ncf-version": "https:\/\/github.com/Normation/ncf.git#master", "cfengine-version": "3.7" }
+}
