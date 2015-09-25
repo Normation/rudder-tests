@@ -108,7 +108,7 @@ def host_lines(platform, hosts, pf_id):
       line += ", setup:'" + host['rudder-setup']  + "', host_list:'" + hostnames + "'"
       # rudder host
       if host['rudder-setup'] != 'ncf' and host['rudder-setup'] != 'empty':
-        line += "', version:'" +  host['rudder-version'] + "', server:'" + own_server
+        line += ", version:'" +  host['rudder-version'] + "', server:'" + own_server + "'"
       # ncf host
       if host['rudder-setup'] == 'ncf':
         line += ", ncf_version:'" + host['ncf-version'] + "', cfengine_version:'" +  host['cfengine-version'] + "'"
