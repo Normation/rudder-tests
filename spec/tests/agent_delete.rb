@@ -5,7 +5,7 @@ acceptHost = $params['DELETE']
 describe "Delete node"  do
 
   # find node uuid
-  describe command($rudderCli + " nodes list | jq '.nodes | map(select(.hostname==\"" + acceptHost + "\")) | .[0].id'") do
+  describe command($rudderCli + " nodes list | jq '.nodes | map(select(.hostname ==\"" + acceptHost + "\" or .hostname ==\"" + acceptHost + ".rudder.local\")) | .[0].id'") do
     its(:exit_status) { should eq 0 }
     it {
       # register output uuid for next command
@@ -21,7 +21,7 @@ describe "Delete node"  do
       should eq 0
     }
     its(:stdout) { should match /"id": "#{$uuid}"/ }
-    its(:stdout) { should match /"hostname": "#{acceptHost}"/ }
+    its(:stdout) { should match /"hostname": "#{acceptHost}/ }
     its(:stdout) { should match /"status": "deleted"/ }
   end
 

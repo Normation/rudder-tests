@@ -12,6 +12,7 @@ class Scenario:
   Most scenario related methods are global and not in this class to make scenario writing look like script writing
   """
   def __init__(self, platform, rspec, rcli, frmt, run_only, run_finally, err_stop):
+    self.stop = False
     self.errors = False
     self.platform = platform
     self.pf = platform.name
@@ -46,19 +47,15 @@ def enum(*sequential, **named):
 Err = enum('CONTINUE', 'BREAK', 'FINALLY')
 
 
-def dont_run(test, mode):
-  """ Return True when the test must not be run """
-  # Beware, negative logic
-  if scenario.err_stop and scenario.errors:   # stop everything after error if 'err_stop'
+def should_run(test, mode):
+  """ Return True when the test must be ran """
+  if not scenario.stop:
     return True
-  if mode != Err.FINALLY and scenario.errors: # stop everything not Finally after errors
-    return True
-  if scenario.run_only is not None:           # do not run filtered out tests
-    if test not in scenario.run_only:
-      return True
-  if mode == Err.FINALLY and not scenario.run_finally: # do not run finally unless 'run_finally'
-    return True
-  return False
+
+  if mode != Err.FINALLY:
+    return False
+  else: # mode == Err.FINALLY
+    return scenario.run_finally
 
 
 ############################################
@@ -72,7 +69,7 @@ def run(target, test, error_mode, **kwargs):
    - BREAK: stop the scenario if this fail, for tests that change a state
    - FINALLY: always run this test, for leaning after a scenario, broken or not
   """
-  if dont_run(test, error_mode):
+  if not should_run(test, error_mode):
     return
 
   # prepare command
@@ -100,6 +97,8 @@ def run(target, test, error_mode, **kwargs):
 
   if retcode != 0:
     scenario.errors = True
+    if error_mode == Err.BREAK:
+      scenario.stop = True
 
 
 def run_on(kind = "all", *args, **kwargs):
@@ -142,7 +141,7 @@ def shell(command):
 
 def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
   """ Wait for the generation of a given node promises """
-  if dont_run(name, error_mode):
+  if not should_run(name, error_mode):
     return
   # wait for promise generation
   agent_uuid = shell(scenario.rcli + " nodes list | jq '.nodes | map(select(.hostname==\"" + hostname + "\")) | .[0].id'")
@@ -171,7 +170,7 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
 
 def host_date(name, error_mode, server):
   """ Return the current date on the host """
-  if dont_run(name, error_mode):
+  if not should_run(name, error_mode):
     return None
   return shell_on(server, "date +%s")
 
