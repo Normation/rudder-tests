@@ -166,6 +166,8 @@ then
   PM_INSTALL="apt-get -y install"
 elif type yum 2> /dev/null
 then
+  # Fix Centos5 issue installing, which install both architecture, this has no effects on other distros
+  echo "multilib_policy=best" >> /etc/yum.conf
   PM_INSTALL="yum -y install"
 elif type zypper 2> /dev/null
 then

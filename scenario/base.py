@@ -13,6 +13,7 @@ run_on("all", 'agent', Err.CONTINUE)
 
 # force inventory
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="")
 run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
 
 # accept nodes
@@ -26,11 +27,16 @@ for host in scenario.nodes("agent"):
   wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
 
 # Run agent
+run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="")
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="")
 
 # Test relay configuration
-run_on("relay", 'relay_config', Err.CONTINUE)
+
+ipRange = scenario.platform.hosts[scenario.nodes()[0]].run("LANG=C ip -4 -o addr show | grep 'inet 192.168' | sed 's/.*inet 192\.168\.\([0-9]\+\)\..*/192.168.\\1.0\/24/'")
+run_on("relay", 'relay_config', Err.CONTINUE, IPRANGE=ipRange)
 
 # Test rule result
 run_on("agent", 'user_test', Err.CONTINUE)
