@@ -356,6 +356,7 @@ class Platform:
             print(check_output(command, shell=True))
             # Promote to relay
             print(host.run("/opt/rudder/bin/rudder-node-to-relay "+relay))
+            print(host.run("curl https://localhost/rudder/api/deploy/reload -k"))
 
   def export(self):
     """ Export the full platform in a tgz """

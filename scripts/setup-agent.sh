@@ -66,6 +66,8 @@ setup_relay() {
   else
     setup_relay_old
   fi
+
+  rudder agent inventory
 }
 
 upgrade_relay() {
