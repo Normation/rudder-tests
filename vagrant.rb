@@ -25,9 +25,12 @@ $centos6 = "geerlingguy/centos6"
 $centos6x32 = "kusold/centos-6-i386-puppet"
 $centos7 = "chef/centos-7.0"
 
+$fedora18 = "boxcutter/fedora18"
+
 $oracle6 = "kikitux/oracle6"
 
 $sles11 = "idar/sles11sp3"
+$sles12 = "idar/sles12"
 
 $debian5 = "felipelavinz/debian-lenny"
 $debian6 = "dene/debian-squeeze"

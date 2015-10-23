@@ -12,6 +12,8 @@ for host in scenario.nodes():
 run_on("all", 'agent', Err.CONTINUE)
 
 # force inventory
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="")
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
 run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="")
 run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")

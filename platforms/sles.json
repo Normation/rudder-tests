@@ -1,5 +1,7 @@
 {
   "default":{ "run-with": "vagrant", "rudder-version": "3.0-nightly", "system": "sles11", "inventory-os": "suse" },
   "server": { "rudder-setup": "server" },
+  "relay":  { "rudder-setup": "relay" },
+  "agent1": { "rudder-setup": "agent", "server": "relay" },
   "agent1": { "rudder-setup": "agent" }
 }
