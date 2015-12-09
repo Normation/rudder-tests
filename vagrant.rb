@@ -23,7 +23,7 @@
 $centos5 = "hfm4/centos5"
 $centos6 = "geerlingguy/centos6"
 $centos6x32 = "kusold/centos-6-i386-puppet"
-$centos7 = "chef/centos-7.0"
+$centos7 = "bento/centos-7.1"
 
 $fedora18 = "boxcutter/fedora18"
 
