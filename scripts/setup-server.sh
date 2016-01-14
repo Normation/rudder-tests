@@ -76,7 +76,7 @@ upgrade_server() {
     ${PM_UPGRADE} "rudder-*" "ncf*"
   fi
 
-  service rudder-jetty restart
+  service_cmd rudder-jetty restart
 
 }
 
