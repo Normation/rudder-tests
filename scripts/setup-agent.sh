@@ -41,7 +41,7 @@ setup_agent() {
   # TODO rudder < 2.11 only
   echo "${SERVER}.rudder.local" > /var/rudder/cfengine-community/policy_server.dat
 
-  service rudder-agent start
+  service_cmd rudder-agent start
 
 }
 
@@ -190,12 +190,12 @@ EOF
 
   if [ "${PM}" = "apt" ]
   then
-    service apache2 restart
+    service_cmd apache2 restart
   elif [ "${PM}" = "yum" ]
   then
-    service httpd restart
+    service_cmd httpd restart
   else
-    service apache2 restart
+    service_cmd apache2 restart
   fi
 
   /var/rudder/cfengine-community/bin/cf-agent -K -D force_inventory

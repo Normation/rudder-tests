@@ -58,6 +58,7 @@ which() {
   return 1
 }
 
+# get a remote url content using the first available method
 get() {
   WGET="wget -q -O"
   CURL="curl -s -o"
@@ -66,5 +67,17 @@ get() {
     ${CURL} "$@"
   else
     ${WGET} "$@"
+  fi
+}
+
+# run a service using the first available method
+service_cmd() {
+  if [ -x "/etc/init.d/$1" ]
+  then
+    name="$1"
+    shift
+    "/etc/init.d/${name}" "$@"
+  else
+    service "$@"
   fi
 }
