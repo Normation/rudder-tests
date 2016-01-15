@@ -13,6 +13,10 @@ To run Rudder Test Framework, first prepare the needed tools:
 - install docopt, requests, pexpect and urllib3 python modules (pip install docopt requests pexpect urllib3)
 - run `make` in the `script` directory
 
+Additionally you can do this to get better performances:
+- have vagrant >= 1.8 (to be able to clone VM)
+- run vagrant plugin install vagrant-cachier (to have a cache for packages)
+
 Run the desired test platform:
 - ./rtf platform setup debian 
 
