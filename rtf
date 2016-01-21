@@ -216,7 +216,7 @@ class Vagrant(Host):
 
   def run(self, command):
     """ Run a command as root on this host """
-    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo PATH=$PATH:/vagrant/scripts LANG=C " + command + "\" -- -q", shell=True)
+    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", shell=True)
     return value .rstrip()
 
   def share(self, password):
