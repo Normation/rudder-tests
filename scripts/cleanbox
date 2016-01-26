@@ -195,5 +195,14 @@ do
   rsync -a /vagrant/scripts/files/zsh/ "${home}"/
 done
 
+if type curl >/dev/null 2>/dev/null
+then
+  curl -s -o /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
+  curl -s -o /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
+else
+  wget -q -O /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
+  wget -q -O /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
+fi
+
 id > /tmp/xxx
 
