@@ -204,5 +204,7 @@ else
   wget -q -O /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
 fi
 
+chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
+
 id > /tmp/xxx
 
