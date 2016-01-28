@@ -40,7 +40,8 @@ $debian8 = "oar-team/debian8"
 $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "ubuntu/precise64"
 $ubuntu12_10 = "chef/ubuntu-12.10"
-$ubuntu14_04 = "ubuntu/trusty64"
+#$ubuntu14_04 = "ubuntu/trusty64"
+$ubuntu14_04 = "normation/ubuntu-14.04"
 
 $solaris10 = "uncompiled/solaris-10"
 #$solaris10 = "tnarik/solaris10-minimal"
@@ -80,14 +81,15 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
 
   # provisioning script
   if os == $windows7 or os == $windows2008 then
-    command = "c:/vagrant/scripts/cleanbox.cmd #{net} #{host_list}\n"
+    command = "c:/vagrant/scripts/network.cmd #{net} #{host_list}\n"
     if setup != "empty" and setup != "ncf" then
       command += "mkdir \"c:/Program Files/Cfengine\"\n"
       command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
       command += "c:/vagrant/rudder-plugins/Rudder-agent-x64.exe /S\n"
     end
   else
-    command = "/vagrant/scripts/cleanbox #{net} \"#{host_list}\"\n"
+    command = "/vagrant/scripts/cleanbox.sh\n"
+    command += "/vagrant/scripts/network.sh #{net} \"#{host_list}\"\n"
     if setup != "empty" and setup != "ncf" then
       command += "ALLOWEDNETWORK=#{net}.0/24 /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end

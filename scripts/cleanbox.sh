@@ -3,8 +3,31 @@
 # Various cleanups to apply on the Vagrant boxes we use.
 # no set -e since some things are expected to fail
 
-NET="$1"
-HOSTS="$2"
+postclean() {
+  ### THINGS TO DO ON AN ALREADY CLEAN BOX
+  if type curl >/dev/null 2>/dev/null
+  then
+    curl -s -o /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
+    curl -s -o /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
+  else
+    wget -q -O /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
+    wget -q -O /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
+  fi
+  
+  chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
+  
+  id > /tmp/xxx
+}
+
+# bos is clean
+if [ -f /root/clean ]
+then
+  postclean
+  exit 0
+fi
+
+
+### THINGS TO DO ON A DIRTY BOX
 
 # force DNS server to an always valid one (all)
 cat << EOF > /etc/resolv.conf
@@ -59,39 +82,6 @@ then
   service iptables stop 2>/dev/null
   service firewalld stop 2>/dev/null
 fi
-
-# Install a clean /etc/hosts for Rudder to operate properly (all)
-cat << EOF > /etc/hosts
-# /etc/hosts, built by rtf (Rudder Test Framwork)
-#
-# Format:
-# IP-Address  Full-Qualified-Hostname  Short-Hostname
-#
-
-# IPv4
-127.0.0.1       localhost
-
-EOF
-
-i=2
-for host in ${HOSTS}
-do
-  echo "${NET}.${i}    ${host}.rudder.local ${host}" >> /etc/hosts
-  i=`expr $i + 1`
-done
-
-cat << EOF >> /etc/hosts
-
-# IPv6
-::1             localhost ipv6-localhost ipv6-loopback
-
-fe00::0         ipv6-localnet
-
-ff00::0         ipv6-mcastprefix
-ff02::1         ipv6-allnodes
-ff02::2         ipv6-allrouters
-ff02::3         ipv6-allhosts
-EOF
 
 # Setup Debian / Ubuntu packaging (debian/ubuntu)
 if type apt-get 2>/dev/null
@@ -195,16 +185,4 @@ do
   rsync -a /vagrant/scripts/files/zsh/ "${home}"/
 done
 
-if type curl >/dev/null 2>/dev/null
-then
-  curl -s -o /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
-  curl -s -o /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
-else
-  wget -q -O /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
-  wget -q -O /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
-fi
-
-chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
-
-id > /tmp/xxx
-
+postclean
