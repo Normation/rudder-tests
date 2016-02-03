@@ -179,10 +179,8 @@ ${PM_INSTALL} htop
 for user in root vagrant
 do
   home=`getent passwd ${user} | cut -d: -f6`
-  rsync -a /vagrant/scripts/files/vim/ "${home}"/
-  rsync -a /vagrant/scripts/files/git/ "${home}"/
-  rsync -a /vagrant/scripts/files/bash/ "${home}"/
-  rsync -a /vagrant/scripts/files/zsh/ "${home}"/
+  shopt -s dotglob
+  rsync -a /vagrant/scripts/files/* "${home}"/
 done
 
 postclean
