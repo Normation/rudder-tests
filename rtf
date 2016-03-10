@@ -300,6 +300,8 @@ class Vagrant(Host):
           # Look for next id, default case would be to get max+1
           next_id = max_pf_id + 1
           # But we prefer to use min - 1
+          if min_pf_id > next_id:
+            min_pf_id = next_id
           if min_pf_id > 1:
             next_id = min_pf_id - 1
           else:
