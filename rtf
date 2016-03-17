@@ -21,7 +21,7 @@ Usage:
     rtf scenario list
     rtf scenario env <platform>
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
-    rtf test from-rule <platform> <uuid> <test_name> [--with-scenario]
+    rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
 
 Options:
     --ova              Export in ova format (the platform status is not kept)
@@ -625,7 +625,7 @@ class Platform:
 
   def print_environment(self, client_path):
     """ Print environment used to run tests on this platform """
-    (rudder_url, token) = self.get_server_info()
+    (rudder_url, token) = self.api_connection_info()
     setenv(client_path, rudder_url, token)
     print("export PATH=" + os.environ['PATH'])
     print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
@@ -636,7 +636,7 @@ class Platform:
   def export_test(self, rule_uuid, test_name, scenario=False):
     """ Export a given rule, for use in a test or a scenario """
     # Retrieve data
-    (rudder_url, token) = self.get_server_info()
+    (rudder_url, token) = self.api_connection_info()
     endpoint = RudderEndPoint(rudder_url, token, verify=False)
     rule = endpoint.rule_details(rule_uuid)['rules'][0]
     directives = []
@@ -664,7 +664,7 @@ Add the test to an existing scenario:
 - Add the following line before the call to wait_for_generation on all agents
     run('localhost', '%(test_name)s_rule', Err.BREAK, NAME="Test %(test_name)s", GROUP="special:all")
 - Add the following line after the call to wait_for_generation
-    run_on_agents('%(test_name)s_test', Err.CONTINUE)
+    run_on("agent", ''%(test_name)s_test', Err.CONTINUE)
 - Add the following lines before the removal of the agent nodes
     run('localhost', 'directive_delete', Err.FINALLY, DELETE="%(directive_name)s", GROUP="special:all")
     run('localhost', 'rule_delete', Err.FINALLY, DELETE="%(rule_name)s", GROUP="special:all")
@@ -860,35 +860,35 @@ from scenario.lib import *
 # test begins, register start time
 start()
 
-run_on_all('agent', Err.CONTINUE)
+run_on("all", 'agent', Err.CONTINUE)
 
 # force inventory
-run_on_agents('run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
-run_on_servers('run_agent', Err.CONTINUE, PARAMS="")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
+run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
 
 # accept nodes
-for host in scenario.agent_nodes():
+for host in scenario.nodes("agent"):
   run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
 # Add a rule 
 date0 = host_date('wait', Err.CONTINUE, "server")
 run('localhost', '%(test_name)s_rule', Err.BREAK, NAME="Test %(test_name)s", GROUP="special:all")
-for host in scenario.agent_nodes():
+for host in scenario.nodes("agent"):
   wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
 
 # Run agent
-run_on_agents('run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
-run_on_agents('run_agent', Err.CONTINUE, PARAMS="")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="")
 
 # Test rule result
-run_on_agents('%(test_name)s_test', Err.CONTINUE)
+run_on("agent", '%(test_name)s_test', Err.CONTINUE)
 
 # remove rule/directive
 run('localhost', 'directive_delete', Err.FINALLY, DELETE="Test %(test_name)s Directive", GROUP="special:all")
 run('localhost', 'rule_delete', Err.FINALLY, DELETE="Test %(test_name)s Rule", GROUP="special:all")
 
 # remove agent
-for host in scenario.agent_nodes():
+for host in scenario.nodes("agent"):
   run('localhost', 'agent_delete', Err.FINALLY, DELETE=host)
 
 # test end, print summary
