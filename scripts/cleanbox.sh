@@ -100,6 +100,14 @@ then
     echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
   fi
 
+  # Replace repos by archive for Debian Squeeze
+  grep -e "^6\." /etc/debian_version > /dev/null
+  squeeze=$?
+  if [[ $squeeze -eq 0 ]] ;
+  then
+    echo "deb http://archive.debian.org/debian/ squeeze main" > /etc/apt/sources.list
+  fi
+
   if hash service 2>/dev/null
   then
     :
