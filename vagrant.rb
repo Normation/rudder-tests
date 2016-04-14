@@ -51,6 +51,7 @@ $windows7 = "designerror/windows-7"
 #$windows2008 = "opentable/win-2008r2-standard-amd64-nocm"
 #$windows2008 = "ferventcoder/win2008r2-x64-nocm"
 $windows2008 = "opentable/win-2008-enterprise-amd64-nocm"
+$windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
 def configure(config, os, pf_name, pf_id, host_name, host_id, 
               setup:'empty', version:nil, server:nil, host_list:'', 
