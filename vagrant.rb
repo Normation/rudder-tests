@@ -42,6 +42,7 @@ $ubuntu12_04 = "ubuntu/precise64"
 $ubuntu12_10 = "chef/ubuntu-12.10"
 #$ubuntu14_04 = "ubuntu/trusty64"
 $ubuntu14_04 = "normation/ubuntu-14.04"
+$ubuntu16_04 = "ubuntu/xenial64"
 
 $solaris10 = "uncompiled/solaris-10"
 #$solaris10 = "tnarik/solaris10-minimal"
