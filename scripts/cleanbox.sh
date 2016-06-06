@@ -103,7 +103,7 @@ then
   # Replace repos by archive for Debian Squeeze
   grep -e "^6\." /etc/debian_version > /dev/null
   squeeze=$?
-  if [[ $squeeze -eq 0 ]] ;
+  if [ $squeeze -eq 0 ] ;
   then
     echo "deb http://archive.debian.org/debian/ squeeze main" > /etc/apt/sources.list
   fi
