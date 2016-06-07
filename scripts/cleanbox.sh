@@ -88,6 +88,14 @@ if type apt-get 2>/dev/null
 then
   export DEBIAN_FRONTEND=noninteractive  
 
+  # Replace repos by archive for Debian Squeeze
+  grep -e "^6\." /etc/debian_version > /dev/null
+  squeeze=$?
+  if [ $squeeze -eq 0 ] ;
+  then
+    echo "deb http://archive.debian.org/debian/ squeeze main" > /etc/apt/sources.list
+  fi
+
   apt-get update
 
   # make sure lsb_release command is available
@@ -98,14 +106,7 @@ then
   then
     echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe" > /etc/apt/sources.list
     echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
-  fi
-
-  # Replace repos by archive for Debian Squeeze
-  grep -e "^6\." /etc/debian_version > /dev/null
-  squeeze=$?
-  if [ $squeeze -eq 0 ] ;
-  then
-    echo "deb http://archive.debian.org/debian/ squeeze main" > /etc/apt/sources.list
+    apt-get update
   fi
 
   if hash service 2>/dev/null
