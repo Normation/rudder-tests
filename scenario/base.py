@@ -1,3 +1,7 @@
+#
+# Generic scenario that tries many tests on a server->relay->agent platform
+#
+
 from scenario.lib import *
 
 # test begins, register start time
@@ -39,8 +43,8 @@ run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="")
 run_on("agent", 'user_test', Err.CONTINUE)
 
 # remove rule/directive
-run('localhost', 'directive_delete', Err.FINALLY, DELETE="Test User Directive", GROUP="special:all")
-run('localhost', 'rule_delete', Err.FINALLY, DELETE="Test User Rule", GROUP="special:all")
+run('localhost', 'directive_delete', Err.FINALLY, DELETE="Test User Directive")
+run('localhost', 'rule_delete', Err.FINALLY, DELETE="Test User Rule")
 
 # remove agent
 for host in scenario.nodes("agent"):

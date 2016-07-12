@@ -1,0 +1,15 @@
+{
+  "default":{ "run-with": "vagrant", "rudder-version": "3.2", "system": "ubuntu14_04", "inventory-os": "ubuntu" },
+  "server": { "rudder-setup": "server" },
+  "agent1": { "rudder-setup": "agent", "system": "centos5", "inventory-os": "centos" },
+  "agent2": { "rudder-setup": "agent", "system": "centos6", "inventory-os": "centos" },
+  "agent3": { "rudder-setup": "agent", "system": "centos7", "inventory-os": "centos" },
+  "agent5": { "rudder-setup": "agent", "system": "debian6", "inventory-os": "debian" },
+  "agent6": { "rudder-setup": "agent", "system": "debian7", "inventory-os": "debian" },
+  "agent7": { "rudder-setup": "agent", "system": "debian8", "inventory-os": "debian" },
+  "agent8": { "rudder-setup": "agent", "system": "sles11", "inventory-os": "suse" },
+  "agent9": { "rudder-setup": "agent", "system": "sles12", "inventory-os": "suse" },
+  "agent10": { "rudder-setup": "agent", "system": "ubuntu10_04", "inventory-os": "ubuntu" },
+  "agent11": { "rudder-setup": "agent", "system": "ubuntu12_04", "inventory-os": "ubuntu" },
+  "agent12": { "rudder-setup": "agent", "system": "ubuntu14_04", "inventory-os": "ubuntu" }
+}

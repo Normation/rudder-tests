@@ -20,7 +20,8 @@ Usage:
     rtf host update-os <host> <version>
     rtf scenario list
     rtf scenario env <platform>
-    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
+    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
+    rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--technique=<technique>]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
 
 Options:
@@ -30,6 +31,89 @@ Options:
     --filter=...       Only run provided test list from scenario
     --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
     --create-scenario  Generate a sample scenario file to use this test independantly
+    --technique=...    Run the technique scenario on the given technique (instead of all technique found)
+
+Commands
+    All *platform* command are related to platform management. A platform is described is the platforms directory and
+    consists of one or more VM in the same network with zero or one rudder component installed.
+
+    All *host* commands are related to a single host within a given platform.
+
+    All *scenario* commands are related to test scenarii. A scenario consists of many successive call to single tests and
+    is described in the scenario directory.
+
+    All *test* commands are related to single tests. A test is a serverspec file that calls a command an tests its
+    outcome. A test can be used in many different scenarii.
+
+    rtf platform list
+        List all available platforms.
+
+    rtf platform status <platform>
+        Display current status of given platform.
+
+    rtf platform setup <platform> [<key>=<value> ...] [<version>]
+        Create and run the given platform's VMs if they are not already up and running.
+        Any value from the platform file can be overrided using a key=value parameter.
+        The installed Rudder version can be overrider using a single version parameter.
+
+    rtf platform destroy <platform>
+        Destroy all VMs in a given platform.
+
+    rtf platform share <platform>
+        Share the platform using Hashicorp's atlas. You need an atlas account to do this.
+
+    rtf platform export <platform> [--ova]
+        Export the platform in tgz or on ova.
+
+        The tgz form contrains a script to prepare and run th platform on a new machine.
+        It must be used on linux with vagrant and on the same major version of virtualbox.
+
+        The ova form export independant VMs archives that can be (theoretically) used on 
+        any virtualization product. Be careful, this form destroys the original platform.
+
+    rtf platform shutdown <platform>
+        Shutdown all VMs without destroying them.
+
+    rtf platform snapshot <platform>
+        Snapshots all VMs.
+
+    rtf platform rollback <platform>
+        Rollback all VMs to teh last snapshot (in the right order to keep Rudder working).
+
+    rtf platform update-rudder <platform> <version>
+        Upgrade Rudder on all machines of the platform.
+
+    rtf platform update-os <platform> <version>
+        Upgrade the OS on all machines of the platform.
+
+    rtf host list <platform>
+        List hosts of the platform.
+
+    rtf host update-rudder <host> <version>
+        Upgrade Rudder on a single host of the platform.
+
+    rtf host update-os <host> <version>
+        Upgrade the OS on a single host of the platform.
+
+    rtf scenario list
+        List all available scenarii.
+
+    rtf scenario env <platform>
+        Output environment variables used to run a scenario on the platform.
+        Useful to run tests by yourself.
+
+    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
+        Run a single scenario on a given platform.
+        Scenario specific parameters must be provided using additional KEY=VALUE.
+        See *Options* for more options.
+
+    rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--technique=<technique>]
+
+    rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
+        Generate a test from an existing rule on the platform.
+        This create files to recreate the directive and the rules on all hosts.
+        The test file also contains a stub test to check that everything has worked.
+
 """
 
 from __future__ import print_function
@@ -595,7 +679,7 @@ class Platform:
     return (rudder_url, token)
 
 
-  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path):
+  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params):
     """ Run a scenario on this platform """
     # test ruby binary
     rubyver = check_output("ruby --version", shell=True)
@@ -616,7 +700,11 @@ class Platform:
     rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
 
     # load and run
-    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop)
+    parameters = {}
+    for param in params:
+      kv = param.split('=')
+      parameters[kv[0]] = kv[1]
+    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters)
     setenv(client_path, rudder_url, token)
     importlib.import_module("scenario." + name)
     if scenario.lib.scenario.errors:
@@ -901,8 +989,10 @@ finish()
 
 if __name__ == "__main__":
   args = docopt.docopt(__doc__)
-  # Hack nedded because there is not api client package yet
-  client_path = "rudder-api-client"
+  script_dir = os.path.dirname(os.path.realpath(__file__))
+  os.chdir(script_dir)
+  # Hack nedded because there is no api client package yet
+  client_path = script_dir + "/rudder-api-client"
   if not os.path.exists(client_path):
     print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
     print("If you want to use rudder-api-client from a local repository please type this command:")
@@ -965,7 +1055,7 @@ if __name__ == "__main__":
       if filter == []:
         filter = None
       platform = get_platform(args['<platform>'])
-      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path)
+      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'])
   elif args['test']:
     if args['from-rule']:
       platform = get_platform(args['<platform>'])
