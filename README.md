@@ -86,6 +86,20 @@ A typical scenario:
 - You can include a scenario from another one, just call import scenario.subscenario within your scenario
 - Some methods are provided to iterate a test over current platform nodes 
 
+Writing a technique test
+------------------------
+
+Technique tests use a special scenario to test a technique. The are localed in the technique folder,
+in a `tests` directory, containing:
+
+- `my_test.metadata`: The main file, in JSON, containing information about the test, for example the global compliance and the paths of other test files.
+- `my_test.json`: The directive parameters for the test.
+- `my_test.rb`: The serverspec file containing the actual test. It should check if the directive was correctly applied.
+- `my_test.sh`(optionnal): A script to launch before starting the test, to prepare the environement.
+
+This content can be generated from an existing directive, using:
+
+`rtf test from-directive <platform> <directiveid> <test_name> <destination_path>`
 
 Adding a platform or an OS
 --------------------------

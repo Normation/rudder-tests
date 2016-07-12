@@ -23,6 +23,7 @@ Usage:
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
     rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--technique=<technique>]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
+    rtf test from-directive <platform> <uuid> <test_name> <path>
 
 Options:
     --ova              Export in ova format (the platform status is not kept)
@@ -113,6 +114,11 @@ Commands
         Generate a test from an existing rule on the platform.
         This create files to recreate the directive and the rules on all hosts.
         The test file also contains a stub test to check that everything has worked.
+
+    rtf test from-directive <platform> <uuid> <test_name> <path>
+        Generate a technique test from an existing directive on the platform.
+        This create files to recreate the directive data, a metadata file and a stub test
+        in the destination path.
 
 """
 
@@ -763,6 +769,55 @@ Add the test to an existing scenario:
       make_scenario_file(scenario_file, test_name)
       print("Additionnaly, a scenario has been created in " + scenario_file)
 
+  def export_technique_test(self, directive_uuid, test_name, path):
+    """ Export a technique test data, for use in a technique test, in the given path """
+
+    # Test destination directory
+    if not os.path.isdir(path):
+      print("The " + path + " path does not exist.")
+      exit(1)
+
+    # Retrieve data
+    (rudder_url, token) = self.api_connection_info()
+    endpoint = RudderEndPoint(rudder_url, token, verify=False)
+
+    file_check = test_name + ".rb"
+    file_metadata = test_name + ".metadata"
+    file_directive = test_name + ".json"
+
+    # Generate metadata
+    metadata = {}
+    metadata["check"] = file_check
+    metadata["directive"] = file_directive
+    metadata["compliance"] = 100
+
+    make_jsonfile(os.path.join(path, file_metadata), metadata)
+
+    # Generate check file
+    make_user_testfile(os.path.join(path, file_check))
+
+    # Generate directive
+    directive = endpoint.directive_details(directive_uuid)['directives'][0]
+
+    # This is needed because of #8687, the API does not know these parameters at creation
+    if "isEnabled" in directive:
+      del directive["isEnabled"]
+    if "isSystem" in directive:
+      del directive["isSystem"]
+    if "priority" in directive:
+      del directive["priority"]
+
+    make_jsonfile(os.path.join(path, file_directive), directive)
+
+    print("""
+The test content has been generated in %s, it contains:
+
+- %s which contains the metatdata, automatically filled. You can edit the expected compliance (default is 100)
+- %s which contains the directive parameters, automatically filled.
+- %s which is a stub check file. You need to edit it to describe the expected state
+  -> Please edit it!
+""" % ( path, file_metadata, file_directive, file_check ))
+
 
 ###################
 # Utility methods #
@@ -817,6 +872,10 @@ def list_scenarii():
     file = f.replace(".py", "")
     if file != "__init__" and file != "lib":
       print(file)
+
+def make_jsonfile(filename, content):
+  with open(filename, "w") as fd:
+    fd.write(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))
 
 def make_rule_testfile(filename, rule, directives):
   with open(filename, "w") as fd:
@@ -1060,4 +1119,6 @@ if __name__ == "__main__":
     if args['from-rule']:
       platform = get_platform(args['<platform>'])
       platform.export_test(args['<uuid>'], args['<test_name>'], args['--create-scenario'])
-
+    elif args['from-directive']:
+      platform = get_platform(args['<platform>'])
+      platform.export_technique_test(args['<uuid>'], args['<test_name>'], args['<path>'])
