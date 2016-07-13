@@ -3,6 +3,7 @@
 import re
 import copy
 import os
+import json
 from subprocess import Popen, check_output, PIPE, CalledProcessError
 from time import sleep
 from datetime import datetime
@@ -81,7 +82,12 @@ def run(target, test, error_mode, **kwargs):
     env = 'TARGET_HOST=' + scenario.pf + '_' + target + ' '
   for k,v in kwargs.items():
     env += 'RUDDER_' + k + '=' + '"' + v + '" '
-  command = env + scenario.rspec + " spec/tests/" + test + ".rb"
+  if test.startswith("/"):
+    testfile = test
+    test = re.sub(r'.*/([\w\-]+)\.rb', r'\1', test)
+  else:
+    testfile = "spec/tests/" + test + ".rb"
+  command = env + scenario.rspec + " " + testfile
 
   # run it
   now = datetime.now().isoformat()
@@ -183,32 +189,35 @@ def get_param(param, default):
   else:
     return default
 
+def _file_must_exist(filename):
+  if not os.path.isfile(filename):
+    print("ERROR: " + filename + " file doesn't exist")
+    exit(1)
 
-def find_techniques():
+def get_tests():
   """ Return the list of techniques to be tested """
-  techniques = []
-  techniques_directory = get_param("technique", "").split(',')
-  for technique_directory in techniques_directory:
-    match = re.search(r'^.*/(\w+)/\d+\.\d+/?$', technique_directory)
-    if not match:
-      print("ERROR: " + technique_directory + " is not a technique directory")
-      exit(1)
-    name = match.group(1)
-    root = technique_directory + "/tests"
-    if not os.path.isdir(root):
-        print("ERROR: " + technique_directory + " does not contain any test")
-        exit(1)
-    for file in os.listdir(root):
-      match = re.search(r'^([\w\-]+)\.json$', file)
-      if not match:
-        continue
-      directive = root + "/" + file
-      metadata = root + "/" + match.group(1) + ".metadata"
-      if not os.path.isfile(metadata):
-        metadata = None
-      test = root + "/" + match.group(1) + ".rb"
-      if not os.path.isfile(test):
-          print("ERROR: " + directive + " has no matching .rb test file");
-          exit(1)
-      techniques.append({ "name": name, "test": test, "directive": directive, "metadata": metadata })
-  return techniques
+  tests = []
+  tests_metadata = get_param("test", "").split(',')
+  for metadata_file in tests_metadata:
+
+    _file_must_exist(metadata_file)
+    with open(metadata_file) as fd:
+      metadata = json.load(fd)
+
+      root = os.path.abspath(os.path.dirname(metadata_file))
+      metadata['directive'] = root+'/'+metadata['directive']
+      _file_must_exist(metadata['directive'])
+      metadata['check'] = root+'/'+metadata['check']
+      _file_must_exist(metadata['check'])
+      if 'init' in metadata:
+        metadata['init'] = root+'/'+metadata['init']
+        _file_must_exist(metadata['init'])
+  
+      with open(metadata['directive']) as dir_fd:
+        directive = json.load(dir_fd)
+        metadata['name'] = directive['techniqueName']
+        metadata['directive_name'] = directive['displayName']
+
+      tests.append(metadata)
+  return tests
+

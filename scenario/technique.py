@@ -4,28 +4,36 @@
 # Give it a directory parameter and it will test all techniques with a self test in it
 
 from scenario.lib import *
+import time
 
-# TODO: how do you rerun a test without killing the platform
+# Get test list from parameters
+tests = get_tests()
 
-# Get technique list from parameters
-techniques = find_techniques()
-
-# test begins, register start time
+# Test begins, register start time
 start()
 
-# force inventory
+# Force inventory
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
 run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
 
-# accept nodes
+# Accept nodes
 for host in scenario.nodes("agent"):
   run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
-# test all techniques
+## Run test init script
+#for test in tests:
+#  if 'init' in test:
+#    run_on("all", 'techniques/technique_init', Err.BREAK, INIT=test['init'])
+
+# Test all techniques
 date0 = host_date('wait', Err.CONTINUE, "server")
-for technique in techniques:
+for test in tests:
   # Add a technique/directive/rule
-  run('localhost', 'techniques/technique_rule', Err.BREAK, TECHNIQUE=technique['name'], DIRECTIVE=technique['directive'], GROUP="special:all")
+  run('localhost', 'techniques/technique_rule', Err.BREAK, 
+            TECHNIQUE=test['name'], 
+            DIRECTIVE=test['directive'], 
+            GROUP="special:all",
+            NAME=test['directive_name'])
 
 # Wait for generation
 for host in scenario.nodes("agent"):
@@ -37,10 +45,13 @@ run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="")
 
 # Test rule result
-for technique in techniques:
-  run_on("agent", technique['test'], Err.CONTINUE)
+for test in tests:
+  run_on("agent", test['check'], Err.CONTINUE)
 
-# TODO test rule compliance
+## Test rule compliance
+#time.sleep(5) # wait for server to compute compliance
+#for test in tests:
+#  run('localhost', 'techniques/technique_compliance', Err.CONTINUE, RULE=test['directive_name'], COMPLIANCE=str(test['compliance']))
 
 # test end, print summary
 finish()

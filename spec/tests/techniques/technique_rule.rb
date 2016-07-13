@@ -3,11 +3,11 @@ require 'spec_helper'
 group = $params['GROUP']
 technique = $params['TECHNIQUE']
 directiveFile = $params['DIRECTIVE']
-directiveName = technique + " test directive"
+directiveName = $params['NAME']
 ruleFile = "/tmp/rule.json"
-ruleName = technique + " test rule"
+ruleName = $params['NAME']
 
-describe "Add a user directive and a rule"  do
+describe "Add a directive and a rule"  do
 
   # create directive
   describe command($rudderCli + " directive create --json=" + directiveFile + " " + technique + " '" + directiveName + "'") do
