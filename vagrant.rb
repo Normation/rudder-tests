@@ -23,7 +23,7 @@
 $centos5 = "hfm4/centos5"
 $centos6 = "geerlingguy/centos6"
 $centos6x32 = "kusold/centos-6-i386-puppet"
-$centos7 = "bento/centos-7.1"
+$centos7 = "geerlingguy/centos7"
 
 $fedora18 = "boxcutter/fedora18"
 
@@ -33,7 +33,7 @@ $sles11 = "idar/sles11sp3"
 $sles12 = "alchemy-solutions/sles12sp1"
 
 $debian5 = "felipelavinz/debian-lenny"
-$debian6 = "dene/debian-squeeze"
+$debian6 = "puppetlabs/debian-6.0.10-64-nocm"
 $debian7 = "cargomedia/debian-7-amd64-default"
 $debian8 = "oar-team/debian8"
 
@@ -114,6 +114,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     server_config.vm.box = os
     server_config.vm.provider :virtualbox do |vb|
       vb.customize ["modifyvm", :id, "--memory", memory]
+    end
+    server_config.vm.provider :libvirt do |vm|
+      vm.memory = memory
     end
     if setup == "server" then
       server_config.vm.network :forwarded_port, guest: 80, host: forward
