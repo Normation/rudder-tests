@@ -114,8 +114,11 @@ def run_on(kind = "all", *args, **kwargs):
   for host in scenario.nodes(kind):
     run(host, *args, **kwargs)
 
-def start():
+def start(doc):
   """ Start a scenario """
+  # Do not start if the scenario is not properly loaded
+  if scenario is None:
+    raise ValueError(doc) # way to stop a scenario, this should be catched by the loader
   now = datetime.now().isoformat()
   print("[" + now + "] Begining of scenario")
 

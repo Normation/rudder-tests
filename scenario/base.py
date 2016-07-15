@@ -1,11 +1,13 @@
-#
-# Generic scenario that tries many tests on a server->relay->agent platform
-#
+"""
+Scenario: base
 
+Generic scenario that tries many tests on a platform with or without a relay.
+This is the base scenario that should be run to test a release.
+"""
 from scenario.lib import *
 
 # test begins, register start time
-start()
+start(__doc__)
 
 # Generic tests
 for host in scenario.nodes():

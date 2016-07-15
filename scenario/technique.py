@@ -1,16 +1,20 @@
-#
-# Techniques specific scenario that runs tests on one or more techniques
-#
-# Give it a directory parameter and it will test all techniques with a self test in it
+"""
+Scenario: technique
+Parameters: test=<file1.metadata>,... a test file that describe the test to run, you can provide more than one test file by separating them with coma.
+
+Techniques specific scenario that runs tests on one or more techniques.
+Use it on the all_agents platform to test your technique on all available agents.
+It will not clear the platform at the end of the test. Use the reset technique instead.
+"""
 
 from scenario.lib import *
 import time
 
+# Test begins, register start time
+start(__doc__)
+
 # Get test list from parameters
 tests = get_tests()
-
-# Test begins, register start time
-start()
 
 # Force inventory
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")

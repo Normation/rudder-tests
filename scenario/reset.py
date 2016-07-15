@@ -1,11 +1,16 @@
-#
-# Generic scenario that tries many tests on a server->relay->agent platform
-#
+"""
+Scenario: reset
+Parameters: nodes=[yes|no] "no" disables accepted node removal.
+
+Generic scenario that resets the platform.
+It removes all rules, directives and accepted nodes.
+It may not be useful as a standalone test but can be used after another scenario to rerun the tests.
+"""
 
 from scenario.lib import *
 
 # test begins, register start time
-start()
+start(__doc__)
 
 # remove everything
 delete = get_param("nodes", "yes")
