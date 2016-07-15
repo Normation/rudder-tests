@@ -15,6 +15,8 @@ postclean() {
   fi
   
   chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
+  cp /vagrant/scripts/ncf /usr/local/bin/
+  chmod +x /usr/local/bin/ncf
   
   id > /tmp/xxx
 }
