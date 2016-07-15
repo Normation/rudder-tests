@@ -20,10 +20,10 @@ run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
 for host in scenario.nodes("agent"):
   run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
-## Run test init script
-#for test in tests:
-#  if 'init' in test:
-#    run_on("all", 'techniques/technique_init', Err.BREAK, INIT=test['init'])
+# Run test init script
+for test in tests:
+  if 'init' in test:
+    run_on("all", 'techniques/technique_init', Err.BREAK, INIT=test['init'])
 
 # Test all techniques
 date0 = host_date('wait', Err.CONTINUE, "server")
