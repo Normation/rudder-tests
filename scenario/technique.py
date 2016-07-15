@@ -48,10 +48,10 @@ run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="")
 for test in tests:
   run_on("agent", test['check'], Err.CONTINUE)
 
-## Test rule compliance
-#time.sleep(5) # wait for server to compute compliance
-#for test in tests:
-#  run('localhost', 'techniques/technique_compliance', Err.CONTINUE, RULE=test['directive_name'], COMPLIANCE=str(test['compliance']))
+# Test rule compliance
+time.sleep(5) # wait for server to compute compliance
+for test in tests:
+  run('localhost', 'techniques/technique_compliance', Err.CONTINUE, RULE=test['directive_name'], COMPLIANCE=str(test['compliance']))
 
 # test end, print summary
 finish()
