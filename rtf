@@ -19,9 +19,10 @@ Usage:
     rtf host update-rudder <host> <version>
     rtf host update-os <host> <version>
     rtf scenario list
+    rtf scenario doc <scenario>
     rtf scenario env <platform>
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
-    rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--technique=<technique>]
+    rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
     rtf test from-directive <platform> <uuid> <test_name> <path>
 
@@ -99,6 +100,9 @@ Commands
     rtf scenario list
         List all available scenarii.
 
+    rtf scenario doc <scenario>
+        Print documentation of the scenario.
+
     rtf scenario env <platform>
         Output environment variables used to run a scenario on the platform.
         Useful to run tests by yourself.
@@ -109,6 +113,8 @@ Commands
         See *Options* for more options.
 
     rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--technique=<technique>]
+        Push the technique to the platform server before running the "technique" scenario on its tests.
+        If the directory contains more than one technique with test scenario, run tests on all techniques.
 
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
         Generate a test from an existing rule on the platform.
@@ -315,6 +321,9 @@ class Vagrant(Host):
     """ Run a command as root on this host """
     value = check_output("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", shell=True)
     return value .rstrip()
+
+  def push_technique(self, directory):
+    ## TODO
 
   def share(self, password):
     """ Shares this box via vagrant cloud """
@@ -626,6 +635,11 @@ class Platform:
     for host_type in host_types.values():
       host_type.remove_platform(self.name)
 
+  def push_technique(self, directory):
+    for host in self.hosts.values():
+      if host.info['rudder-setup'] == 'server':
+        host.push_technique(directory)
+
   def share(self):
     """ Share the platform via vagrant cloud """
     # Some of this is vagrant specific, it should be refactored when we add a new provider
@@ -689,8 +703,7 @@ class Platform:
       print("This platform has no rudder server, can't run this command")
       exit(2)
     return (rudder_url, token)
-
-
+     
   def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params):
     """ Run a scenario on this platform """
     # test ruby binary
@@ -882,6 +895,12 @@ def list_scenarii():
 def make_jsonfile(filename, content):
   with open(filename, "w") as fd:
     fd.write(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))
+
+def scenario_doc(name):
+  try:
+    importlib.import_module("scenario." + name)
+  except ValueError as e:
+    print(e)
 
 def make_rule_testfile(filename, rule, directives):
   with open(filename, "w") as fd:
@@ -1112,6 +1131,8 @@ if __name__ == "__main__":
   elif args['scenario']:
     if args['list']:
       list_scenarii()
+    elif args['doc']:
+      scenario_doc(args['<scenario>'])
     elif args['env']:
       platform = get_platform(args['<platform>'])
       platform.print_environment(client_path)
@@ -1121,6 +1142,9 @@ if __name__ == "__main__":
         filter = None
       platform = get_platform(args['<platform>'])
       platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'])
+    elif args['technique']:
+      platform = get_platform(args['<platform>'])
+      platform.push_technique(args['<directory>'])
   elif args['test']:
     if args['from-rule']:
       platform = get_platform(args['<platform>'])
