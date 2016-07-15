@@ -118,6 +118,23 @@ Platforms are in platforms/
 - "system" is one of the variable of known boxes from vagrant.rb
 - "osname" is a substring of the OS name that is discovered by fusion (this is used by the fusion test)
 
+Using libvirt provider with rtf
+--------------------------
+You need to install several vagrant plugins to use libvirt (vagrant plugin install *plugin-name*): 
+- vagrant-libvirt (Support of libvirt as provider)
+- vagrant-mutate (To transform virtualbox boxes to libvirt format)
+
+Unless the box is available on Atlas with libvirt provider, You will need to add boxes before lauching your tests:
+```
+vagrant box add <box-name>
+vagrant mutate <box-name> libvirt
+```
+Some boxes (specially centos 7.2) do not work with vagrant 1.8.3, downgrading to vagrant 1.8.1 fixes the issue
+
+You can then define you are using libivrt as provider by two ways:
+- Defining key provider in your "default" section in your platform
+- Running platform setup this way: ./rtf platform setup *platform-name*  provider=libvirt
+
 
 Adding a new host format
 ------------------------

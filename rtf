@@ -242,11 +242,12 @@ class Vagrant(Host):
     self.platform = pf
     self.name = name
     self.hostid = pf + '_' + name
+    self.provider = host_info["provider"]
     init_vagrantfile()
 
   def start(self):
     """ Setup and run this host """
-    os.system("vagrant up " + self.hostid)
+    os.system("vagrant up " + self.hostid + " --provider="+self.provider)
 
   def stop(self):
     """ Destroy this host """
@@ -455,12 +456,17 @@ class Platform:
   def __init__(self, name, platform_info, override):
     self.name = name
     self.hosts = {}
+    self.provider = "virtualbox"
     # manage default values
     default = platform_info['default']
     for hostname, host in platform_info.items():
       if hostname == "default":
         continue
       host_info = copy.deepcopy(default)
+      if not "provider" in host_info:
+        host_info["provider"] = self.provider
+      else:
+        self.provider = host_info["provider"]
       host_info.update(host)
       host_info.update(override)
       class_name = host_info['run-with']
