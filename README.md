@@ -142,3 +142,18 @@ Everything on host is done through the Host class in rtf.
 
 The only Host class is currently Vagrant. To implement the support of a new format you should create a new class implementing the same methods as Vagrant and deplare it in the host_types variable.
 
+
+Using dev environment
+------------------------
+
+It's possible to create a development environment with rtf.
+We provide a platform to launch your environment, just run: 
+```
+./rtf platform setup dev
+```
+You can also add a dev server to any platform by setting it's "rudder-setup" parameter to "dev-server" (like we do in dev.json)
+
+To use the provided configuration file in your Eclipse, just add this line the project run configuration arguments:
+```
+-Drudder.configFile=<path-to-rudder-tests>/dev/configuration.properties
+```

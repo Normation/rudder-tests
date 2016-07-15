@@ -60,6 +60,11 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
               ncf_version:nil, cfengine_version:nil
              )
   # Parameters
+  dev = false
+  if setup == "dev-server"
+    setup = "server"
+    dev = true
+  end
   if setup == "server" then
     memory = 1536
     if windows_plugin then
@@ -107,6 +112,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
         command += "/usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
       end
     end
+    if dev then
+      command += "/vagrant/scripts/dev.sh\n"
+    end
   end
 
   # Configure
@@ -121,6 +129,13 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     if setup == "server" then
       server_config.vm.network :forwarded_port, guest: 80, host: forward
       server_config.vm.network :forwarded_port, guest: 443, host: forward+1
+    end
+    if dev then
+      server_config.vm.network :forwarded_port, guest: 389, host: 1389
+      server_config.vm.network :forwarded_port, guest: 5432, host: 15432
+
+      config.vm.synced_folder "/var/rudder/share", "/var/rudder/share", :create => true
+      config.vm.synced_folder "/var/rudder/cfengine-community/inputs", "/var/rudder/cfengine-community/inputs", :create => true
     end
     server_config.vm.network :private_network, ip: ip
     server_config.vm.hostname = host_name
