@@ -95,7 +95,7 @@ in a `tests` directory, containing:
 - `my_test.metadata`: The main file, in JSON, containing information about the test, for example the global compliance and the paths of other test files.
 - `my_test.json`: The directive parameters for the test.
 - `my_test.rb`: The serverspec file containing the actual test. It should check if the directive was correctly applied.
-- `my_test.sh`(optionnal): A script to launch before starting the test, to prepare the environement.
+- `my_test.cf`(optionnal): A CFEngine policy to enforce before starting the test, to prepare the environement.
 
 This content can be generated from an existing directive, using:
 
