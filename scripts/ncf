@@ -1,5 +1,8 @@
 #!/bin/sh
 
+PATH=$PATH:/var/rudder/cfengine-community/bin:/var/cfengine/bin
+export PATH
+
 # Run a technique file (or any cfengine file)
 ncf_technique() {
   file="$1"
@@ -85,6 +88,7 @@ body common control
               };
 
     bundlesequence => { 
+      "configuration",
 EOF
   echo "      \"${BUNDLE}\"" >> "${FILE}"
   cat >> "${FILE}" <<'EOF'

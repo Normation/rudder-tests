@@ -202,7 +202,6 @@ def get_tests():
   tests = []
   tests_metadata = get_param("test", "").split(',')
   for metadata_file in tests_metadata:
-
     _file_must_exist(metadata_file)
     with open(metadata_file) as fd:
       metadata = json.load(fd)
