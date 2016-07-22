@@ -22,7 +22,7 @@
 # find more : https://atlas.hashicorp.com/boxes/search
 $centos5 = "hfm4/centos5"
 $centos6 = "geerlingguy/centos6"
-$centos6x32 = "kusold/centos-6-i386-puppet"
+$centos6x32 = "bento/centos-6.7-i386"
 $centos7 = "geerlingguy/centos7"
 
 $fedora18 = "boxcutter/fedora18"
