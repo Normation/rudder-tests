@@ -22,7 +22,7 @@ Usage:
     rtf scenario doc <scenario>
     rtf scenario env <platform>
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
-    rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
+    rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
     rtf test from-directive <platform> <uuid> <test_name> <path>
 
@@ -112,9 +112,11 @@ Commands
         Scenario specific parameters must be provided using additional KEY=VALUE.
         See *Options* for more options.
 
-    rtf scenario technique <platform> <directory> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--technique=<technique>]
-        Push the technique to the platform server before running the "technique" scenario on its tests.
-        If the directory contains more than one technique with test scenario, run tests on all techniques.
+    rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
+        Push a list of techniques to the platform's server and run matching tests using the "technique" scenario.
+        Techniques are all the one found under the <directory>
+        Use --last-version when you want to use only test last technique version (directory must be a subdirectory of rudder-techniques)
+        Use --technique to provide a pattern (woldcard based) to filter the list of technique to test (ex: rpmPackageInstallation/5.1)
 
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
         Generate a test from an existing rule on the platform.
@@ -322,8 +324,21 @@ class Vagrant(Host):
     value = check_output("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", shell=True)
     return value .rstrip()
 
-  def push_technique(self, directory):
-    ## TODO
+  def push(self, source, destination):
+    os.system("vagrant scp \"" + source + "\" \"" + self.hostid + ":" + destination + "\"")
+
+  def pull(self, source, destination):
+    os.system("vagrant scp \"" + self.hostid + ":" + source + "\" \"" + destination + "\"")
+
+  def push_techniques(self, directory):
+    """ Replace all techniques with the provided ones """
+    # First, empty techniques directory
+    self.run("cd /var/rudder/configuration-repository/techniques/ && find . -mindepth 1 -maxdepth 1 -type d -not -name system | xargs rm -rf ")
+    # Then push new techniques
+    self.push(directory, "/tmp/")
+    name = os.path.basename(os.path.abspath(directory))
+    self.run("mv /tmp/" + name + " /var/rudder/configuration-repository/techniques/")
+    self.run("cd /var/rudder/configuration-repository/techniques/ && git add --all . && git commit --allow-empty -m 'Replacing all techniques with the test ones' && rudder server reload-techniques")
 
   def share(self, password):
     """ Shares this box via vagrant cloud """
@@ -635,10 +650,10 @@ class Platform:
     for host_type in host_types.values():
       host_type.remove_platform(self.name)
 
-  def push_technique(self, directory):
+  def push_techniques(self, directory):
     for host in self.hosts.values():
       if host.info['rudder-setup'] == 'server':
-        host.push_technique(directory)
+        host.push_techniques(directory)
 
   def share(self):
     """ Share the platform via vagrant cloud """
@@ -729,6 +744,7 @@ class Platform:
     for param in params:
       kv = param.split('=')
       parameters[kv[0]] = kv[1]
+    pprint(parameters)
     scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters)
     setenv(client_path, rudder_url, token)
     importlib.import_module("scenario." + name)
@@ -1067,6 +1083,28 @@ for host in scenario.nodes("agent"):
 finish()
 """ % { 'test_name': test_name } )
 
+
+def find_tests(techniques, filter, last_version):
+  params = "-d "
+  if last_version:
+    params += "-l "
+  if filter is not None and filter != "":
+    params += "-f '" + filter + "' "
+  cmd = os.getcwd() + "/scripts/technique-files " + params + techniques
+  technique_dirs = check_output(cmd, shell=True)
+  tests = []
+  for technique in technique_dirs.split("\n"):
+    if technique == "":
+      continue
+    test_dir = technique + "/tests"
+    if not os.path.isdir(test_dir):
+      continue
+    for file in os.listdir(test_dir):
+      match = re.search(r'^[\w\-_]+\.metadata$', file)
+      if match:
+        tests.append(test_dir + "/" + file)
+  return tests
+
 ##########################
 # Command line interface #
 ##########################
@@ -1137,14 +1175,28 @@ if __name__ == "__main__":
       platform = get_platform(args['<platform>'])
       platform.print_environment(client_path)
     elif args['run']:
-      filter=args['--filter']
+      filter = args['--filter']
       if filter == []:
         filter = None
       platform = get_platform(args['<platform>'])
       platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'])
     elif args['technique']:
       platform = get_platform(args['<platform>'])
-      platform.push_technique(args['<directory>'])
+      techniques = args['<directory>']
+      # Find the tests
+      tests = find_tests(techniques, args['--technique'], args['--last-version'])
+      if not tests:
+        print("There is no test in your techniques directory")
+        exit(1)
+      # push the techniques
+      platform.push_techniques(techniques)
+      # run the tests (all at once)
+      params = [ "test=" + ",".join(tests) ]
+      filter = args['--filter']
+      if filter == []:
+        filter = None
+      pprint(params)
+      platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params)
   elif args['test']:
     if args['from-rule']:
       platform = get_platform(args['<platform>'])

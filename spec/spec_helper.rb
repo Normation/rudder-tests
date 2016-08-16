@@ -46,10 +46,8 @@ $rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token=' + token.
 
 # Functions that can be used in tests
 def send_file(from, to)
-  `mkdir -p sendfile/`
-  `cp #{from} sendfile/`
   host = ENV['TARGET_HOST']
-  `vagrant ssh #{host} -c 'mv /vagrant/sendfile/#{from} #{to}'`
+  `vagrant scp #{from} #{host}:#{to}`
 end
 
 ## monkeypatching serverspec
