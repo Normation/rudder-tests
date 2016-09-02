@@ -166,7 +166,10 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
       break
     sleep(1)
     print("Waiting for " + agent_uuid + " rule generation")
-    datestr = shell_on(server, "cat /var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder_promises_generated 2>/dev/null")
+    generated_old = "/var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder_promises_generated"
+    generated_new = "/var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder-promises-generated"
+    cmd = "cat " + generated_new + " " + generated_old + " 2>/dev/null | head -n1"
+    datestr = shell_on(server, cmd)
     if datestr == "":
       continue
     if re.match(r'^\d+$', datestr):
