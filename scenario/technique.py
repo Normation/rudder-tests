@@ -17,8 +17,8 @@ start(__doc__)
 tests = get_tests()
 
 # Force inventory
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
-run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="inventory")
+run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
 
 # Accept nodes
 for host in scenario.nodes("agent"):
@@ -44,9 +44,9 @@ for host in scenario.nodes("agent"):
   wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
 
 # Deploy all
-run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="")
+run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="update")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="run")
 
 # Test rule result
 for test in tests:

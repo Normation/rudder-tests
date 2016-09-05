@@ -18,11 +18,11 @@ for host in scenario.nodes():
 run_on("all", 'agent', Err.CONTINUE)
 
 # force inventory
-run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
-run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-D force_inventory")
-run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="")
-run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="update")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="inventory")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
+run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
 
 # accept nodes
 for host in scenario.nodes("agent"):
@@ -35,11 +35,11 @@ for host in scenario.nodes("agent"):
   wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
 
 # Run agent
-run_on("server", 'run_agent', Err.CONTINUE, PARAMS="")
-run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
-run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="-f failsafe.cf")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="")
+run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="update")
+run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="update")
+run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="run")
 
 # Test rule result
 run_on("agent", 'user_test', Err.CONTINUE)
