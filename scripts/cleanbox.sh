@@ -39,7 +39,7 @@ nameserver 8.8.8.8
 nameserver 8.8.4.4
 EOF
 
-chattr +i /etc/resolv.conf
+chattr +i /etc/resolv.conf /etc/resolvconf/run/resolv.conf 2>/dev/null
 
 # remove "stdin: not a tty" error on some box
 sed -e 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile > /root/.profile2 && mv /root/.profile2 /root/.profile
@@ -184,14 +184,14 @@ fi
 # package that should exist everywhere
 ${PM_INSTALL} zsh vim less curl tree nano git binutils rsync
 # install that may fail
-${PM_INSTALL} htop
+${PM_INSTALL} htop ldapscripts
 
 # add common useful files
 for user in root vagrant
 do
   home=`getent passwd ${user} | cut -d: -f6`
-  shopt -s dotglob
-  rsync -a /vagrant/scripts/files/* "${home}"/
+  shopt -s dotglob 2>/dev/null || true
+  rsync -a /vagrant/scripts/files/ "${home}"/
 done
 
 postclean

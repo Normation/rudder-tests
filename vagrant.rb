@@ -44,6 +44,8 @@ $ubuntu12_10 = "chef/ubuntu-12.10"
 $ubuntu14_04 = "normation/ubuntu-14.04"
 $ubuntu16_04 = "ubuntu/xenial64"
 
+$slackware14 = "ratfactor/slackware"
+
 $solaris10 = "uncompiled/solaris-10"
 #$solaris10 = "tnarik/solaris10-minimal"
 $solaris11 = "ruby-concurrency/oracle-solaris-11"
