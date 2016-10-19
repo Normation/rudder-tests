@@ -311,13 +311,11 @@ class Vagrant(Host):
 
   def snapshot(self):
     """ Snapshot this host """
-    # remove existing snapshot before creating a new one
-    os.system("vagrant snapshot list " + self.hostid + " 2>/dev/null && vagrant snapshot delete " + self.hostid + " RTF_SNAPSHOT")
-    os.system("vagrant snapshot take " + self.hostid + " RTF_SNAPSHOT")
+    os.system("vagrant snapshot push " + self.hostid)
 
   def rollback(self):
     """ Go to last snapshot on this host """
-    os.system("vagrant snapshot back " + self.hostid)
+    os.system("vagrant snapshot pop " + self.hostid)
 
   def run(self, command):
     """ Run a command as root on this host """
