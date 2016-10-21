@@ -194,4 +194,8 @@ do
   rsync -a /vagrant/scripts/files/ "${home}"/
 done
 
+# Clean vagrant-cachier cached files for rudder packages 
+find /tmp/vagrant-cache -name 'Rudder' -type d | xargs rm -rf
+find /tmp/vagrant-cache -name 'rudder*' -o -name 'ncf*' | xargs rm -f
+
 postclean
