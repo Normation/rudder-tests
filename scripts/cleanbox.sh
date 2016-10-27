@@ -42,7 +42,7 @@ EOF
 chattr +i /etc/resolv.conf /etc/resolvconf/run/resolv.conf 2>/dev/null
 
 # remove "stdin: not a tty" error on some box
-sed -e 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile > /root/.profile2 && mv /root/.profile2 /root/.profile
+sed -e 's/^mesg n$/tty -s \&\& mesg n/g' /root/.profile > /root/.profile2 2>/dev/null && mv /root/.profile2 /root/.profile
 
 # Enable SELinux (all)
 if [ -f /etc/sysconfig/selinux ]

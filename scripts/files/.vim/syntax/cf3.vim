@@ -34,9 +34,9 @@ syn match   cf3Bundle /^\s*bundle\s\+/ nextgroup=Cf3BundleTypes skipwhite
 
 syn keyword cf3BodyTypes action classes contain acl changes contained nextgroup=cf3BundleName skipwhite
 syn keyword cf3BodyTypes copy_from delete depth_search contained nextgroup=cf3BundleName skipwhite
-syn keyword cf3BodyTypes edit_defaults file_select contained nextgroup=cf3BundleName skipwhite
+syn keyword cf3BodyTypes edit_defaults file_select password contained nextgroup=cf3BundleName skipwhite
 syn keyword cf3BodyTypes link_from perms rename tcp_ip contained nextgroup=cf3BundleName skipwhite
-syn keyword cf3BodyTypes package_method process_count contained nextgroup=cf3BundleName skipwhite 
+syn keyword cf3BodyTypes package_method process_count package_module contained nextgroup=cf3BundleName skipwhite 
 syn keyword cf3BodyTypes process_select service_method contained nextgroup=cf3BundleName skipwhite
 syn keyword cf3BodyTypes mount volume printfile match_value contained nextgroup=cf3BundleName skipwhite
 syn keyword cf3BodyTypes association select_region delete_select contained nextgroup=cf3BundleName skipwhite
@@ -49,7 +49,7 @@ syn match   cf3BodyControl /^\s*body\s\+\(monitor\|runagent\)\s\+control/
 syn match   cf3BodyControl /^\s*body\s\+\(executor\|knowledge\|hub\)\s\+control/  
 syn match   cf3BodyControl /^\s*body\s\+\(reporter\|file\)\s\+control/  
 
-syn match cf3Action /\<\(vars\|classes\|reports\|meta\):/
+syn match cf3Action /\<\(vars\|classes\|reports\|meta\|users\):/
 syn match cf3Action /\<\(commands\|databases\|files\|interfaces\|methods\|packages\|storage\):/
 syn match cf3Action /\<\(access\|measurements\|roles\|topics\|occurrences\|defaults\):/
 syn match cf3Action /\<\(control\|guest_environments\|outputs\|processes\|services\|things\):/
@@ -69,7 +69,7 @@ syn match   cf3Esc          /\\\\[sSdD+][\+\*]*/ contained
 syn region  cf3Array        start=/\(\\\)\@<!\[/ end=/\]/ contained contains=cf3Var
 " Variables wrapped in {} or ()
 syn region  cf3Var          start=/[$@][{(]/ end=/[})]/ contains=cf3Var,cf3Array
-syn region  cf3String       start=/\z\("\|'\)/ skip=/\\\z1/ end=/\z1/ contains=cf3Var,cf3Esc,cf3Array
+syn region  cf3String       start=/\z\("\|'\)/ skip=/\(\\\)\@<!\(\\\\\)*\\\z1/ end=/\z1/ contains=cf3Var,cf3Esc,cf3Array
 syn region  cf3Fold 	    start="{" end="}" transparent fold
 
 syn keyword cf3Type			string int real slist ilist rlist data
@@ -77,28 +77,34 @@ syn keyword cf3Type			string int real slist ilist rlist data
 " The following list may be automatically generated using
 " tools/extract_cf3BuiltIns.sh 
 
-" Last update: 2013/10/10 - git tag e40c31e901ff2396d25658af578873353ad06499
+" Last update: 2015/10/04 - git tag e0392e5c7f0087fa3b0df36ca3b83f4136924ba9
 
-syn keyword cf3BuiltIns	 accessedbefore accumulated ago and canonify contained
-syn keyword cf3BuiltIns	canonifyuniquely changedbefore classesmatching classify classmatch concat contained
-syn keyword cf3BuiltIns	countclassesmatching countlinesmatching difference dirname diskfree escape contained
-syn keyword cf3BuiltIns	eval every execresult fileexists filesexist filesize contained
-syn keyword cf3BuiltIns	filestat filter findfiles format getenv getfields contained
-syn keyword cf3BuiltIns	getgid getindices getuid getusers getvalues grep contained
-syn keyword cf3BuiltIns	groupexists hash hashmatch host2ip hostinnetgroup hostrange contained
-syn keyword cf3BuiltIns	hostsseen hostswithclass hubknowledge ifelse intersection ip2host contained
-syn keyword cf3BuiltIns	iprange irange isdir isexecutable isgreaterthan islessthan contained
-syn keyword cf3BuiltIns	islink isnewerthan isplain isvariable join lastnode contained
-syn keyword cf3BuiltIns	laterthan ldaparray ldaplist ldapvalue length lsdir contained
-syn keyword cf3BuiltIns	maparray maplist mergecontainer none not now contained
-syn keyword cf3BuiltIns	nth on or parseintrealstringarray parsejson parsestringarrayidx contained
-syn keyword cf3BuiltIns	peerleader peerleaders peers product randomint readfile contained
-syn keyword cf3BuiltIns	readintrealstringarray readintrealstringlist readjson readstringarrayidx readtcp regarray contained
-syn keyword cf3BuiltIns	regcmp regextract registryvalue regldap regline reglist contained
-syn keyword cf3BuiltIns	remoteclassesmatching remotescalar returnszero reverse rrange selectservers contained
-syn keyword cf3BuiltIns	shuffle some sort splayclass splitstring strcmp contained
-syn keyword cf3BuiltIns	strftime sublist sum translatepath unique usemodule contained
-syn keyword cf3BuiltIns	userexists contained
+syn keyword cf3BuiltIns	accessedbefore accumulated ago and bundlesmatching contained
+syn keyword cf3BuiltIns	bundlestate canonify canonifyuniquely changedbefore classesmatching classify contained
+syn keyword cf3BuiltIns	classmatch concat countclassesmatching countlinesmatching data_expand data_readstringarray contained
+syn keyword cf3BuiltIns	data_readstringarrayidx data_regextract datastate difference dirname diskfree contained
+syn keyword cf3BuiltIns	escape eval every execresult expandrange file_hash contained
+syn keyword cf3BuiltIns	fileexists filesexist filesize filestat filter findfiles contained
+syn keyword cf3BuiltIns	format getclassmetatags getenv getfields getgid getindices contained
+syn keyword cf3BuiltIns	getuid getusers getvalues getvariablemetatags grep groupexists contained
+syn keyword cf3BuiltIns	hash hashmatch host2ip hostinnetgroup hostrange hostsseen contained
+syn keyword cf3BuiltIns	hostswithclass hubknowledge ifelse intersection ip2host iprange contained
+syn keyword cf3BuiltIns	irange isdir isexecutable isgreaterthan islessthan islink contained
+syn keyword cf3BuiltIns	isnewerthan isplain isvariable join lastnode laterthan contained
+syn keyword cf3BuiltIns	ldaparray ldaplist ldapvalue length lsdir makerule contained
+syn keyword cf3BuiltIns	maparray mapdata maplist max mean mergedata contained
+syn keyword cf3BuiltIns	min none not now nth on contained
+syn keyword cf3BuiltIns	or packagesmatching packageupdatesmatching parseintarray parsejson parserealarray contained
+syn keyword cf3BuiltIns	parsestringarray parsestringarrayidx parseyaml peerleader peerleaders peers contained
+syn keyword cf3BuiltIns	product randomint readcsv readdata readfile readintarray contained
+syn keyword cf3BuiltIns	readintlist readjson readrealarray readreallist readstringarray readstringarrayidx contained
+syn keyword cf3BuiltIns	readstringlist readtcp readyaml regarray regcmp regextract contained
+syn keyword cf3BuiltIns	registryvalue regldap regline reglist remoteclassesmatching remotescalar contained
+syn keyword cf3BuiltIns	returnszero reverse rrange selectservers shuffle some contained
+syn keyword cf3BuiltIns	sort splayclass splitstring storejson strcmp strftime contained
+syn keyword cf3BuiltIns	string_downcase string_head string_length string_mustache string_reverse string_split contained
+syn keyword cf3BuiltIns	string_tail string_upcase sublist sum translatepath unique contained
+syn keyword cf3BuiltIns	usemodule userexists variablesmatching contained
 
 " The following list may be automatically generated using
 " tools/extract_cf3evolve_freelib.sh
@@ -159,14 +165,15 @@ syn keyword cf3ControlAttr	ignore_missing_bundles ignore_missing_inputs inputs c
 syn keyword cf3ControlAttr	version lastseenexpireafter output_prefix domain contained
 syn keyword cf3ControlAttr	require_comments host_licenses_paid site_classes contained
 syn keyword cf3ControlAttr	syslog_host syslog_port fips_mode protocol_version contained
+syn keyword cf3ControlAttr	package_module contained
 syn keyword cf3MethodAttr	usebundle useresult inherit contained
-syn keyword cf3CommonAttr	action classes ifvarclass handle depends_on comment policy contained
+syn keyword cf3CommonAttr	action classes if unless ifvarclass handle depends_on comment policy contained
 syn keyword cf3ClassesAttr	and dist expression not or persistence scope select_class xor contained
 syn keyword cf3CommandsAttr args contain module contained
 syn keyword cf3ProcessesAttr process_count process_select contained
 syn keyword cf3ProcessesAttr process_stop restart_class signals contained
 syn keyword cf3PackagesAttr	package_architectures package_method package_policy contained
-syn keyword cf3PackagesAttr	package_select package_version contained
+syn keyword cf3PackagesAttr	package_select package_version package_module contained
 syn keyword cf3GuestEnvAttr	environment_host environment_interface contained
 syn keyword cf3GuestEnvAttr	environment_resources environment_state contained
 syn keyword cf3GuestEnvAttr	environment_type contained
@@ -180,7 +187,7 @@ syn keyword cf3StorageAttr	mount volume  contained
 syn keyword cf3FilesAttr	acl changes copy_from create delete depth_search contained
 syn keyword cf3FilesAttr	edit_defaults edit_line edit_template edit_xml file_select contained
 syn keyword cf3FilesAttr	link_from move_obstructions pathtype perms contained
-syn keyword cf3FilesAttr	rename repository touch transformer contained
+syn keyword cf3FilesAttr	rename repository template_method touch transformer contained
 syn keyword cf3AccessAttr	admit_ips admit_hostnames admit_keys admit deny deny_ips deny_hostnames deny_keys maproot contained
 syn keyword cf3AccessAttr	ifencrypted resource_type contained
 syn keyword cf3MeasurementsAttr	stream_type data_type history_type contained
@@ -221,6 +228,8 @@ syn keyword cf3BodyDepthSearchAttr	rmdeadlinks traverse_links xdev contained
 syn keyword cf3BodyDeleteAttr	dirlinks rmdirs contained
 syn keyword cf3BodyRenameAttr	disable disable_mode disable_suffix newname rotate contained
 syn keyword cf3BodyChangesAttr	hash report_changes update_hashes report_diffs contained
+syn keyword cf3BodyPackageModuleAttr	default_options query_installed_ifelapsed contained
+syn keyword cf3BodyPackageModuleAttr	query_updates_ifelapsed contained
 syn keyword cf3BodyPackageMethodAttr	package_add_command package_arch_regex contained
 syn keyword cf3BodyPackageMethodAttr	package_changes package_delete_command contained
 syn keyword cf3BodyPackageMethodAttr	package_delete_convention package_file_repositories contained
@@ -319,6 +328,7 @@ syn cluster cf3AttrCluster	add=cf3ServicesAttr,cf3DatabasesAttr,cf3DefaultsAttr
 syn cluster cf3AttrCluster	add=cf3BodyLinkFromAttr,cf3BodyPermsAttr,cf3BodyACLAttr
 syn cluster cf3AttrCluster	add=cf3BodyDepthSearchAttr,cf3BodyDeleteAttr,cf3BodyRenameAttr
 syn cluster cf3AttrCluster	add=cf3BodyChangesAttr,cf3BodyPackageMethodAttr,cf3BodyActionAttr
+syn cluster cf3AttrCluster	add=cf3BodyPackageModuleAttr
 syn cluster cf3AttrCluster	add=cf3BodyContainAttr,cf3BodyCopyFromAttr,cf3BodyVolumeAttr
 syn cluster cf3AttrCluster	add=cf3BodyMountAttr,cf3BodyServiceMethodAttr,cf3BodyDatabaseServerAttr
 syn cluster cf3AttrCluster	add=cf3BodyEnvResourcesAttr,cf3BodyMatchValueAttr,cf3BodyServiceMethodAttr
@@ -342,6 +352,7 @@ if version >= 508 || !exists("did_cfg_syn_inits")
 	hi cf3Type ctermfg=Magenta 
 	hi Identifier ctermfg=Blue 
 	hi Function ctermfg=DarkGreen
+	hi Library ctermfg=DarkGrey
 	hi cf3ClassBlock ctermfg=Yellow
 
     HiLink cf3Bundle        Statement
@@ -363,7 +374,7 @@ if version >= 508 || !exists("did_cfg_syn_inits")
 	HiLink cf3String        String
 	HiLink cf3BuiltIns		Function
    HiLink cf3Evolve_freelib Function
-	HiLink cf3Stdlib		Function
+	HiLink cf3Stdlib		Library
 
     HiLink cf3Identifier    cf3Arrows
     HiLink cf3Esc           Special
@@ -407,6 +418,7 @@ if version >= 508 || !exists("did_cfg_syn_inits")
 	HiLink cf3BodyRenameAttr	Statement
 	HiLink cf3BodyChangesAttr	Statement
 	HiLink cf3BodyPackageMethodAttr	Statement
+	HiLink cf3BodyPackageModuleAttr	Statement
 	HiLink cf3BodyActionAttr	Statement
 	HiLink cf3BodyContainAttr	Statement
 	HiLink cf3BodyCopyFromAttr	Statement
