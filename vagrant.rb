@@ -1,6 +1,5 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-
 #####################################################################################
 # Copyright 2012 Normation SAS
 #####################################################################################
@@ -56,10 +55,37 @@ $windows7 = "designerror/windows-7"
 $windows2008 = "opentable/win-2008-enterprise-amd64-nocm"
 $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
+# Format pf_name => { 'pf_id' => 0, 'last_host_id' => 0, 'host_list' => [ 'host1', 'host2' ] }
+$platforms = {
+}
+$last_pf_id = 0
+
+def configure_box(config, os, pf_name, host_name, 
+                  setup:'empty', version:nil, server:'', host_list:'',
+                  windows_plugin:false, advanced_reporting:false,
+                  ncf_version:nil, cfengine_version:nil, ram:nil
+                 )
+  pf = $platforms.fetch(pf_name) { |key| 
+                                   $last_pf_id = $last_pf_id+1
+                                   { 'pf_id' => $last_pf_id-1, 'host_list' => [ ]}
+                                 }
+  # autodetect platform id and host id
+  pf_id = pf['pf_id']
+  host_id = pf['host_list'].length
+  pf['host_list'].push(host_name)
+  host_list = host_list + " "
+  $platforms[pf_name] = pf
+  configure(config, os, pf_name, pf_id, host_name, host_id, 
+            setup:setup, version:version, server:server, host_list:host_list,
+            windows_plugin:windows_plugin, advanced_reporting:advanced_reporting,
+            ncf_version:ncf_version, cfengine_version:cfengine_version, ram:ram)
+end
+
+# keep this function separate for compatibility with older Vagrantfiles
 def configure(config, os, pf_name, pf_id, host_name, host_id, 
-              setup:'empty', version:nil, server:nil, host_list:'', 
+              setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false,
-              ncf_version:nil, cfengine_version:nil
+              ncf_version:nil, cfengine_version:nil, ram:nil
              )
   # Parameters
   dev = false
@@ -82,6 +108,10 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   else
     memory = 256
   end
+  # override allocated ram
+  unless ram.nil?
+    memory = ram
+  end
   memory = memory.to_s
   name = pf_name + "_" + host_name
   net = "192.168." + (pf_id+40).to_s
@@ -90,7 +120,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
 
   # provisioning script
   if os == $windows7 or os == $windows2008 then
-    command = "c:/vagrant/scripts/network.cmd #{net} #{host_list}\n"
+    command = "c:/vagrant/scripts/network.cmd #{net} @host_list@\n"
     if setup != "empty" and setup != "ncf" then
       command += "mkdir \"c:/Program Files/Cfengine\"\n"
       command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
@@ -98,7 +128,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     end
   else
     command = "/vagrant/scripts/cleanbox.sh\n"
-    command += "/vagrant/scripts/network.sh #{net} \"#{host_list}\"\n"
+    command += "/vagrant/scripts/network.sh #{net} \"@host_list@\"\n"
     if setup != "empty" and setup != "ncf" then
       command += "ALLOWEDNETWORK=#{net}.0/24 /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end
@@ -141,7 +171,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     end
     server_config.vm.network :private_network, ip: ip
     server_config.vm.hostname = host_name
-    server_config.vm.provision :shell, :inline => command
+    # this is lazy evaluated and so will contain the last definition of host list
+    host_list = $platforms[pf_name]['host_list'].join(" ") + " " + host_list
+    server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
   end
 end
 
