@@ -90,6 +90,17 @@ if type apt-get 2>/dev/null
 then
   export DEBIAN_FRONTEND=noninteractive  
 
+  # pre answer interactive questions from oracle
+  cat << EOF | debconf-set-selections
+sun-java6-bin   shared/accepted-sun-dlj-v1-1    boolean true
+sun-java6-jre   shared/accepted-sun-dlj-v1-1    boolean true
+oracle-java8-installer  shared/present-oracle-license-v1-1  note 
+oracle-java8-installer  shared/accepted-oracle-license-v1-1 boolean true
+oracle-java8-installer  shared/error-oracle-license-v1-1  error 
+oracle-java8-installer  oracle-java8-installer/not_exist  error 
+oracle-java8-installer  oracle-java8-installer/local  string  
+EOF
+
   # Replace repos by archive for Debian Squeeze
   grep -e "^6\." /etc/debian_version > /dev/null
   squeeze=$?
@@ -132,8 +143,9 @@ then
   then
 
     # Install Java, and remove all Zypper repos
-    wget -q -O /tmp/jdk-7u71-linux-x64.rpm https://www.normation.com/tarball/java/jdk-7u71-linux-x64.rpm
-    rpm -ivh /tmp/jdk-7u71-linux-x64.rpm
+    wget -q -O /tmp/jdk.rpm https://www.normation.com/tarball/java/jdk-8u101-linux-x86_64.rpm
+    rpm -ivh /tmp/jdk.rpm
+    ln -s /usr/sbin/update-alternatives /usr/sbin/alternatives
     rm /etc/zypp/repos.d/*.repo
 
     # Get the running SLES version
@@ -154,7 +166,8 @@ then
     fi
 
   else
-    rpm -ivh http://www.normation.com/tarball/java/jdk-7u71-linux-i586.rpm
+    ln -s /usr/sbin/update-alternatives /usr/sbin/alternatives
+    rpm -ivh http://www.normation.com/tarball/java/jdk-8u101-linux-i586.rpm
   fi
 
 fi
@@ -199,3 +212,4 @@ find /tmp/vagrant-cache -name 'Rudder' -type d | xargs rm -rf
 find /tmp/vagrant-cache -name 'rudder*' -o -name 'ncf*' | xargs rm -f
 
 postclean
+
