@@ -172,7 +172,8 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     server_config.vm.network :private_network, ip: ip
     server_config.vm.hostname = host_name
     # this is lazy evaluated and so will contain the last definition of host list
-    host_list = $platforms[pf_name]['host_list'].join(" ") + " " + host_list
+    pf_hostlist = $platforms.fetch(pf_name) { { 'host_list' => [] } }
+    host_list = pf_hostlist['host_list'].join(" ") + " " + host_list
     server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
   end
 end

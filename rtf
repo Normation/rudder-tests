@@ -202,7 +202,7 @@ def host_lines(platform, hosts, pf_id):
         own_server = server
 
       # generic host
-      line = "configure_box(config, $" + os + ", '" + pf + "', '" + hostname +"'"  
+      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id
       line += ", setup:'" + host['rudder-setup']  + "', host_list:'" + hostnames + "'"
       # rudder host
       if host['rudder-setup'] != 'ncf' and host['rudder-setup'] != 'empty':
