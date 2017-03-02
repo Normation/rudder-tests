@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 """
 Rudder test framework
@@ -234,6 +234,12 @@ config.vm.provider 'virtualbox' do |v|
 end
 if Vagrant.has_plugin?("vagrant-cachier")
   config.cache.scope = :box
+end
+
+# Mac OS X workwaround
+config.vm.provision "fix-no-tty", type: "shell" do |s|
+    s.privileged = false
+    s.inline = "sudo sed -i '/tty/!s/mesg n/tty -s \\\\&\\\\& mesg n/' /root/.profile"
 end
 
 ### AUTOGEN TAG

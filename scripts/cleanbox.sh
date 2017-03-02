@@ -199,7 +199,7 @@ fi
 # package that should exist everywhere
 ${PM_INSTALL} zsh vim less curl tree nano git binutils rsync
 # install that may fail
-${PM_INSTALL} htop ldapscripts
+${PM_INSTALL} htop ldapscripts uuid-runtime dbus
 
 # add common useful files
 for user in root vagrant
@@ -210,8 +210,11 @@ do
 done
 
 # Clean vagrant-cachier cached files for rudder packages 
-find /tmp/vagrant-cache -name 'Rudder' -type d | xargs rm -rf
-find /tmp/vagrant-cache -name 'rudder*' -o -name 'ncf*' | xargs rm -f
+if [ -d "/tmp/vagrant-cache" ]
+then
+    find /tmp/vagrant-cache -name 'Rudder' -type d | xargs rm -rf
+    find /tmp/vagrant-cache -name 'rudder*' -o -name 'ncf*' | xargs rm -f
+fi
 
 postclean
 
