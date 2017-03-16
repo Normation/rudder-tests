@@ -1,6 +1,6 @@
 {
-  "default":{ "run-with": "vagrant", "rudder-version": "3.0" },
-  "server": { "rudder-setup": "server", "system": "debian7", "inventory-os": "debian" },
+  "default":{ "run-with": "vagrant", "rudder-version": "4.1" },
+  "server": { "rudder-setup": "server", "system": "debian8", "inventory-os": "debian" },
   "agent1": { "rudder-setup": "agent", "system": "windows2008", "inventory-os": "Windows" },
   "agent2": { "rudder-setup": "agent", "system": "windows7", "inventory-os": "Windows" }
 }
