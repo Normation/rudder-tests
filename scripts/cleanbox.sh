@@ -169,6 +169,12 @@ then
       zypper ar -f "http://ci.normation.com/sles-repo/SLES-11-SP3-DVD-x86_64-GM-DVD2/" "SLES_11_SP3_DVD2" > /dev/null
     fi
 
+    if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -eq 1 ]
+    then
+      zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
+      zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD2/" "SLES_12_SP1_DVD2" > /dev/null
+    fi
+
   else
     wget -q -O /tmp/jdk.rpm http://www.normation.com/tarball/java/jdk-8u101-linux-i586.rpm
     rpm -iv /tmp/jdk.rpm || true
