@@ -143,13 +143,30 @@ import importlib
 import docopt
 import pexpect
 import signal
-from subprocess import check_output, CalledProcessError
+from subprocess import Popen,PIPE
 from pprint import pprint
 # Hack to import rudder lib, remove, some day ...
 import sys
 sys.path.insert(0,"./rudder-api-client/lib.python")
 from rudder import RudderEndPoint, RudderError
 
+
+# Run a command in a shell like a script would do
+# And inform the user of its execution
+def shell(command, fail_exit=True, keep_output=True):
+  if keep_output:
+    process = Popen(command, stdout=PIPE, shell=True, universal_newlines=True)
+    output,error = process.communicate()
+    retcode = process.poll()
+  else: # keep tty management and thus colors
+    process = Popen(command, shell=True)
+    retcode = process.wait()
+    output = None
+  if fail_exit and retcode != 0:
+    print(command)
+    print("*** COMMAND ERROR " + str(retcode))
+    exit(1)
+  return (retcode, output)
 
 class Host:
   """Generic Host
@@ -297,9 +314,8 @@ class Vagrant(Host):
 
   def ssh_config(self, key_directory):
     """ get ssh configuration to connect to this machine """
-    try:
-      output = check_output("vagrant ssh-config " + self.hostid, shell=True)
-    except CalledProcessError:
+    (code, output) = shell("vagrant ssh-config " + self.hostid, fail_exit=False)
+    if code != 0:
       print("Cannot get ssh-configuration for " + self.hostid)
       print("A patch for vagrant is available here https://github.com/peckpeck/vagrant/commit/93c5b853511548087fba7e8813c34ee45226e1cc")
       print("Halting!")
@@ -323,10 +339,10 @@ class Vagrant(Host):
     """ Go to last snapshot on this host """
     os.system("vagrant snapshot pop " + self.hostid)
 
-  def run(self, command):
+  def run(self, command, fail_exit=True):
     """ Run a command as root on this host """
-    value = check_output("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", shell=True)
-    return value .rstrip()
+    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit)
+    return value.rstrip()
 
   def push(self, source, destination):
     os.system("vagrant scp \"" + source + "\" \"" + self.hostid + ":" + destination + "\"")
@@ -337,7 +353,7 @@ class Vagrant(Host):
   def push_techniques(self, directory):
     """ Replace all techniques with the provided ones """
     # First, empty techniques directory
-    self.run("cd /var/rudder/configuration-repository/techniques/ && find . -mindepth 1 -maxdepth 1 -type d -not -name system | xargs rm -rf ")
+    self.run("cd /var/rudder/configuration-repository/techniques/ && find . -mindepth 1 -maxdepth 1 -type d -not -name system | xargs rm -rf ", fail_exit=False)
     # Then push new techniques
     self.push(directory, "/tmp/")
     name = os.path.basename(os.path.abspath(directory))
@@ -527,7 +543,8 @@ class Platform:
             # Accept the relay
             rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
             command = rcli + " nodes accept "+ relay
-            print(check_output(command, shell=True))
+            (code, output) = shell(command)
+            print(output)
             # Promote to relay
             print(host.run("/opt/rudder/bin/rudder-node-to-relay "+relay))
             print(host.run("curl https://localhost/rudder/api/deploy/reload -k"))
@@ -726,7 +743,7 @@ class Platform:
   def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params):
     """ Run a scenario on this platform """
     # test ruby binary
-    rubyver = check_output("ruby --version", shell=True)
+    (code, rubyver) = shell("ruby --version")
     if re.match(r'jruby', rubyver):
       if not re.match(r'jruby 1.7', rubyver):
         print("WARNING: this is not JRuby 1.7, compatibility unknown")
@@ -737,7 +754,7 @@ class Platform:
 
     # Test rspec command
     rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
-    check_output(rspec, shell=True)
+    shell(rspec)
 
     # Get api command line
     (rudder_url, token) = self.api_connection_info()
@@ -1095,7 +1112,7 @@ def find_tests(techniques, filter, last_version):
   if filter is not None and filter != "":
     params += "-f '" + filter + "' "
   cmd = os.getcwd() + "/scripts/technique-files " + params + techniques
-  technique_dirs = check_output(cmd, shell=True)
+  (code, technique_dirs) = shell(cmd)
   tests = []
   for technique in technique_dirs.split("\n"):
     if technique == "":
