@@ -1,0 +1,7 @@
+{
+  "default":{ "run-with": "vagrant", "rudder-version": "4.1", "system": "ubuntu16_04", "inventory-os": "ubuntu" },
+  "server": { "rudder-setup": "server" },
+  "relay":  { "rudder-setup": "relay", "system": "ubuntu14_04" },
+  "agent1": { "rudder-setup": "agent", "server": "relay" },
+  "agent2": { "rudder-setup": "agent", "system": "ubuntu12_04" }
+}
