@@ -141,13 +141,13 @@ fi
 if [ -f /etc/SuSE-release ]
 then
 
+  ln -s /usr/sbin/update-alternatives /usr/sbin/alternatives
   if [ "$(uname -m)" = "x86_64" ]
   then
 
     # Install Java, and remove all Zypper repos
     wget -q -O /tmp/jdk.rpm https://www.normation.com/tarball/java/jdk-8u101-linux-x86_64.rpm
     rpm -ivh /tmp/jdk.rpm
-    ln -s /usr/sbin/update-alternatives /usr/sbin/alternatives
     rm /etc/zypp/repos.d/*.repo
 
     # Get the running SLES version
@@ -168,7 +168,6 @@ then
     fi
 
   else
-    ln -s /usr/sbin/update-alternatives /usr/sbin/alternatives
     rpm -ivh http://www.normation.com/tarball/java/jdk-8u101-linux-i586.rpm
   fi
 
