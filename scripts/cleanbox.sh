@@ -137,6 +137,11 @@ EOF
   apt-get install --force-yes -y libltdl7
 fi
 
+if [ -f /etc/debian_version ]
+then
+  DEBIAN_VERSION=`cat /etc/debian_version | cut -d'.' -f1`
+fi
+
 # Setup SLES packaging (suse)
 if [ -f /etc/SuSE-release ]
 then
@@ -223,6 +228,12 @@ ${PM_INSTALL} zsh vim less curl binutils rsync
 ${PM_INSTALL} git || ${PM_INSTALL} git-core
 # install that may fail
 ${PM_INSTALL} htop ldapscripts uuid-runtime tree nano
+
+# In case the vagrant box is very minimal
+if [ "${DEBIAN_VERSION}" = "8" ]
+then
+  ${PM_INSTALL} dbus
+fi
 
 # add common useful files
 for user in root vagrant
