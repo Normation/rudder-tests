@@ -141,20 +141,25 @@ fi
 if [ -f /etc/SuSE-release ]
 then
 
+  # Get the running SLES version
+  SLES_VERSION=`grep "VERSION" /etc/SuSE-release|sed "s%VERSION\ *=\ *\(.*\)%\1%"`
+  SLES_SERVICEPACK=`grep "PATCHLEVEL" /etc/SuSE-release|sed "s%PATCHLEVEL\ *=\ *\(.*\)%\1%"`
+
   ln -s /usr/sbin/update-alternatives /usr/sbin/alternatives
-  echo "Installing JDK8" 
   if [ "$(uname -m)" = "x86_64" ]
   then
 
-    # Install Java, and remove all Zypper repos
-    wget -q -O /tmp/jdk.rpm https://www.normation.com/tarball/java/jdk-8u101-linux-x86_64.rpm
-    rpm -iv /tmp/jdk.rpm || true
+    if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -ge 1 ]
+    then
+      # do not preinstall java on sles12
+      true
+    else
+      echo "Installing JDK8" 
+      wget -q -O /tmp/jdk.rpm https://www.normation.com/tarball/java/jdk-8u101-linux-x86_64.rpm
+      rpm -iv /tmp/jdk.rpm | grep '^.$' || true
+    fi
 
     rm -f /etc/zypp/repos.d/*.repo
-
-    # Get the running SLES version
-    SLES_VERSION=`grep "VERSION" /etc/SuSE-release|sed "s%VERSION\ *=\ *\(.*\)%\1%"`
-    SLES_SERVICEPACK=`grep "PATCHLEVEL" /etc/SuSE-release|sed "s%PATCHLEVEL\ *=\ *\(.*\)%\1%"`
 
     # Add the repositories corresponding to the running SLES version
     if [ ${SLES_VERSION} -eq 11 ] && [ ${SLES_SERVICEPACK} -eq 1 ]
@@ -173,11 +178,20 @@ then
     then
       zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
       zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD2/" "SLES_12_SP1_DVD2" > /dev/null
+      # preinstall mod_wsgi
+      zypper --non-interactive install apache2 | grep '^.$'
+      rpm -iv http://download.opensuse.org/repositories/Apache:/Modules/SLE_12_SP1/x86_64/apache2-mod_wsgi-4.5.2-58.1.x86_64.rpm
     fi
 
   else
-    wget -q -O /tmp/jdk.rpm http://www.normation.com/tarball/java/jdk-8u101-linux-i586.rpm
-    rpm -iv /tmp/jdk.rpm || true
+    if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -ge 1 ]
+    then
+      true
+    else
+      echo "Installing JDK8"
+      wget -q -O /tmp/jdk.rpm http://www.normation.com/tarball/java/jdk-8u101-linux-i586.rpm
+      rpm -iv /tmp/jdk.rpm | grep '^.$' || true
+    fi
   fi
 
 fi
@@ -205,9 +219,10 @@ fi
 # this can be very long, we should make it optional
 
 # package that should exist everywhere
-${PM_INSTALL} zsh vim less curl tree nano git binutils rsync
+${PM_INSTALL} zsh vim less curl binutils rsync
+${PM_INSTALL} git || ${PM_INSTALL} git-core
 # install that may fail
-${PM_INSTALL} htop ldapscripts uuid-runtime dbus
+${PM_INSTALL} htop ldapscripts uuid-runtime tree nano
 
 # add common useful files
 for user in root vagrant

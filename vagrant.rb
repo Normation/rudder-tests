@@ -127,21 +127,22 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       command += "c:/vagrant/rudder-plugins/Rudder-agent-x64.exe /S\n"
     end
   else
-    command = "/vagrant/scripts/cleanbox.sh\n"
+    command = "echo 'Starting VM setup'\n"
+    command += "/vagrant/scripts/cleanbox.sh\n"
     command += "/vagrant/scripts/network.sh #{net} \"@host_list@\"\n"
     if setup != "empty" and setup != "ncf" then
-      command += "ALLOWEDNETWORK=#{net}.0/24 /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\" | grep -v '^.$'\n"
+      command += "ALLOWEDNETWORK=#{net}.0/24 /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end
     if setup == "ncf" then
-      command += "/usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\" | grep -v '^.$'\n"
+      command += "/usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
     end
     if setup == "server" then
       command += "/vagrant/scripts/create-token\n"
       if windows_plugin then
-        command += "/usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip | grep -v '^.$'\n"
+        command += "/usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
       end
       if advanced_reporting then
-        command += "/usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz | grep -v '^.$'\n"
+        command += "/usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
       end
     end
     if dev then
