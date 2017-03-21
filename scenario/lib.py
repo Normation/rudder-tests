@@ -37,6 +37,14 @@ class Scenario:
           nodes.append(hostname)
       return nodes
 
+  def host_rudder_version(self, hostname):
+    host = self.platform.hosts[hostname]
+    version_line = host.cached_run("rudder agent version", fail_exit=False)
+    match = re.match(r'^Rudder agent (\d+)\.(\d+)\..*', version_line)
+    if match:
+      return (match.group(1), match.group(2))
+    else: 
+      return ("", "")
 
 # Global variable that hold current scenario data
 scenario = None
@@ -80,6 +88,10 @@ def run(target, test, error_mode, **kwargs):
     env = 'TARGET_HOST=localhost '
   else:
     env = 'TARGET_HOST=' + scenario.pf + '_' + target + ' '
+    # add version
+    (major, minor) = scenario.host_rudder_version(target)
+    env += 'RUDDER_AGENT_VERSION_MAJOR="' + major +'" '
+    env += 'RUDDER_AGENT_VERSION_MINOR="' + minor +'" '
   for k,v in kwargs.items():
     env += 'RUDDER_' + k + '=' + '"' + v + '" '
   if test.startswith("/"):

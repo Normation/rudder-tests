@@ -148,6 +148,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     if dev then
       command += "/vagrant/scripts/dev.sh\n"
     end
+    command += "/bin/true\n"
   end
 
   # Configure

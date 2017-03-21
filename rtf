@@ -274,6 +274,7 @@ class Vagrant(Host):
     self.name = name
     self.hostid = pf + '_' + name
     self.provider = host_info["provider"]
+    self.commands = {}
     init_vagrantfile()
 
   def start(self):
@@ -343,6 +344,13 @@ class Vagrant(Host):
     """ Run a command as root on this host """
     (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit)
     return value.rstrip()
+
+  def cached_run(self, command, fail_exit=True):
+    if command in self.commands:
+      return self.commands[command]
+    value = self.run(command, fail_exit)
+    self.commands[command] = value
+    return value
 
   def push(self, source, destination):
     os.system("vagrant scp \"" + source + "\" \"" + self.hostid + ":" + destination + "\"")
@@ -749,7 +757,7 @@ class Platform:
         print("WARNING: this is not JRuby 1.7, compatibility unknown")
 
     elif not re.match(r'ruby 2', rubyver):
-      print("ERROR: MRI Ruby needs be version 2")
+      print("ERROR: MRI Ruby needs to be version 2")
       exit(3)
 
     # Test rspec command
