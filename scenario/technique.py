@@ -9,12 +9,14 @@ It will not clear the platform at the end of the test. Use the reset technique i
 
 from scenario.lib import *
 import time
+from pprint import pprint
 
 # Test begins, register start time
 start(__doc__)
 
 # Get test list from parameters
 tests = get_tests()
+
 
 # Force inventory
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="inventory")
@@ -24,38 +26,46 @@ run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
 for host in scenario.nodes("agent"):
   run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
-# Run test init script
+# Run all tests
+test_id=1
 for test in tests:
-  if 'init' in test:
-    run_on("all", 'techniques/technique_init', Err.BREAK, INIT=test['init'])
+  # define rule name
+  if 'name' in test:
+    rule_name=test['name']
+  else:
+    rule_name="test_"+str(test_idi)
 
-# Test all techniques
-date0 = host_date('wait', Err.CONTINUE, "server")
-for test in tests:
+  # Run init script
+  if 'inits' in test:
+    run_on("agent", 'techniques/technique_init', Err.BREAK, INITS=",".join(test['inits']), SERVER_VERSION=scenario.server_rudder_version())
+
+  date0 = host_date('wait', Err.CONTINUE, "server")
   # Add a technique/directive/rule
   run('localhost', 'techniques/technique_rule', Err.BREAK, 
-            TECHNIQUE=test['name'], 
-            DIRECTIVE=test['directive'], 
-            GROUP="special:all",
-            NAME=test['directive_name'])
+            DIRECTIVES=",".join(test['directives']),
+            INDEX=str(test_id),
+            GROUP="special:all_exceptPolicyServers",
+            NAME=rule_name)
 
-# Wait for generation
-for host in scenario.nodes("agent"):
-  wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
+  # Wait for generation
+  for host in scenario.nodes("agent"):
+    wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
 
-# Deploy all
-run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="update")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="run")
+  # Deploy
+  run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
+  run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="update") # could be replaced by run -u after 4.0
+  run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
+  run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="update")
+  run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="run")
 
-# Test rule result
-for test in tests:
-  run_on("agent", test['check'], Err.CONTINUE)
+  # Test rule result
+  for check in test['checks']:
+    run_on("agent", check, Err.CONTINUE)
 
-# Test rule compliance
-time.sleep(5) # wait for server to compute compliance
-for test in tests:
-  run('localhost', 'techniques/technique_compliance', Err.CONTINUE, RULE=test['directive_name'], COMPLIANCE=str(test['compliance']))
+  # Test rule compliance
+  time.sleep(5) # wait for server to compute compliance
+  run('localhost', 'techniques/technique_compliance', Err.CONTINUE, RULE=rule_name, COMPLIANCE=str(test['compliance']))
+  test_id+=1
 
 # test end, print summary
 finish()

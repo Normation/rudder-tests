@@ -46,6 +46,14 @@ class Scenario:
     else: 
       return ("", "")
 
+  def server_rudder_version(self):
+    servers = scenario.nodes("server")
+    # assume a single server
+    if len(servers) != 1:
+      return ""
+    (major, minor) = self.host_rudder_version(servers[0])
+    return major+"."+minor
+
 # Global variable that hold current scenario data
 scenario = None
 
@@ -216,25 +224,47 @@ def get_tests():
   """ Return the list of techniques to be tested """
   tests = []
   tests_metadata = get_param("test", "").split(',')
+  technique_root = get_param("root", "")
   for metadata_file in tests_metadata:
     _file_must_exist(metadata_file)
     with open(metadata_file) as fd:
-      metadata = json.load(fd)
-
-      root = os.path.abspath(os.path.dirname(metadata_file))
-      metadata['directive'] = root+'/'+metadata['directive']
-      _file_must_exist(metadata['directive'])
-      metadata['check'] = root+'/'+metadata['check']
-      _file_must_exist(metadata['check'])
-      if 'init' in metadata:
-        metadata['init'] = root+'/'+metadata['init']
-        _file_must_exist(metadata['init'])
+      metadatas = json.load(fd)
+      # metadata content : [ { test }, ... ]
+      # test content : { "name": "test_name",
+      #                  "init": "init command",  # it must be relative since the PATH will include the metadata file path
+      #                  "directives": [ "directive_file", ... ],
+      #                  "checks": [ "check_script.rb", ... ],
+      #                  "compliance": "expected compliance" }
+      for metadata in metadatas:
+        root = os.path.abspath(os.path.dirname(metadata_file))
+        metadata['local_root'] = root
+        metadata['remote_root'] = root.replace(technique_root,  "/var/rudder/configuration-repository/techniques/")
+ 
+        # make directives path absolute
+        directives = []
+        for directive in metadata['directives']:
+          path = root+'/'+directive
+          _file_must_exist(path)
+          directives.append(path)
+        metadata['directives'] = directives
   
-      with open(metadata['directive']) as dir_fd:
-        directive = json.load(dir_fd)
-        metadata['name'] = directive['techniqueName']
-        metadata['directive_name'] = directive['displayName']
+        # make checks path absolute
+        checks = []
+        for check in metadata['checks']:
+          path = root+'/'+check
+          _file_must_exist(path)
+          checks.append(path)
+        metadata['checks'] = checks
 
-      tests.append(metadata)
+        # make inits path absolute
+        inits = []
+        for init in metadata['inits']:
+          path = root+'/'+init
+          _file_must_exist(path)
+          inits.append(path)        
+        metadata['inits'] = inits
+
+        tests.append(metadata)
+
   return tests
 
