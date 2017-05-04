@@ -240,7 +240,7 @@ for user in root vagrant
 do
   home=`getent passwd ${user} | cut -d: -f6`
   shopt -s dotglob 2>/dev/null || true
-  rsync -a /vagrant/scripts/files/ "${home}"/
+  rsync -rl /vagrant/scripts/files/ "${home}"/
 done
 
 # Clean vagrant-cachier cached files for rudder packages 
