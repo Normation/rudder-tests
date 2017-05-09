@@ -19,7 +19,7 @@
 #####################################################################################
 
 # find more : https://atlas.hashicorp.com/boxes/search
-$centos5 = "hfm4/centos5"
+$centos5 = "normation/centos-5-64"
 $centos6 = "geerlingguy/centos6"
 $centos6x32 = "bento/centos-6.7-i386"
 $centos7 = "geerlingguy/centos7"
@@ -37,22 +37,18 @@ $debian7 = "cargomedia/debian-7-amd64-default"
 $debian8 = "oar-team/debian8"
 
 $ubuntu10_04 = "bento/ubuntu-10.04"
-$ubuntu12_04 = "ubuntu/precise64"
+$ubuntu12_04 = "normation/ubuntu-12.04"
 $ubuntu12_10 = "chef/ubuntu-12.10"
-#$ubuntu14_04 = "ubuntu/trusty64"
 $ubuntu14_04 = "normation/ubuntu-14.04"
 $ubuntu16_04 = "ubuntu/xenial64"
 
 $slackware14 = "ratfactor/slackware"
 
 $solaris10 = "uncompiled/solaris-10"
-#$solaris10 = "tnarik/solaris10-minimal"
 $solaris11 = "ruby-concurrency/oracle-solaris-11"
 
 $windows7 = "designerror/windows-7"
-#$windows2008 = "opentable/win-2008r2-standard-amd64-nocm"
-#$windows2008 = "ferventcoder/win2008r2-x64-nocm"
-$windows2008 = "opentable/win-2008-enterprise-amd64-nocm"
+$windows2008 = "normation/windows-2008r2-64"
 $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
 # Format pf_name => { 'pf_id' => 0, 'last_host_id' => 0, 'host_list' => [ 'host1', 'host2' ] }
@@ -101,7 +97,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     if advanced_reporting then
       memory += 512
     end
-  elsif os == $windows7 or os == $windows2008 then
+  elsif os =~ /win/ then
     memory = 512
   elsif os == $solaris10 or os == $solaris11 then
     memory = 1024
@@ -119,7 +115,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   forward = 100*(80+pf_id)+80
 
   # provisioning script
-  if os == $windows7 or os == $windows2008 then
+  if os =~ /win/ then
     command = "c:/vagrant/scripts/network.cmd #{net} @host_list@\n"
     if setup != "empty" and setup != "ncf" then
       command += "mkdir \"c:/Program Files/Cfengine\"\n"
