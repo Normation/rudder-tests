@@ -9,14 +9,14 @@ end
 
 describe file('/var/rudder/cfengine-community/policy_server.dat') do
   it { should be_file }
-  its(:content) { should match /rudder|127.0.0.1/ }
+  its(:content) { should match /server|rudder|127.0.0.1/ }
 end
 
 describe command('getent hosts $(cat /var/rudder/cfengine-community/policy_server.dat)') do
   its(:exit_status) { should eq 0 }
 end
 
-describe process("cf-execd") do
-  it { should be_running }
-end
+#describe process("cf-execd") do
+#  it { should be_running }
+#end
 

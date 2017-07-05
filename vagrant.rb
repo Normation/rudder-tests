@@ -49,6 +49,7 @@ $solaris11 = "ruby-concurrency/oracle-solaris-11"
 
 $windows7 = "designerror/windows-7"
 $windows2008 = "normation/windows-2008r2-64"
+$windows2012 = "opentable/win-2012r2-standard-amd64-nocm"
 $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
 # Format pf_name => { 'pf_id' => 0, 'last_host_id' => 0, 'host_list' => [ 'host1', 'host2' ] }
@@ -155,6 +156,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     end
     server_config.vm.provider :libvirt do |vm|
       vm.memory = memory
+      vm.nic_model_type = "e1000"
     end
     if setup == "server" then
       server_config.vm.network :forwarded_port, guest: 80, host: forward

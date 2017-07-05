@@ -767,7 +767,6 @@ class Platform:
     for param in params:
       kv = param.split('=')
       parameters[kv[0]] = kv[1]
-    pprint(parameters)
     scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters)
     setenv(client_path, rudder_url, token)
     importlib.import_module("scenario." + name)
@@ -1214,11 +1213,10 @@ if __name__ == "__main__":
       # push the techniques
       platform.push_techniques(techniques)
       # run the tests (all at once)
-      params = [ "test=" + ",".join(tests) ]
+      params = [ "test=" + ",".join(tests), "root=" + techniques ]
       filter = args['--filter']
       if filter == []:
         filter = None
-      pprint(params)
       platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params)
   elif args['test']:
     if args['from-rule']:

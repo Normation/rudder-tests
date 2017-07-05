@@ -23,7 +23,7 @@ postclean() {
   id > /tmp/xxx
 }
 
-# bos is clean
+# box is clean
 if [ -f /root/clean ]
 then
   postclean
