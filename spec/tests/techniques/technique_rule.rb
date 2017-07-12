@@ -17,7 +17,7 @@ describe "Add a directive and a rule"  do
     directiveName = data["displayName"] + " (" + index + "," + String($directive_id) + ")"
     $directive_id += 1
     # create directive
-    describe command($rudderCli + " directive create --json=" + directiveFile + " " + technique + " '" + directiveName + "'") do
+    describe command($rudderCli + " directive create --json=" + directiveFile + " " + technique + " '" + directiveName + "' | jq '.directives[0].id'") do
       its(:exit_status) { should eq 0 }
       its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
       it {
@@ -44,6 +44,7 @@ describe "Add a directive and a rule"  do
   "displayName": "#{ruleName}",
   "longDescription": "#{ruleName} Long Description",
   "shortDescription": "#{ruleName} Short Description",
+  "enabled": true,
   "targets": [
     {
       "exclude": {
@@ -61,7 +62,7 @@ EOF
       }
     }
     after(:all) {
-#      File.delete(ruleFile)
+    #  File.delete(ruleFile)
     }
     its(:exit_status) { should eq 0 }
     its(:stdout) { should match /^"[0-9a-f\-]+"$/ }

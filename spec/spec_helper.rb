@@ -71,7 +71,7 @@ if defined? RSpec::Core::Formatters::BaseTextFormatter
           end
   
           def example_failed(failure)
-            output.puts failure_output(failure.example, failure.example.execution_result.exception)
+            output.puts failure_output(failure.example)
             output.puts "#{current_indentation}time: #{failure.example.execution_result.run_time}s"
           end
   

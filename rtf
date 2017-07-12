@@ -354,11 +354,11 @@ class Vagrant(Host):
 
   def push_techniques(self, directory):
     """ Replace all techniques with the provided ones """
-    # First, empty techniques directory
-    self.run("cd /var/rudder/configuration-repository/techniques/ && find . -mindepth 1 -maxdepth 1 -type d -not -name system | xargs rm -rf ", fail_exit=False)
+    # First, erase technique directories matching the tested one
+    name = os.path.basename(os.path.abspath(directory))
+    self.run("cd /var/rudder/configuration-repository/techniques/ && find -mindepth 1 -type d -name " + name + " | xargs rm -rf ", fail_exit=False)
     # Then push new techniques
     self.push(directory, "/tmp/")
-    name = os.path.basename(os.path.abspath(directory))
     self.run("mv /tmp/" + name + " /var/rudder/configuration-repository/techniques/")
     self.run("cd /var/rudder/configuration-repository/techniques/ && git add --all . && git commit --allow-empty -m 'Replacing all techniques with the test ones' && rudder server reload-techniques")
 
@@ -863,6 +863,15 @@ Add the test to an existing scenario:
       del directive["isSystem"]
     if "priority" in directive:
       del directive["priority"]
+    if "tags" in directive:
+      del directive["tags"]
+    if "policyMode" in directive:
+      del directive["policyMode"]
+    if "system" in directive:
+      del directive["system"]
+    if "id" in directive:
+      del directive["id"]
+    
 
     make_jsonfile(os.path.join(path, file_directive), directive)
 
@@ -1217,6 +1226,8 @@ if __name__ == "__main__":
       filter = args['--filter']
       if filter == []:
         filter = None
+      # add the reset scenario execution before a technique test
+      platform.run_scenario('reset', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params)
       platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params)
   elif args['test']:
     if args['from-rule']:

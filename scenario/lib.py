@@ -231,9 +231,10 @@ def get_tests():
       metadatas = json.load(fd)
       # metadata content : [ { test }, ... ]
       # test content : { "name": "test_name",
-      #                  "init": "init command",  # it must be relative since the PATH will include the metadata file path
+      #                  "inits": [ "inits command", ... ],  # it must be relative since the PATH will include the metadata file path
       #                  "directives": [ "directive_file", ... ],
       #                  "checks": [ "check_script.rb", ... ],
+      #                  "sharedFiles": ["file to upload", ...],
       #                  "compliance": "expected compliance" }
       for metadata in metadatas:
         root = os.path.abspath(os.path.dirname(metadata_file))
@@ -264,7 +265,14 @@ def get_tests():
           inits.append(path)        
         metadata['inits'] = inits
 
+        # make sharedFiles path absolute
+        sharedFiles = []
+        for iFile in metadata['sharedFiles']:
+          path = root+'/'+iFile
+          _file_must_exist(path)
+          sharedFiles.append(path)        
+        metadata['sharedFiles'] = sharedFiles
+
         tests.append(metadata)
 
   return tests
-

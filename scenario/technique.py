@@ -33,12 +33,17 @@ for test in tests:
   if 'name' in test:
     rule_name=test['name']
   else:
-    rule_name="test_"+str(test_idi)
+    rule_name="test_"+str(test_id)
 
   # Run init script
   if 'inits' in test:
-    run_on("agent", 'techniques/technique_init', Err.BREAK, INITS=",".join(test['inits']), SERVER_VERSION=scenario.server_rudder_version())
+    for iInit in test['inits']:
+        run_on("agent", 'techniques/technique_init', Err.BREAK, INIT=iInit, SERVER_VERSION=scenario.server_rudder_version())
 
+  # Add the shared-Files on the server
+  if 'sharedFiles' in test:
+    for iFile in test['sharedFiles']:
+        run_on("server", 'techniques/technique_sharedFiles', Err.BREAK, FILE=iFile)
   date0 = host_date('wait', Err.CONTINUE, "server")
   # Add a technique/directive/rule
   run('localhost', 'techniques/technique_rule', Err.BREAK, 
