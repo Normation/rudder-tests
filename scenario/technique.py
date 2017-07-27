@@ -17,14 +17,14 @@ start(__doc__)
 # Get test list from parameters
 tests = get_tests()
 
-
 # Force inventory
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="inventory")
 run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
 
+if scenario.startTestNumber == 0:
 # Accept nodes
-for host in scenario.nodes("agent"):
-  run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
+  for host in scenario.nodes("agent"):
+    run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
 # Run all tests
 test_id=1
@@ -61,11 +61,11 @@ for test in tests:
   run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="update") # could be replaced by run -u after 4.0
   run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
   run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="update")
-  run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="run")
+  run_on("agent", 'technique_run_agent', Err.CONTINUE, PARAMS="run", NAME="test_output.log")
 
   # Test rule result
   for check in test['checks']:
-    run_on("agent", check, Err.CONTINUE)
+    run_test_on(test_id, "agent", check, Err.CONTINUE)
 
   # Test rule compliance
   time.sleep(5) # wait for server to compute compliance

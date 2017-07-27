@@ -22,7 +22,7 @@ Usage:
     rtf scenario doc <scenario>
     rtf scenario env <platform>
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
-    rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
+    rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--start=<test number>]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
     rtf test from-directive <platform> <uuid> <test_name> <path>
 
@@ -34,6 +34,7 @@ Options:
     --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
     --create-scenario  Generate a sample scenario file to use this test independantly
     --technique=...    Run the technique scenario on the given technique (instead of all technique found)
+    --start=<test number>  Run and start the scenario from a given test. 
 
 Commands
     All *platform* command are related to platform management. A platform is described is the platforms directory and
@@ -131,7 +132,6 @@ Commands
 """
 
 from __future__ import print_function
-import argparse
 import json
 import os
 import tempfile
@@ -742,7 +742,7 @@ class Platform:
       exit(2)
     return (rudder_url, token)
      
-  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params):
+  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params, startTestNumber):
     """ Run a scenario on this platform """
     # test ruby binary
     (code, rubyver) = shell("ruby --version")
@@ -767,7 +767,7 @@ class Platform:
     for param in params:
       kv = param.split('=')
       parameters[kv[0]] = kv[1]
-    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters)
+    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters, startTestNumber)
     setenv(client_path, rudder_url, token)
     importlib.import_module("scenario." + name)
     if scenario.lib.scenario.errors:
@@ -844,8 +844,10 @@ Add the test to an existing scenario:
 
     # Generate metadata
     metadata = {}
-    metadata["check"] = file_check
-    metadata["directive"] = file_directive
+    metadata["inits"] = []
+    metadata["checks"] = [file_check]
+    metadata["directives"] = [file_directive]
+    metadata["sharedFiles"] = []
     metadata["compliance"] = 100
 
     make_jsonfile(os.path.join(path, file_metadata), metadata)
@@ -941,7 +943,9 @@ def list_scenarii():
 
 def make_jsonfile(filename, content):
   with open(filename, "w") as fd:
+    fd.write('[')
     fd.write(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))
+    fd.write(']')
 
 def scenario_doc(name):
   try:
@@ -1210,7 +1214,7 @@ if __name__ == "__main__":
       if filter == []:
         filter = None
       platform = get_platform(args['<platform>'])
-      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'])
+      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'], args['--start'])
     elif args['technique']:
       platform = get_platform(args['<platform>'])
       techniques = args['<directory>']
@@ -1226,9 +1230,12 @@ if __name__ == "__main__":
       filter = args['--filter']
       if filter == []:
         filter = None
-      # add the reset scenario execution before a technique test
-      platform.run_scenario('reset', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params)
-      platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params)
+      # add the reset scenario execution before a technique test, except if --start option is precised
+      start = args['--start']
+      if start == None:
+        args['--start'] = 0;
+        platform.run_scenario('reset', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']))
+      platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']))
   elif args['test']:
     if args['from-rule']:
       platform = get_platform(args['<platform>'])

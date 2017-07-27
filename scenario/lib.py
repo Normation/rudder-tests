@@ -13,7 +13,7 @@ class Scenario:
   """ Holds a scenario data 
   Most scenario related methods are global and not in this class to make scenario writing look like script writing
   """
-  def __init__(self, platform, rspec, rcli, frmt, run_only, run_finally, err_stop, params):
+  def __init__(self, platform, rspec, rcli, frmt, run_only, run_finally, err_stop, params, startTestNumber):
     self.stop = False
     self.errors = False
     self.platform = platform
@@ -25,6 +25,7 @@ class Scenario:
     self.run_finally = run_finally
     self.err_stop = err_stop
     self.params = params
+    self.startTestNumber = startTestNumber
 
   def nodes(self, kind = "all"):
     # kind not defined, return all nodes
@@ -133,6 +134,15 @@ def run_on(kind = "all", *args, **kwargs):
   """ Run a test on nodes of type kind """
   for host in scenario.nodes(kind):
     run(host, *args, **kwargs)
+
+def run_test_on(test_id, kind = "all", *args, **kwargs):
+  """ Run a test on nodes of type kind """
+  if  test_id >= scenario.startTestNumber:
+    print("EXECUTING TEST %d" %test_id)
+    for host in scenario.nodes(kind):
+        run(host, *args, **kwargs)
+  else:
+    print("SKIPPING TEST %d" %test_id)
 
 def start(doc):
   """ Start a scenario """
