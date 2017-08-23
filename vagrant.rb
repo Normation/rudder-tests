@@ -40,7 +40,7 @@ $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
 $ubuntu12_10 = "chef/ubuntu-12.10"
 $ubuntu14_04 = "normation/ubuntu-14.04"
-$ubuntu16_04 = "ubuntu/xenial64"
+$ubuntu16_04 = "bento/ubuntu-16.04"
 
 $slackware14 = "ratfactor/slackware"
 
@@ -50,6 +50,7 @@ $solaris11 = "ruby-concurrency/oracle-solaris-11"
 $windows7 = "designerror/windows-7"
 $windows2008 = "normation/windows-2008r2-64"
 $windows2012 = "opentable/win-2012r2-standard-amd64-nocm"
+$windows2008r2 = "opentable/win-2008r2-standard-amd64-nocm"
 $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
 # Format pf_name => { 'pf_id' => 0, 'last_host_id' => 0, 'host_list' => [ 'host1', 'host2' ] }
@@ -59,7 +60,7 @@ $last_pf_id = 0
 
 def configure_box(config, os, pf_name, host_name, 
                   setup:'empty', version:nil, server:'', host_list:'',
-                  windows_plugin:false, advanced_reporting:false,
+                  windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
                   ncf_version:nil, cfengine_version:nil, ram:nil
                  )
   pf = $platforms.fetch(pf_name) { |key| 
@@ -74,14 +75,14 @@ def configure_box(config, os, pf_name, host_name,
   $platforms[pf_name] = pf
   configure(config, os, pf_name, pf_id, host_name, host_id, 
             setup:setup, version:version, server:server, host_list:host_list,
-            windows_plugin:windows_plugin, advanced_reporting:advanced_reporting,
+            windows_plugin:windows_plugin, advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin,
             ncf_version:ncf_version, cfengine_version:cfengine_version, ram:ram)
 end
 
 # keep this function separate for compatibility with older Vagrantfiles
 def configure(config, os, pf_name, pf_id, host_name, host_id, 
               setup:'empty', version:nil, server:'', host_list:'', 
-              windows_plugin:false, advanced_reporting:false,
+              windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
               ncf_version:nil, cfengine_version:nil, ram:nil
              )
   # Parameters
@@ -91,7 +92,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     dev = true
   end
   if setup == "server" then
-    memory = 1536
+    memory = 1536 
     if windows_plugin then
       memory += 512
     end
@@ -119,9 +120,15 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   if os =~ /win/ then
     command = "c:/vagrant/scripts/network.cmd #{net} @host_list@\n"
     if setup != "empty" and setup != "ncf" then
-      command += "mkdir \"c:/Program Files/Cfengine\"\n"
-      command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
-      command += "c:/vagrant/rudder-plugins/Rudder-agent-x64.exe /S\n"
+      if setup == "rudder-agent-cfengine" then
+        command += "mkdir \"c:/Program Files/Cfengine\"\n"
+        command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
+        command += "c:/vagrant/rudder-plugins/Rudder-agent-x64.exe /S\n"
+      else
+        command += "mkdir \"c:/Program Files/Rudder\"\n"
+        command += "echo #{server} > \"c:/Program Files/Rudder/policy_server.dat\"\n"
+        command += "c:/vagrant/rudder-plugins/rudder-agent-dsc.exe /S\n"
+      end
     end
   else
     command = "echo 'Starting VM setup'\n"
@@ -135,6 +142,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     end
     if setup == "server" then
       command += "/vagrant/scripts/create-token\n"
+      if dsc_plugin then
+        command += "/opt/rudder/bin/rudder-pkg install-file /vagrant/rudder-plugins/rudder-plugin-dsc.rpkg\n"
+      end
       if windows_plugin then
         command += "/usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
       end

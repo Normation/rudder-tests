@@ -189,9 +189,13 @@ def host_lines(platform, hosts, pf_id):
 
   # detect the need for windows support
   windows_support = False
+  dsc_support = False
   for hostname in host_list:
     if hosts[hostname].info['system'].startswith("win"):
-      windows_support = True
+      if hosts[hostname].info['rudder-setup'] == "rudder-agent-cfengine":
+        windows_support = True
+      else:
+        dsc_support = True
 
   # detect default server node
   server = ""
@@ -231,6 +235,8 @@ def host_lines(platform, hosts, pf_id):
       # windows support
       if host['rudder-setup'] == 'server' and windows_support:
         line += ", windows_plugin:true"
+      if host['rudder-setup'] == 'server' and dsc_support:
+        line += ", dsc_plugin:true"
       line += ")\n"
       lines.append(line)
   return lines
@@ -584,7 +590,7 @@ class Platform:
       for host in self.hosts.values():
         outfile.write("echo '"+host.hostid+"'\n")
       outfile.write("echo ''\n")
-    os.chmod(dirname+'/run', 0755)
+    os.chmod(dirname+'/run', 0o755)
     # create shutdown script
     with open(dirname+'/terminate', 'w') as outfile:
       outfile.write("#!/bin/sh\n")
@@ -593,7 +599,7 @@ class Platform:
         outfile.write("[ -n \"$UUID\" ] && VBoxManage controlvm $UUID poweroff\n")
         outfile.write("[ -n \"$UUID\" ] && VBoxManage unregistervm $UUID\n")
       outfile.write("echo 'You can now safely remove this directory!'\n")
-    os.chmod(dirname+'/terminate', 0755)
+    os.chmod(dirname+'/terminate', 0o755)
 
     # Create tgz
     os.system("tar czf rtf-" + self.name + ".tgz " + os.path.basename(dirname))
@@ -911,7 +917,7 @@ def load_json(filename):
   data = re.sub("\\/\\/.*", "", data)
   try:
     return json.loads(data)
-  except Exception,e:
+  except Exception as e:
     print("JSON syntax error in " + filename)
     print(e.message)
     exit(3)
