@@ -35,6 +35,7 @@ $debian5 = "felipelavinz/debian-lenny"
 $debian6 = "puppetlabs/debian-6.0.10-64-nocm"
 $debian7 = "cargomedia/debian-7-amd64-default"
 $debian8 = "oar-team/debian8"
+$debian9 = "normation/debian9-64"
 
 $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
