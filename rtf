@@ -143,6 +143,8 @@ import importlib
 import docopt
 import pexpect
 import signal
+import socket
+import requests
 from subprocess import Popen,PIPE
 from pprint import pprint
 # Hack to import rudder lib, remove, some day ...
@@ -175,6 +177,22 @@ class Host:
   """
   def __init__(self, host_info):
     self.info = host_info
+
+use_proxy = None
+def have_proxy():
+  global use_proxy
+  nrm_proxy = "http://filer.interne.normation.com:3128"
+  proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
+  if use_proxy is not None:
+    return use_proxy
+  nrm_ip = socket.gethostbyname("republique-1.normation.com.")
+  req = requests.get("http://ipinfo.io/ip")
+  if req.status_code == 200:
+    if req.content.strip() == nrm_ip:
+      use_proxy = proxy_line
+      return use_proxy
+  use_proxy = ""
+  return use_proxy
 
 
 ### Vagrant specific code ###
@@ -279,7 +297,8 @@ class Vagrant(Host):
 
   def start(self):
     """ Setup and run this host """
-    os.system("vagrant up " + self.hostid + " --provider="+self.provider)
+    proxy = have_proxy()
+    os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
 
   def stop(self):
     """ Destroy this host """

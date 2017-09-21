@@ -227,7 +227,7 @@ fi
 ${PM_INSTALL} zsh vim less curl binutils rsync
 ${PM_INSTALL} git || ${PM_INSTALL} git-core
 # install that may fail
-${PM_INSTALL} htop ldapscripts uuid-runtime tree nano
+${PM_INSTALL} htop ldapscripts uuid-runtime tree
 
 # In case the vagrant box is very minimal
 if [ "${DEBIAN_VERSION}" = "8" ]

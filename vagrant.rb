@@ -31,11 +31,11 @@ $oracle6 = "kikitux/oracle6"
 $sles11 = "idar/sles11sp3"
 $sles12 = "alchemy-solutions/sles12sp1"
 
-$debian5 = "felipelavinz/debian-lenny"
-$debian6 = "puppetlabs/debian-6.0.10-64-nocm"
-$debian7 = "cargomedia/debian-7-amd64-default"
-$debian8 = "oar-team/debian8"
-$debian9 = "normation/debian9-64"
+$debian5 = "normation/debian-5-64"
+$debian6 = "normation/debian-6-64"
+$debian7 = "normation/debian-7-64"
+$debian8 = "normation/debian-8-64"
+$debian9 = "normation/debian-9-64"
 
 $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
@@ -59,6 +59,9 @@ $platforms = {
 }
 $last_pf_id = 0
 
+require 'socket'
+require "open-uri"
+
 def configure_box(config, os, pf_name, host_name, 
                   setup:'empty', version:nil, server:'', host_list:'',
                   windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
@@ -78,6 +81,22 @@ def configure_box(config, os, pf_name, host_name,
             setup:setup, version:version, server:server, host_list:host_list,
             windows_plugin:windows_plugin, advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin,
             ncf_version:ncf_version, cfengine_version:cfengine_version, ram:ram)
+end
+
+$proxy = nil
+def get_proxy()
+  unless $proxy.nil?
+    return $proxy
+  end
+  nrm_ip = Socket.getaddrinfo("republique-1.normation.com.", 'http')[0][2]
+  my_ip = URI.parse("http://ipinfo.io/ip").read().strip()
+  if nrm_ip == my_ip then
+    nrm_proxy = "http://filer.interne.normation.com:3128"
+    $proxy = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy
+  else
+    $proxy = ""
+  end
+  return $proxy
 end
 
 # keep this function separate for compatibility with older Vagrantfiles
@@ -132,14 +151,15 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       end
     end
   else
+    proxy = get_proxy()
     command = "echo 'Starting VM setup'\n"
     command += "/vagrant/scripts/cleanbox.sh\n"
     command += "/vagrant/scripts/network.sh #{net} \"@host_list@\"\n"
     if setup != "empty" and setup != "ncf" then
-      command += "ALLOWEDNETWORK=#{net}.0/24 /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
+      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end
     if setup == "ncf" then
-      command += "/usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
+      command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
     end
     if setup == "server" then
       command += "/vagrant/scripts/create-token\n"
