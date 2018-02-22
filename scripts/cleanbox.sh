@@ -188,6 +188,11 @@ then
       rpm -iv http://download.opensuse.org/repositories/Apache:/Modules/SLE_12_SP1/x86_64/apache2-mod_wsgi-4.5.2-58.1.x86_64.rpm
     fi
 
+    if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -eq 2 ]
+    then
+      zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
+    fi
+
   else
     if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -ge 1 ]
     then
