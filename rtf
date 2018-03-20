@@ -185,12 +185,15 @@ def have_proxy():
   proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
   if use_proxy is not None:
     return use_proxy
-  nrm_ip = socket.gethostbyname("republique-1.normation.com.")
-  req = requests.get("http://ipinfo.io/ip")
-  if req.status_code == 200:
-    if req.content.strip() == nrm_ip:
-      use_proxy = proxy_line
-      return use_proxy
+  socket.gethostbyname(socket.gethostname())
+  s.connect(("8.8.8.8", 80))
+  if s.getsockname()[0].startswith('192.168.90.'):
+    nrm_ip = socket.gethostbyname("republique-1.normation.com.")
+    req = requests.get("http://ipinfo.io/ip")
+    if req.status_code == 200:
+      if req.content.strip() == nrm_ip:
+        use_proxy = proxy_line
+        return use_proxy
   use_proxy = ""
   return use_proxy
 

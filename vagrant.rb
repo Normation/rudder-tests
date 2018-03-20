@@ -41,7 +41,7 @@ $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
 $ubuntu12_10 = "chef/ubuntu-12.10"
 $ubuntu14_04 = "normation/ubuntu-14.04"
-$ubuntu16_04 = "bento/ubuntu-16.04"
+$ubuntu16_04 = "normation/ubuntu-16-04-64"
 
 $slackware14 = "ratfactor/slackware"
 
@@ -88,11 +88,25 @@ def get_proxy()
   unless $proxy.nil?
     return $proxy
   end
-  nrm_ip = Socket.getaddrinfo("republique-1.normation.com.", 'http')[0][2]
-  my_ip = URI.parse("http://ipinfo.io/ip").read().strip()
-  if nrm_ip == my_ip then
-    nrm_proxy = "http://filer.interne.normation.com:3128"
-    $proxy = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy
+  def local_ip
+    orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
+
+    UDPSocket.open do |s|
+      s.connect '8.8.8.8', 1
+      s.addr.last
+    end
+  ensure
+    Socket.do_not_reverse_lookup = orig
+  end
+  if local_ip().a.start_with?('192.168.90.') then
+    nrm_ip = Socket.getaddrinfo("republique-1.normation.com.", 'http')[0][2]
+    public_ip = URI.parse("http://ipinfo.io/ip").read().strip()
+    if nrm_ip == public_ip then
+      nrm_proxy = "http://filer.interne.normation.com:3128"
+      $proxy = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy
+    else
+      $proxy = ""
+    end
   else
     $proxy = ""
   end
@@ -156,7 +170,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     command += "/vagrant/scripts/cleanbox.sh\n"
     command += "/vagrant/scripts/network.sh #{net} \"@host_list@\"\n"
     if setup != "empty" and setup != "ncf" then
-      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
+      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{UNSUPPORTED} /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end
     if setup == "ncf" then
       command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"

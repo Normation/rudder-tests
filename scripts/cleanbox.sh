@@ -23,6 +23,13 @@ postclean() {
   id > /tmp/xxx
 }
 
+# Temporary (event clean box don't have that yet
+# Move it to Dirty below when ready
+if [ -f /etc/yum.conf ] && [ $(getconf LONG_BIT) == 64 ]
+then
+  echo "exclude=*.i386 *.i686" >> /etc/yum.conf
+fi
+
 # box is clean
 if [ -f /root/clean ]
 then
