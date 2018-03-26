@@ -88,15 +88,21 @@ def get_proxy()
   unless $proxy.nil?
     return $proxy
   end
-  nrm_ip = Socket.getaddrinfo("republique-1.normation.com.", 'http')[0][2]
-  my_ip = URI.parse("http://ipinfo.io/ip").read().strip()
-  if nrm_ip == my_ip then
-    nrm_proxy = "http://filer.interne.normation.com:3128"
-    $proxy = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy
-  else
-    $proxy = ""
+  begin
+  	nrm_ip = Socket.getaddrinfo("republique-1.normation.com.", 'http')[0][2]
+  	my_ip = URI.parse("http://ipinfo.io/ip").read().strip()
+  	if nrm_ip == my_ip then
+  	  nrm_proxy = "http://filer.interne.normation.com:3128"
+  	  $proxy = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy
+  	else
+  	  $proxy = ""
+    end
+	rescue SocketError
+		#When no internet is available
+		$proxy = ""
+	ensure
+    return $proxy
   end
-  return $proxy
 end
 
 # keep this function separate for compatibility with older Vagrantfiles
