@@ -8,3 +8,6 @@ __pycache__/
 
 # Script to be rebuilt
 scripts/rudder-setup
+
+# Specific to each install
+/rudder-api-client
