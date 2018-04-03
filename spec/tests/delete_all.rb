@@ -4,7 +4,7 @@ nodes = $params['DELETE_NODES']
 describe "Delete all"  do
 
   # delete rules
-  describe command($rudderCli + " rules list | jq '.rules | .[].id' | xargs -n 1 " + $rudderCli + " rule delete ") do
+  describe command($rudderCli + " rules list | jq '.rules[] | select(.displayName!=\"Global configuration for all nodes\").id' | xargs -n 1 " + $rudderCli + " rule delete ") do
     # To always make it succeed unless a command is missing
     # A better way would be to make the command ignore null
     its(:exit_status) { should_not eq 127 }
