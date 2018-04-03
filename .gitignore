@@ -11,3 +11,6 @@ scripts/rudder-setup
 
 # Specific to each install
 /rudder-api-client
+
+# Local testing platforms are not commited
+platforms/test*.json

@@ -45,6 +45,12 @@ for test in tests:
     for iFile in test['sharedFiles']:
         run_on("server", 'techniques/technique_sharedFiles', Err.BREAK, FILE=iFile)
   date0 = host_date('wait', Err.CONTINUE, "server")
+  # delete directive/rule with given names
+  run('localhost', 'techniques/technique_clean', Err.BREAK, 
+            DIRECTIVES=",".join(test['directives']),
+            INDEX=str(test_id),
+            GROUP="special:all_exceptPolicyServers",
+            NAME=rule_name)
   # Add a technique/directive/rule
   run('localhost', 'techniques/technique_rule', Err.BREAK, 
             DIRECTIVES=",".join(test['directives']),
