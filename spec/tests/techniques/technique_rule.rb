@@ -8,13 +8,13 @@ ruleFile = "/tmp/rule.json"
 ruleName = $params['NAME']
 
 describe "Add a directive and a rule"  do
-
   $directive_id ||= 1
   for directiveFile in directiveFiles.split(",") do
     file = File.read(directiveFile)
     data = JSON.parse(file)
     technique = data["techniqueName"]
-    directiveName = data["displayName"] + " (" + index + "," + String($directive_id) + ")"
+    directiveName = data["displayName"]
+
     $directive_id += 1
     # create directive
     describe command($rudderCli + " directive create --json=" + directiveFile + " " + technique + " '" + directiveName + "' | jq '.directives[0].id'") do
