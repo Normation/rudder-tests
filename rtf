@@ -185,14 +185,20 @@ def have_proxy():
   proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
   if use_proxy is not None:
     return use_proxy
-  nrm_ip = socket.gethostbyname("republique-1.normation.com.")
-  req = requests.get("http://ipinfo.io/ip")
-  if req.status_code == 200:
-    if req.content.strip() == nrm_ip:
-      use_proxy = proxy_line
-      return use_proxy
-  use_proxy = ""
+  try:
+    nrm_ip = socket.gethostbyname("republique-1.normation.com.")
+    req = requests.get("http://ipinfo.io/ip")
+    if req.status_code == 200:
+      if req.content.strip() == nrm_ip:
+        use_proxy = proxy_line
+        return use_proxy
+  except socket.error as e:
+    print("Network unreachable, can only start local already set up vms")
+    use_proxy=""
+    return use_proxy
+  use_proxy=""
   return use_proxy
+
 
 
 ### Vagrant specific code ###
@@ -298,6 +304,15 @@ class Vagrant(Host):
   def start(self):
     """ Setup and run this host """
     proxy = have_proxy()
+    if (proxy==""):
+      command = "vagrant status " + self.hostid
+      process = Popen(command, stdout=PIPE, shell=True, universal_newlines=True)
+      output,error = process.communicate()
+      result = re.findall("%s.*poweroff.*$"%self.hostid, output, re.MULTILINE) 
+
+      if not result:
+        print("No internet access and no local vms to start")
+        exit()
     os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
 
   def stop(self):
