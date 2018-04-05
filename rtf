@@ -34,7 +34,7 @@ Options:
     --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
     --create-scenario  Generate a sample scenario file to use this test independantly
     --technique=...    Run the technique scenario on the given technique (instead of all technique found)
-    --start=<test number>  Run and start the scenario from a given test. 
+    --start=<test number>  Run and start the scenario from a given test.
 
 Commands
     All *platform* command are related to platform management. A platform is described is the platforms directory and
@@ -71,7 +71,7 @@ Commands
         The tgz form contrains a script to prepare and run th platform on a new machine.
         It must be used on linux with vagrant and on the same major version of virtualbox.
 
-        The ova form export independant VMs archives that can be (theoretically) used on 
+        The ova form export independant VMs archives that can be (theoretically) used on
         any virtualization product. Be careful, this form destroys the original platform.
 
     rtf platform shutdown <platform>
@@ -186,6 +186,7 @@ def have_proxy():
   if use_proxy is not None:
     return use_proxy
   socket.gethostbyname(socket.gethostname())
+  s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   s.connect(("8.8.8.8", 80))
   if s.getsockname()[0].startswith('192.168.90.'):
     nrm_ip = socket.gethostbyname("republique-1.normation.com.")
@@ -194,14 +195,12 @@ def have_proxy():
       if req.content.strip() == nrm_ip:
         use_proxy = proxy_line
         return use_proxy
-  use_proxy = ""
-  return use_proxy
 
 
 ### Vagrant specific code ###
 
 def host_lines(platform, hosts, pf_id):
-  """ Return a Vagrantfile host line """ 
+  """ Return a Vagrantfile host line """
   pf = platform.split('.')[0]
   lines=[]
   i=1
@@ -221,7 +220,7 @@ def host_lines(platform, hosts, pf_id):
   # detect default server node
   server = ""
   for hostname in host_list:
-    if hosts[hostname].info['rudder-setup'] == 'server':
+    if 'server' in hosts[hostname].info['rudder-setup']:
       server = hostname
 
   # write a line for each host
@@ -230,7 +229,7 @@ def host_lines(platform, hosts, pf_id):
     if host['run-with'] == 'vagrant':
       os = host['system']
 
-      if host['rudder-setup'] == 'server':
+      if 'server' in host['rudder-setup']:
         host_id = "0"
       else:
         host_id = str(i)
@@ -254,9 +253,9 @@ def host_lines(platform, hosts, pf_id):
         line += ", ncf_version:'" + host['ncf-version'] + "', cfengine_version:'" +  host['cfengine-version'] + "'"
 
       # windows support
-      if host['rudder-setup'] == 'server' and windows_support:
+      if 'server' in host['rudder-setup'] and windows_support:
         line += ", windows_plugin:true"
-      if host['rudder-setup'] == 'server' and dsc_support:
+      if 'server' in host['rudder-setup'] and dsc_support:
         line += ", dsc_plugin:true"
       line += ")\n"
       lines.append(line)
@@ -556,13 +555,14 @@ class Platform:
     relay_list = []
     # Find all relays uuid
     for host in self.hosts.values():
-      if host.info['rudder-setup'] == 'relay':
+      if 'relay' in host.info['rudder-setup']:
         uuid = host.run("cat /opt/rudder/etc/uuid.hive")
         relay_list.append(uuid)
+
     # Promote relays on servers
     if relay_list:
       for host in self.hosts.values():
-        if host.info['rudder-setup'] == 'server':
+        if 'server' in host.info['rudder-setup']:
           # Treat inventory received on the server
           print(host.run("/opt/rudder/bin/rudder agent run"))
           # Environment setup
@@ -593,7 +593,7 @@ class Platform:
     with open(dirname+'/ssh_config', 'w') as outfile:
       for host in self.hosts.values():
         outfile.write(host.ssh_config(keydir))
-      
+
     # create vm dumps
     for host in self.hosts.values():
       host.export(dirname)
@@ -769,7 +769,7 @@ class Platform:
       print("This platform has no rudder server, can't run this command")
       exit(2)
     return (rudder_url, token)
-     
+
   def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params, startTestNumber):
     """ Run a scenario on this platform """
     # test ruby binary
@@ -847,8 +847,8 @@ Add the test to an existing scenario:
 - Add the following lines before the removal of the agent nodes
     run('localhost', 'directive_delete', Err.FINALLY, DELETE="%(directive_name)s", GROUP="special:all")
     run('localhost', 'rule_delete', Err.FINALLY, DELETE="%(rule_name)s", GROUP="special:all")
-""" % { 'rule_file': rule_file, 'test_file': test_file, 'test_name': test_name, 
-        'directive_name': directive['displayName'], 'rule_name': rule['displayName'] 
+""" % { 'rule_file': rule_file, 'test_file': test_file, 'test_name': test_name,
+        'directive_name': directive['displayName'], 'rule_name': rule['displayName']
         } )
     if scenario:
       make_scenario_file(scenario_file, test_name)
@@ -901,7 +901,7 @@ Add the test to an existing scenario:
       del directive["system"]
     if "id" in directive:
       del directive["id"]
-    
+
 
     make_jsonfile(os.path.join(path, file_directive), directive)
 
@@ -1121,7 +1121,7 @@ run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
 for host in scenario.nodes("agent"):
   run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
-# Add a rule 
+# Add a rule
 date0 = host_date('wait', Err.CONTINUE, "server")
 run('localhost', '%(test_name)s_rule', Err.BREAK, NAME="Test %(test_name)s", GROUP="special:all")
 for host in scenario.nodes("agent"):
@@ -1183,7 +1183,7 @@ if __name__ == "__main__":
     print("If you want to use rudder-api-client from a local repository please type this command:")
     print("ln -s ~/<path_to>/rudder-api-client")
     exit(1)
-  
+
   if args['platform']:
     if args['list']:
       list_platforms()

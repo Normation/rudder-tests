@@ -98,7 +98,7 @@ def get_proxy()
   ensure
     Socket.do_not_reverse_lookup = orig
   end
-  if local_ip().a.start_with?('192.168.90.') then
+  if local_ip().start_with?('192.168.90.') then
     nrm_ip = Socket.getaddrinfo("republique-1.normation.com.", 'http')[0][2]
     public_ip = URI.parse("http://ipinfo.io/ip").read().strip()
     if nrm_ip == public_ip then
@@ -121,6 +121,11 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
              )
   # Parameters
   dev = false
+  demo = false
+  if setup =="demo-server"
+    setup = "server"
+    demo = true
+  end
   if setup == "dev-server"
     setup = "server"
     dev = true
@@ -170,7 +175,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     command += "/vagrant/scripts/cleanbox.sh\n"
     command += "/vagrant/scripts/network.sh #{net} \"@host_list@\"\n"
     if setup != "empty" and setup != "ncf" then
-      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{UNSUPPORTED} /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
+      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end
     if setup == "ncf" then
       command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
@@ -189,6 +194,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     end
     if dev then
       command += "/vagrant/scripts/dev.sh\n"
+    end
+    if demo then
+      command += "/vagrant/scripts/demo-server-setup.sh\n"
     end
     command += "/bin/true\n"
   end
