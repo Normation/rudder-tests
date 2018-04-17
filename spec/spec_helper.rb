@@ -80,3 +80,13 @@ if defined? RSpec::Core::Formatters::BaseTextFormatter
     end
   end
 end
+
+
+# Look for the message in rudder logs
+def test_report_present(techniqueName, status, componentKey, value, message)
+
+  describe file("/var/rudder/cfengine-community/outputs/previous") do
+    its(:content) { should match /.*?R: @@#{techniqueName}@@#{status}@@.*?@@.*?@@.*?@@#{componentKey}@@#{value}@@.*?##.*?@##{message}.*/ }
+  end
+end
+
