@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #####################################################################################
-
+#
 # find more : https://atlas.hashicorp.com/boxes/search
 $centos5 = "normation/centos-5-64"
 $centos6 = "geerlingguy/centos6"
@@ -53,6 +53,24 @@ $windows2008 = "normation/windows-2008r2-64"
 $windows2012 = "opentable/win-2012r2-standard-amd64-nocm"
 $windows2008r2 = "opentable/win-2008r2-standard-amd64-nocm"
 $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
+
+#AWS ami
+$aws_sles11 = "ami-2e1aad53"
+$aws_sles12 = "ami-d29b2daf"
+
+$aws_ubuntu14_04 = "ami-933482ee"
+$aws_ubuntu16_04 = "ami-0e55e373"
+
+$aws_windows2012 = "ami-802492fd"
+
+$aws_os = {
+    "ami-2e1aad53" => "sles",
+    "ami-d29b2daf" => "sles",
+    "ami-933482ee" => "ubuntu",
+    "ami-0e55e373" => "ubuntu",
+    "ami-802492fd" => "windows"
+  }
+
 
 # Format pf_name => { 'pf_id' => 0, 'last_host_id' => 0, 'host_list' => [ 'host1', 'host2' ] }
 $platforms = {
@@ -113,13 +131,13 @@ def get_proxy()
   return $proxy
 end
 
-# keep this function separate for compatibility with older Vagrantfiles
-def configure(config, os, pf_name, pf_id, host_name, host_id, 
+$command = nil
+def provisioning_script(os, host_name, net, first_ip, 
               setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil
+              aws: false, ncf_version:nil, cfengine_version:nil, ram:nil
              )
-  # Parameters
+
   dev = false
   demo = false
   if setup =="demo-server"
@@ -130,34 +148,10 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     setup = "server"
     dev = true
   end
-  if setup == "server" then
-    memory = 1536 
-    if windows_plugin then
-      memory += 512
-    end
-    if advanced_reporting then
-      memory += 512
-    end
-  elsif os =~ /win/ then
-    memory = 512
-  elsif os == $solaris10 or os == $solaris11 then
-    memory = 1024
-  else
-    memory = 256
-  end
-  # override allocated ram
-  unless ram.nil?
-    memory = ram
-  end
-  memory = memory.to_s
-  name = pf_name + "_" + host_name
-  net = "192.168." + (pf_id+40).to_s
-  ip = net + "." + (host_id+2).to_s
-  forward = 100*(80+pf_id)+80
 
   # provisioning script
   if os =~ /win/ then
-    command = "c:/vagrant/scripts/network.cmd #{net} @host_list@\n"
+    command = "c:/vagrant/scripts/network.cmd #{net} #{first_ip} @host_list@\n"
     if setup != "empty" and setup != "ncf" then
       if setup == "rudder-agent-cfengine" then
         command += "mkdir \"c:/Program Files/Cfengine\"\n"
@@ -170,10 +164,16 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       end
     end
   else
-    proxy = get_proxy()
     command = "echo 'Starting VM setup'\n"
     command += "/vagrant/scripts/cleanbox.sh\n"
-    command += "/vagrant/scripts/network.sh #{net} \"@host_list@\"\n"
+    command += "/vagrant/scripts/network.sh #{net} #{first_ip} \"@host_list@\"\n"
+    if aws then
+      command += "echo 'Setting up hostname'\n"
+      command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
+      proxy = ""
+    else
+      proxy = get_proxy()
+    end
     if setup != "empty" and setup != "ncf" then
       command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end
@@ -198,8 +198,147 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     if demo then
       command += "/vagrant/scripts/demo-server-setup.sh\n"
     end
-    command += "/bin/true\n"
   end
+  return command
+end
+
+def ssh_user(ami)
+  aws_users = {
+    "ubuntu" => "ubuntu",
+    "sles" => "ec2-user",
+    "debian" => "admin",
+    "centos" => "centos",
+    "fedora" => "ec2-user",
+    "windows" => "Administrator"
+  }
+  begin
+    os_name = $aws_os[ami]
+    return aws_users[os_name]
+  rescue
+    puts "No suitable user found to ssh on the remote system"
+    return "ec2-user"
+  end
+end
+
+# keep this function separate for compatibility with older Vagrantfiles
+def configure_aws(config, os, pf_name, pf_id, host_name, host_id,
+              setup:'empty', version:nil, server:'', host_list:'',
+              windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
+              ncf_version:nil, cfengine_version:nil, ram:nil
+             )
+
+  if setup == 'server' then
+    instance_type = "t2.medium"
+    security_groups = $AWS_SERVER_GROUP
+  elsif setup == 'relay' then
+    instance_type = "t2.medium"
+    security_groups = $AWS_RELAY_GROUP
+  else
+    instance_type = "t2.micro"
+    security_groups = $AWS_AGENT_GROUP
+  end
+
+  user = ssh_user(os)
+  name = pf_name + "_" + host_name
+  # Because AWS keep the 4 first @ips of each subnet
+  first_ip = 5
+  net = "10.0.0"
+  ip = net + "." + (first_ip + host_id).to_s
+
+  command = provisioning_script(os, host_name, net, first_ip,
+              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:"#{windows_plugin}",
+              advanced_reporting:"#{advanced_reporting}", dsc_plugin:"#{dsc_plugin}", aws:"true", ncf_version:"#{ncf_version}",
+              cfengine_version:"#{cfengine_version}")
+
+  # Configure
+  config.vm.define (name).to_sym do |instance|
+    instance.vm.provider 'aws' do |aws, override|
+      # Use dummy AWS box
+      config.vm.box = 'dummy'
+  
+      # Read AWS authentication information from environment variables
+      aws.aws_dir = ENV['HOME'] + "/.aws/"
+      aws.access_key_id = $AWS_KEY
+      aws.secret_access_key = $AWS_SECRET
+      aws.keypair_name = $AWS_KEYNAME
+  
+      # Specify SSH keypair to use
+      aws.region = 'eu-west-3'
+      aws.ami = os
+      aws.instance_type = instance_type
+      # Specify region, AMI ID, and security group(s)
+      aws.security_groups = security_groups
+      # Private network
+      aws.subnet_id = $AWS_VPC
+      aws.associate_public_ip = true
+      aws.private_ip_address = ip
+      aws.tags = {
+        'Name': "#{name}"
+      }
+  
+      # Specify username and private key path
+      override.ssh.username = user
+      override.ssh.private_key_path = ENV['HOME'] + "/.aws/" + $AWS_KEYNAME + ".pem"
+
+      #override.vm.communicator = "winrm"
+      #override.winrm.username = "Administrator"
+      #override.winrm.password = "VagrantRocks"
+
+      # Provisionning
+      pf_hostlist = $platforms.fetch(pf_name) { { 'host_list' => [] } }
+      host_list = pf_hostlist['host_list'].join(" ") + " " + host_list
+    end
+    instance.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
+  end
+end
+
+    
+
+
+# keep this function separate for compatibility with older Vagrantfiles
+def configure(config, os, pf_name, pf_id, host_name, host_id,
+              setup:'empty', version:nil, server:'', host_list:'', 
+              windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
+              ncf_version:nil, cfengine_version:nil, ram:nil
+             )
+  # Parameters
+  dev = false
+  if setup == "dev-server"
+    setup = "server"
+    dev = true
+  end
+  if setup == "server" then
+    memory = 1536 
+    if windows_plugin then
+      memory += 512
+    end
+    if advanced_reporting then
+      memory += 512
+    end
+  elsif os =~ /win/ then
+    memory = 512
+  elsif os == $solaris10 or os == $solaris11 then
+    memory = 1024
+  else
+    memory = 256
+  end
+  # override allocated ram
+  unless ram.nil?
+    memory = ram
+  end
+  memory = memory.to_s
+
+  name = pf_name + "_" + host_name
+  first_ip = 2
+  net = "192.168." + (pf_id+40).to_s
+  ip = net + "." + (first_ip + host_id).to_s
+  forward = 100*(80+pf_id)+80
+
+
+  command = provisioning_script(os, host_name, net, first_ip,
+              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:"#{windows_plugin}",
+              advanced_reporting:"#{advanced_reporting}", dsc_plugin:"#{dsc_plugin}", ncf_version:"#{ncf_version}",
+              cfengine_version:"#{cfengine_version}")
 
   # Configure
   config.vm.define (name).to_sym do |server_config|

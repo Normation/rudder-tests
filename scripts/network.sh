@@ -2,7 +2,8 @@
 
 
 NET="$1"
-HOSTS="$2"
+LAST_DIGIT_IP="$2"
+HOSTS="$3"
 
 # Install a clean /etc/hosts for Rudder to operate properly (all)
 cat << EOF > /etc/hosts
@@ -17,11 +18,10 @@ cat << EOF > /etc/hosts
 
 EOF
 
-i=2
 for host in ${HOSTS}
 do
-  echo "${NET}.${i}    ${host}.rudder.local ${host}" >> /etc/hosts
-  i=`expr $i + 1`
+  echo "${NET}.${LAST_DIGIT_IP}    ${host}.rudder.local ${host}" >> /etc/hosts
+  LAST_DIGIT_IP=`expr $LAST_DIGIT_IP + 1`
 done
 
 cat << EOF >> /etc/hosts

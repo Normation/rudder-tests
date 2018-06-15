@@ -211,6 +211,10 @@ def host_lines(platform, hosts, pf_id):
   windows_support = False
   dsc_support = False
   for hostname in host_list:
+    if hosts[hostname].info['provider'] == 'aws':
+        command = "configure_aws"
+    else:
+        command = "configure"
     if hosts[hostname].info['system'].startswith("win"):
       if hosts[hostname].info['rudder-setup'] == "rudder-agent-cfengine":
         windows_support = True
@@ -228,6 +232,8 @@ def host_lines(platform, hosts, pf_id):
     host = hosts[hostname].info
     if host['run-with'] == 'vagrant':
       os = host['system']
+      if  host['provider'] == 'aws':
+        os = "aws_" + os
 
       if 'server' in host['rudder-setup']:
         host_id = "0"
@@ -243,7 +249,7 @@ def host_lines(platform, hosts, pf_id):
         own_server = server
 
       # generic host
-      line = "configure(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id
+      line = command + "(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id
       line += ", setup:'" + host['rudder-setup']  + "', host_list:'" + hostnames + "'"
       # rudder host
       if host['rudder-setup'] != 'ncf' and host['rudder-setup'] != 'empty':
@@ -279,6 +285,20 @@ if Vagrant.has_plugin?("vagrant-cachier")
   config.cache.scope = :box
 end
 
+if Vagrant.has_plugin?("vagrant-aws")
+  #$AWS_KEY='xxxxxxxxxxxxxxxxxxxx'
+  #$AWS_SECRET='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+  
+  # name of your key (region specific)
+  #$AWS_KEYNAME='my_keyPair'
+  # vpc id
+  #$AWS_VPC='subnet-xxxxxxxx'
+  # vpc security groups id, do not use the group name
+  #$AWS_SERVER_GROUP='sg-xxxxxxxx'
+  #$AWS_RELAY_GROUP='sg-xxxxxxxx'
+  #$AWS_AGENT_GROUP='sg-xxxxxxxx'
+  
+end
 ### AUTOGEN TAG
 
 end
@@ -364,7 +384,8 @@ class Vagrant(Host):
   def run(self, command, fail_exit=True):
     """ Run a command as root on this host """
     (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit)
-    return value.rstrip()
+    token = re.sub('==>.*\n', '', value)
+    return token.rstrip()
 
   def cached_run(self, command, fail_exit=True):
     if command in self.commands:
@@ -418,6 +439,16 @@ class Vagrant(Host):
       m = re.match(r'configure\((?:.*?,){2}\s*' + "'" + self.platform + "'" + r'\s*,\s*(\d+)', line)
       if m:
         port = str(int(m.group(1)) * 100 + 8081)
+        return m.group(1) + "/rudder"
+      #Test if it is an AWS instance
+      else:
+        aws = re.match(r"configure_aws\(.+" + self.platform + "', [0-9]+, '(\S+)'.+", line)
+        if aws:
+            command = "vagrant ssh-config " + self.platform + "_" + aws.group(1)
+            process = Popen(command , stdout=PIPE, shell=True, universal_newlines=True)
+            output,error = process.communicate()
+            adress = re.match(r'[\s\S]+HostName (.*)', output)
+            return "https://" + adress.group(1) + "/rudder"
     if port is None:
       return None
     return "https://localhost:" + str(port) + "/rudder"
