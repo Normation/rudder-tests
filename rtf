@@ -439,7 +439,7 @@ class Vagrant(Host):
       m = re.match(r'configure\((?:.*?,){2}\s*' + "'" + self.platform + "'" + r'\s*,\s*(\d+)', line)
       if m:
         port = str(int(m.group(1)) * 100 + 8081)
-        return m.group(1) + "/rudder"
+        break
       #Test if it is an AWS instance
       else:
         aws = re.match(r"configure_aws\(.+" + self.platform + "', [0-9]+, '(\S+)'.+", line)
