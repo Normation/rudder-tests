@@ -74,7 +74,7 @@ for test in tests:
     run_test_on(test_id, "agent", check, Err.CONTINUE)
 
   # Test rule compliance
-  time.sleep(5) # wait for server to compute compliance
+  time.sleep(10) # wait for server to compute compliance
   run('localhost', 'techniques/technique_compliance', Err.CONTINUE, RULE=rule_name, COMPLIANCE=str(test['compliance']))
   test_id+=1
 
