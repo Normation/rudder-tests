@@ -104,6 +104,7 @@ def run(target, test, error_mode, **kwargs):
   for k,v in kwargs.items():
     env += 'RUDDER_' + k + '=' + '"' + v + '" '
   if test.startswith("/"):
+    env += 'SCENARIO_BASE="' + os.path.dirname(test) + '" '
     testfile = test
     test = re.sub(r'.*/([\w\-]+)\.rb', r'\1', test)
   else:
