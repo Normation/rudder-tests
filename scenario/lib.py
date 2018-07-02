@@ -66,7 +66,8 @@ def enum(*sequential, **named):
 # Error handling mode in scenario
 Err = enum('CONTINUE', 'BREAK', 'FINALLY')
 
-
+# This method is used to prevent running new test in cases of error
+# If there's been error in scenario, then only the test with Err.FINALLY must be run
 def should_run(test, mode):
   """ Return True when the test must be ran """
   if not scenario.stop:
@@ -82,6 +83,9 @@ def should_run(test, mode):
 # Commands to be used in a scenario script #
 ############################################
 
+# Run a test
+# If the test starts with a /, then the full path of the test will be used,
+# otherwise it will look for a ruby script in specs/tests directory
 def run(target, test, error_mode, **kwargs):
   """ Run one test in a scenario 
   error_mode can be : 
