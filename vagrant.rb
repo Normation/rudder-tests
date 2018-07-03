@@ -246,8 +246,8 @@ def configure_aws(config, os, pf_name, pf_id, host_name, host_id,
   ip = net + "." + (first_ip + host_id).to_s
 
   command = provisioning_script(os, host_name, net, first_ip,
-              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:"#{windows_plugin}",
-              advanced_reporting:"#{advanced_reporting}", dsc_plugin:"#{dsc_plugin}", aws:"true", ncf_version:"#{ncf_version}",
+              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
+              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, aws:true, ncf_version:"#{ncf_version}",
               cfengine_version:"#{cfengine_version}")
 
   # Configure
@@ -302,12 +302,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
               ncf_version:nil, cfengine_version:nil, ram:nil
              )
   # Parameters
-  dev = false
-  if setup == "dev-server"
-    setup = "server"
-    dev = true
-  end
-  if setup == "server" then
+  dev =  setup == "dev-server" 
+
+  if setup =~ /server/ then
     memory = 1536 
     if windows_plugin then
       memory += 512
@@ -336,8 +333,8 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
 
 
   command = provisioning_script(os, host_name, net, first_ip,
-              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:"#{windows_plugin}",
-              advanced_reporting:"#{advanced_reporting}", dsc_plugin:"#{dsc_plugin}", ncf_version:"#{ncf_version}",
+              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
+              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, ncf_version:"#{ncf_version}",
               cfengine_version:"#{cfengine_version}")
 
   # Configure
@@ -351,7 +348,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       vm.memory = memory
       vm.nic_model_type = "e1000"
     end
-    if setup == "server" then
+    if setup =~ /server/ then
       server_config.vm.network :forwarded_port, guest: 80, host: forward
       server_config.vm.network :forwarded_port, guest: 443, host: forward+1
     end

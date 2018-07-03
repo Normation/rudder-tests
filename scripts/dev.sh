@@ -1,6 +1,8 @@
 #!/bin/sh
 
 sed -i "s/^IP=.*$/IP=*/" /opt/rudder/etc/rudder-slapd.conf 
+sed -i "s/^#IP=.*$/IP=*/" /etc/default/rudder-slapd
+
 echo "listen_addresses = '*'" >> /etc/postgresql/9.4/main/postgresql.conf
 echo "host    all         all         192.168.42.0/24       trust" >> /etc/postgresql/9.4/main/pg_hba.conf
 echo "host    all         all         10.0.0.0/16       trust" >> /etc/postgresql/9.4/main/pg_hba.conf
@@ -14,7 +16,11 @@ if [ -e /opt/rudder/etc/rudder-passwords.conf ] ; then
 fi
 
 rudder agent run
+if [ -d /opt/rudder/jetty7 ]; then
+  cp -a /vagrant/dev/fake-rudder.war /opt/rudder/jetty7/webapps/rudder.war
+else
+ cp -a /vagrant/dev/fake-rudder.war /opt/rudder/share/webapps/rudder.war
+fi
 
-cp -a /vagrant/dev/fake-rudder.war /opt/rudder/jetty7/webapps/rudder.war
 
 service rudder-jetty restart
