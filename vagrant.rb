@@ -345,13 +345,11 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     server_config.vm.box = os
     server_config.vm.provider :virtualbox do |vb|
       vb.customize ["modifyvm", :id, "--memory", memory]
+      vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
     end
     server_config.vm.provider :libvirt do |vm|
       vm.memory = memory
       vm.nic_model_type = "e1000"
-    end
-    server_config.vm.provider :virtualbox do |vb|
-      vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
     end
     if setup == "server" then
       server_config.vm.network :forwarded_port, guest: 80, host: forward
