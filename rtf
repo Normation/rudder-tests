@@ -185,6 +185,7 @@ def have_proxy():
   proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
   if use_proxy is not None:
     return use_proxy
+  use_proxy = ""
   socket.gethostbyname(socket.gethostname())
   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   s.connect(("8.8.8.8", 80))
@@ -194,7 +195,8 @@ def have_proxy():
     if req.status_code == 200:
       if req.content.strip() == nrm_ip:
         use_proxy = proxy_line
-        return use_proxy
+  return use_proxy
+    
 
 
 ### Vagrant specific code ###
