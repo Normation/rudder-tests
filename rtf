@@ -265,6 +265,9 @@ def host_lines(platform, hosts, pf_id):
         line += ", windows_plugin:true"
       if 'server' in host['rudder-setup'] and dsc_support:
         line += ", dsc_plugin:true"
+      # ram param
+      if 'ram' in host:
+        line += ", ram:"+ str(host['ram'])
       line += ")\n"
       lines.append(line)
   return lines
