@@ -41,7 +41,8 @@ $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
 $ubuntu12_10 = "chef/ubuntu-12.10"
 $ubuntu14_04 = "normation/ubuntu-14.04"
-$ubuntu16_04 = "normation/ubuntu-16-04-64"
+$ubuntu16_04 = "normation/ubuntu-16.04-64"
+$ubuntu18_04 = "bento/ubuntu-18.04"
 
 $slackware14 = "ratfactor/slackware"
 
