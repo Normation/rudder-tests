@@ -21,6 +21,7 @@ Usage:
     rtf scenario list
     rtf scenario doc <scenario>
     rtf scenario env <platform>
+    rtf scenario ncf_tests <platform> <version>
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
     rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--start=<test number>]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
@@ -108,6 +109,9 @@ Commands
         Output environment variables used to run a scenario on the platform.
         Useful to run tests by yourself.
 
+    rtf scenario ncf_tests <platform> <version>
+        Setup the given platform, install ncf from git in the specified version and then run the ncf tests.
+
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
         Run a single scenario on a given platform.
         Scenario specific parameters must be provided using additional KEY=VALUE.
@@ -132,33 +136,34 @@ Commands
 """
 
 from __future__ import print_function
+from subprocess import Popen, PIPE
 import json
 import os
-import tempfile
 import shutil
 import copy
 import re
-import scenario.lib
+import sys
 import importlib
-import docopt
-import pexpect
 import signal
 import socket
+import pexpect
 import requests
-from subprocess import Popen,PIPE
-from pprint import pprint
+import docopt
+import scenario.lib
+from vagrant import *
 # Hack to import rudder lib, remove, some day ...
-import sys
-sys.path.insert(0,"./rudder-api-client/lib.python")
+sys.path.insert(0, "./rudder-api-client/lib.python")
 from rudder import RudderEndPoint, RudderError
-
 
 # Run a command in a shell like a script would do
 # And inform the user of its execution
-def shell(command, fail_exit=True, keep_output=True):
+def shell(command, fail_exit=True, keep_output=True, live_output=False):
   if keep_output:
-    process = Popen(command, stdout=PIPE, shell=True, universal_newlines=True)
-    output,error = process.communicate()
+    if live_output:
+      process = Popen(command, shell=True, universal_newlines=True)
+    else:
+      process = Popen(command, stdout=PIPE, shell=True, universal_newlines=True)
+    output, error = process.communicate()
     retcode = process.poll()
   else: # keep tty management and thus colors
     process = Popen(command, shell=True)
@@ -185,7 +190,6 @@ def have_proxy():
   proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
   if use_proxy is not None:
     return use_proxy
-  use_proxy = ""
   socket.gethostbyname(socket.gethostname())
   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   s.connect(("8.8.8.8", 80))
@@ -196,16 +200,14 @@ def have_proxy():
       if req.content.strip() == nrm_ip:
         use_proxy = proxy_line
   return use_proxy
-    
-
 
 ### Vagrant specific code ###
 
 def host_lines(platform, hosts, pf_id):
   """ Return a Vagrantfile host line """
   pf = platform.split('.')[0]
-  lines=[]
-  i=1
+  lines = []
+  i = 1
   host_list = sorted(hosts.keys(), reverse=True)
   hostnames = " ".join(host_list)
 
@@ -214,9 +216,9 @@ def host_lines(platform, hosts, pf_id):
   dsc_support = False
   for hostname in host_list:
     if hosts[hostname].info['provider'] == 'aws':
-        command = "configure_aws"
+      command = "configure_aws"
     else:
-        command = "configure"
+      command = "configure"
     if hosts[hostname].info['system'].startswith("win"):
       if hosts[hostname].info['rudder-setup'] == "rudder-agent-cfengine":
         windows_support = True
@@ -386,11 +388,12 @@ class Vagrant(Host):
     """ Go to last snapshot on this host """
     os.system("vagrant snapshot pop " + self.hostid)
 
-  def run(self, command, fail_exit=True):
+  def run(self, command, fail_exit=True, live_output=False):
     """ Run a command as root on this host """
-    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit)
-    token = re.sub('==>.*\n', '', value)
-    return token.rstrip()
+    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit, live_output=live_output)
+    if not live_output:
+      token = re.sub('==>.*\n', '', value)
+      return token.rstrip()
 
   def cached_run(self, command, fail_exit=True):
     if command in self.commands:
@@ -449,11 +452,10 @@ class Vagrant(Host):
       else:
         aws = re.match(r"configure_aws\(.+" + self.platform + "', [0-9]+, '(\S+)'.+", line)
         if aws:
-            command = "vagrant ssh-config " + self.platform + "_" + aws.group(1)
-            process = Popen(command , stdout=PIPE, shell=True, universal_newlines=True)
-            output,error = process.communicate()
-            adress = re.match(r'[\s\S]+HostName (.*)', output)
-            return "https://" + adress.group(1) + "/rudder"
+          command = "vagrant ssh-config " + self.platform + "_" + aws.group(1)
+          (code, output) = shell(command)
+          adress = re.match(r'[\s\S]+HostName (.*)', output)
+          return "https://" + adress.group(1) + "/rudder"
     if port is None:
       return None
     return "https://localhost:" + str(port) + "/rudder"
@@ -461,7 +463,7 @@ class Vagrant(Host):
   @staticmethod
   def status(platform, hosts):
     """ Return the status of all hosts on a given platform """
-    host_list = [ platform + '_' + h for h in hosts ]
+    host_list = [platform + '_' + h for h in hosts]
     os.system("vagrant status " + " ".join(host_list))
 
   @staticmethod
@@ -471,7 +473,7 @@ class Vagrant(Host):
     # parse Vagrantfile into the lines array (and update it)
     with open("Vagrantfile", "r+") as fd:
       updated = False
-      line=fd.readline()
+      line = fd.readline()
       max_pf_id = 0
       min_pf_id = 256
       ids = []
@@ -506,7 +508,7 @@ class Vagrant(Host):
             next_id = min_pf_id - 1
           else:
             # If min = 1, tries to find and id between two used ids
-            for x in range(1,max_pf_id):
+            for x in range(1, max_pf_id):
               if not x in ids:
                 next_id = x
                 break
@@ -521,7 +523,7 @@ class Vagrant(Host):
         # unknown line, keep it
         else:
           lines.append(line)
-        line=fd.readline()
+        line = fd.readline()
       # rewrite the file
       fd.seek(0)
       fd.truncate()
@@ -534,7 +536,7 @@ class Vagrant(Host):
     # parse Vagrantfile into the lines array (and update it)
     with open("Vagrantfile", "r+") as fd:
       updated = False
-      line=fd.readline()
+      line = fd.readline()
       max_pf_id = 0
       matched = False
       while line:
@@ -544,18 +546,15 @@ class Vagrant(Host):
           lines.append(line)
         if re.match(r'### END OF AUTOGENERATION FOR ' + name, line):
           matched = False
-        line=fd.readline()
+        line = fd.readline()
       # rewrite the file
       fd.seek(0)
       fd.truncate()
       fd.writelines(lines)
 
 ### End of vagrant specific code ###
-
 # Global list of host type
-host_types = { 'vagrant': Vagrant }
-
-
+host_types = {'vagrant': Vagrant}
 
 class Platform:
   """ A test platform
@@ -788,7 +787,7 @@ class Platform:
     """ Show platform status """
     for host_type in host_types.values():
       host_list = []
-      for hostname,host in self.hosts.items():
+      for hostname, host in self.hosts.items():
         if isinstance(host, host_type):
           host_list.append(hostname)
       host_type.status(self.name, host_list)
@@ -802,41 +801,47 @@ class Platform:
         rudder_url = host.get_url()
         token = host.run('cat /root/rudder-token')
     if rudder_url is None or token is None:
-      print("This platform has no rudder server, can't run this command")
-      exit(2)
+      rudder_url = ''
+      token = ''
+    #  print("This platform has no rudder server, can't run this command")
+    #  exit(2)
     return (rudder_url, token)
 
-  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params, startTestNumber):
+  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params, startTestNumber, destroyOnError=False):
     """ Run a scenario on this platform """
-    # test ruby binary
-    (code, rubyver) = shell("ruby --version")
-    if re.match(r'jruby', rubyver):
-      if not re.match(r'jruby 1.7', rubyver):
-        print("WARNING: this is not JRuby 1.7, compatibility unknown")
+    try:
+      # test ruby binary
+      (code, rubyver) = shell("ruby --version")
+      if re.match(r'jruby', rubyver):
+        if not re.match(r'jruby 1.7', rubyver):
+          print("WARNING: this is not JRuby 1.7, compatibility unknown")
 
-    elif not re.match(r'ruby 2', rubyver):
-      print("ERROR: MRI Ruby needs to be version 2")
-      exit(3)
+      elif not re.match(r'ruby 2', rubyver):
+        print("ERROR: MRI Ruby needs to be version 2")
+        exit(3)
 
-    # Test rspec command
-    rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
-    shell(rspec)
+      # Test rspec command
+      rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
+      shell(rspec)
 
-    # Get api command line
-    (rudder_url, token) = self.api_connection_info()
-    rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
+      # Get api command line
+      (rudder_url, token) = self.api_connection_info()
+      rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
 
-    # load and run
-    parameters = {}
-    for param in params:
-      kv = param.split('=')
-      parameters[kv[0]] = kv[1]
-    scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters, startTestNumber)
-    setenv(client_path, rudder_url, token)
-    importlib.import_module("scenario." + name)
-    if scenario.lib.scenario.errors:
-      print("Test scenario '"+ name +"' failed on platform '" + self.name + "'")
-      exit(5)
+      # load and run
+      parameters = {}
+      for param in params:
+        kv = param.split('=')
+        parameters[kv[0]] = kv[1]
+      scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters, startTestNumber)
+      setenv(client_path, rudder_url, token)
+      importlib.import_module("scenario." + name)
+      if scenario.lib.scenario.errors:
+        print("Test scenario '"+ name +"' failed on platform '" + self.name + "'")
+        exit(5)
+    finally:
+      if destroyOnError:
+        self.teardown()
 
   def print_environment(self, client_path):
     """ Print environment used to run tests on this platform """
@@ -883,9 +888,9 @@ Add the test to an existing scenario:
 - Add the following lines before the removal of the agent nodes
     run('localhost', 'directive_delete', Err.FINALLY, DELETE="%(directive_name)s", GROUP="special:all")
     run('localhost', 'rule_delete', Err.FINALLY, DELETE="%(rule_name)s", GROUP="special:all")
-""" % { 'rule_file': rule_file, 'test_file': test_file, 'test_name': test_name,
-        'directive_name': directive['displayName'], 'rule_name': rule['displayName']
-        } )
+""" % {'rule_file': rule_file, 'test_file': test_file, 'test_name': test_name,
+       'directive_name': directive['displayName'], 'rule_name': rule['displayName']
+      })
     if scenario:
       make_scenario_file(scenario_file, test_name)
       print("Additionnaly, a scenario has been created in " + scenario_file)
@@ -948,7 +953,7 @@ The test content has been generated in %s, it contains:
 - %s which contains the directive parameters, automatically filled.
 - %s which is a stub check file. You need to edit it to describe the expected state
   -> Please edit it!
-""" % ( path, file_metadata, file_directive, file_check ))
+""" % (path, file_metadata, file_directive, file_check))
 
 
 ###################
@@ -1031,8 +1036,8 @@ directiveFile = "/tmp/directive.json"
 ruleFile = "/tmp/rule.json"
 
 describe "Add a test directive and a rule"  do
-      """ % { 'displayName': rule['displayName'] }
-    for idx,directive in enumerate(directives):
+      """ % {'displayName': rule['displayName']}
+    for idx, directive in enumerate(directives):
       data += """
   # Add directive
   describe command($rudderCli + " directive create --json=" + directiveFile + " %(technique)s %(name)s") do
@@ -1054,7 +1059,7 @@ EOF
     }
   end
 
-""" % { 'technique': directive['techniqueName'], 'name': directive['displayName'], 'directive': json.dumps(directive, indent=2), 'id': idx }
+""" % {'technique': directive['techniqueName'], 'name': directive['displayName'], 'directive': json.dumps(directive, indent=2), 'id': idx}
     data += """
   # create a rule
   describe command($rudderCli + " rule create --json=" + ruleFile + " testRule") do
@@ -1064,7 +1069,7 @@ EOF
 {
   "directives": [
 """
-    data += ",".join([ '"#{$uuid' + str(i) + '}"' for i in range(0, len(directives)) ])
+    data += ",".join(['"#{$uuid' + str(i) + '}"' for i in range(0, len(directives))])
     data += """
   ],
   "displayName": "%(displayName)s Rule",
@@ -1098,7 +1103,7 @@ EOF
   end
 
 end
-""" % { 'displayName': rule['displayName'], 'longDescription': rule['longDescription'], 'shortDescription': rule['shortDescription'] }
+""" % {'displayName': rule['displayName'], 'longDescription': rule['longDescription'], 'shortDescription': rule['shortDescription']}
     fd.write(data)
 
 def make_user_testfile(filename):
@@ -1180,7 +1185,7 @@ for host in scenario.nodes("agent"):
 
 # test end, print summary
 finish()
-""" % { 'test_name': test_name } )
+""" % {'test_name': test_name})
 
 
 def find_tests(techniques, filter, last_version):
@@ -1279,6 +1284,11 @@ if __name__ == "__main__":
         filter = None
       platform = get_platform(args['<platform>'])
       platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'], args['--start'])
+    elif args['ncf_tests']:
+      platform = get_platform(args['<platform>'], {})
+      platform.setup(client_path)
+      platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>']], args['--start'], destroyOnError=True)
+      platform.teardown()
     elif args['technique']:
       platform = get_platform(args['<platform>'])
       techniques = args['<directory>']
@@ -1290,14 +1300,14 @@ if __name__ == "__main__":
       # push the techniques
       platform.push_techniques(techniques)
       # run the tests (all at once)
-      params = [ "test=" + ",".join(tests), "root=" + techniques ]
+      params = ["test=" + ",".join(tests), "root=" + techniques]
       filter = args['--filter']
       if filter == []:
         filter = None
       # add the reset scenario execution before a technique test, except if --start option is precised
       start = args['--start']
       if start == None:
-        args['--start'] = 0;
+        args['--start'] = 0
         platform.run_scenario('reset', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']))
       platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']))
   elif args['test']:

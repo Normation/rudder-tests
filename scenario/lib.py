@@ -160,7 +160,7 @@ def finish():
   print("[" + now + "] End of scenario")
 
 
-def shell_on(hostname, command):
+def shell_on(hostname, command, live_output=False):
   """ Run a shell command on a host and return its output without failing if there is an error """
   try:
     if hostname == 'localhost':
@@ -170,7 +170,7 @@ def shell_on(hostname, command):
         print("ERROR: No host named " + hostname)
         return ""
       host = scenario.platform.hosts[hostname]
-      return host.run(command)
+      return host.run(command, live_output=live_output)
   except CalledProcessError, e:
     print("ERROR(" + str(e.returncode) + ") in: " + command + " on " + hostname)
     return e.output
