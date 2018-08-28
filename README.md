@@ -208,3 +208,13 @@ $AWS_AGENT_GROUP='sg-8ec894e7'
 ```
 You can now use rtf with aws as you usually do with virtualbox.
 There is still no windows support.
+
+
+Useful Knowledge
+------------------------
+
+The IP addr used for the VMs can be set in the Vagrantfile by defining the variable NET_PREFIX. To make the first IP of your Vagrantfile start at 192.168.90.0 add:
+```
+$NET_PREFIX = 90
+```
+Each new platform will then start at 192.168.($NET_PREFIX+platform_id). This is not retro-compatible with older Vagrantfiles.
