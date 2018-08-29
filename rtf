@@ -150,7 +150,6 @@ import pexpect
 import requests
 import docopt
 import scenario.lib
-from vagrant import *
 # Hack to import rudder lib, remove, some day ...
 sys.path.insert(0, "./rudder-api-client/lib.python")
 from rudder import RudderEndPoint, RudderError
@@ -183,12 +182,12 @@ class Host:
   def __init__(self, host_info):
     self.info = host_info
 
-use_proxy = None
+use_proxy = ''
 def have_proxy():
   global use_proxy
   nrm_proxy = "http://filer.interne.normation.com:3128"
   proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
-  if use_proxy is not None:
+  if use_proxy is not '':
     return use_proxy
   socket.gethostbyname(socket.gethostname())
   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
