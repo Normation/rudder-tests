@@ -176,7 +176,7 @@ def provisioning_script(os, host_name, net, first_ip,
       proxy = get_proxy()
     end
     if setup != "empty" and setup != "ncf" then
-      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
+      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
     end
     if setup == "ncf" then
       command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
@@ -187,10 +187,10 @@ def provisioning_script(os, host_name, net, first_ip,
         command += "/opt/rudder/bin/rudder-pkg install-file /vagrant/rudder-plugins/rudder-plugin-dsc.rpkg\n"
       end
       if windows_plugin then
-        command += "/usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
+        command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
       end
       if advanced_reporting then
-        command += "/usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
+        command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
       end
     end
     if dev then
