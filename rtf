@@ -21,21 +21,22 @@ Usage:
     rtf scenario list
     rtf scenario doc <scenario>
     rtf scenario env <platform>
-    rtf scenario ncf_tests <platform> <version>
+    rtf scenario ncf_tests <platform> <version> [--cfengine-version=<cfengine_version>]
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
     rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--start=<test number>]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
     rtf test from-directive <platform> <uuid> <test_name> <path>
 
 Options:
-    --ova              Export in ova format (the platform status is not kept)
-    --no-finally       Do not run tests tagged FINALLY in the scenario, to avoid coming back to initial state
-    --stop             Stop test on first error
-    --filter=...       Only run provided test list from scenario
-    --format=<format>  Output format to use (progress, documentation, html or json) [Default: documentation]
-    --create-scenario  Generate a sample scenario file to use this test independantly
-    --technique=...    Run the technique scenario on the given technique (instead of all technique found)
+    --ova                  Export in ova format (the platform status is not kept)
+    --no-finally           Do not run tests tagged FINALLY in the scenario, to avoid coming back to initial state
+    --stop                 Stop test on first error
+    --filter=...           Only run provided test list from scenario
+    --format=<format>      Output format to use (progress, documentation, html or json) [Default: documentation]
+    --create-scenario      Generate a sample scenario file to use this test independantly
+    --technique=...        Run the technique scenario on the given technique (instead of all technique found)
     --start=<test number>  Run and start the scenario from a given test.
+    --cfengine-version=... Define the version of cfengine used to execute the ncf_tests, like 3.10 3.12 rudder-4.3 rudder-latest or ci/rudder-3.2.1
 
 Commands
     All *platform* command are related to platform management. A platform is described is the platforms directory and
@@ -111,6 +112,8 @@ Commands
 
     rtf scenario ncf_tests <platform> <version>
         Setup the given platform, install ncf from git in the specified version and then run the ncf tests.
+        When no cfengine version is specified, tests will be executed with the cfengine agent shipped with the
+        Rudder agent in the same version than the ncf version specified.
 
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
         Run a single scenario on a given platform.
@@ -1286,7 +1289,9 @@ if __name__ == "__main__":
     elif args['ncf_tests']:
       platform = get_platform(args['<platform>'], {})
       platform.setup(client_path)
-      platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>']], args['--start'], destroyOnError=True)
+      if (args['--cfengine-version'] == None):
+        args['--cfengine-version'] = ''
+      platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>'], "cfengine_version=" + args['--cfengine-version']], args['--start'], destroyOnError=True)
       platform.teardown()
     elif args['technique']:
       platform = get_platform(args['<platform>'])

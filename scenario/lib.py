@@ -163,6 +163,8 @@ def finish():
 def shell_on(hostname, command, live_output=False):
   """ Run a shell command on a host and return its output without failing if there is an error """
   try:
+    if live_output:
+      print("+" + command)
     if hostname == 'localhost':
       return check_output("LANG=C " + command, shell=True)
     else:
