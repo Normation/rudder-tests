@@ -141,6 +141,8 @@ Commands
 from __future__ import print_function
 from subprocess import Popen, PIPE
 import json
+import random
+import time
 import os
 import shutil
 import copy
@@ -329,6 +331,14 @@ class Vagrant(Host):
   def start(self):
     """ Setup and run this host """
     proxy = have_proxy()
+    while "making sure that no vagrant up are running":
+      (returncode, output) = shell("pgrep -f \"vagrant up\"", fail_exit=False)
+      if returncode == 0:
+        idle = random.randint(5, 10)
+        print("Another vagrant session is currently running, waiting " + str(idle) + " seconds")
+        time.sleep(idle)
+      else:
+        break
     os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
 
   def stop(self):
