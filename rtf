@@ -332,8 +332,8 @@ class Vagrant(Host):
     """ Setup and run this host """
     proxy = have_proxy()
     while "making sure that no vagrant up are running":
-      (returncode, output) = shell("pgrep -f \"vagrant up\"", fail_exit=False)
-      if returncode != 0:
+      (returncode, output) = shell("pgrep -f \"[v]agrant up\"", fail_exit=False)
+      if returncode != 1:
         idle = random.randint(5, 10)
         print("Another vagrant session is currently running, waiting " + str(idle) + " seconds")
         time.sleep(idle)
