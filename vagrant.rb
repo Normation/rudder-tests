@@ -168,6 +168,7 @@ def provisioning_script(os, host_name, net, first_ip,
     command = "echo 'Starting VM setup'\n"
     command += "/vagrant/scripts/cleanbox.sh\n"
     command += "/vagrant/scripts/network.sh #{net} #{first_ip} \"@host_list@\"\n"
+    command += "export DOWNLOAD_USER=#{ENV['DOWNLOAD_USER']} DOWNLOAD_PASSWORD=#{ENV['DOWNLOAD_PASSWORD']}\n"
     if aws then
       command += "echo 'Setting up hostname'\n"
       command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
