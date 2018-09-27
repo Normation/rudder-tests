@@ -29,7 +29,8 @@ $fedora18 = "boxcutter/fedora18"
 $oracle6 = "kikitux/oracle6"
 
 $sles11 = "idar/sles11sp3"
-$sles12 = "alchemy-solutions/sles12sp1"
+$sles12 = "normation/sles-12-03-64"
+$sles15 = "normation/sles-15-64"
 
 $debian5 = "normation/debian-5-64"
 $debian6 = "normation/debian-6-64"
