@@ -124,12 +124,26 @@ EOF
   apt-get install --force-yes -y lsb-release
 
   # Old Ubuntu releases need to use the old-releases mirror instead of the default one
-  if hash lsb_release 2>/dev/null && [ "$(lsb_release -cs)" = "quantal" ]
+  if hash lsb_release 2>/dev/null
   then
-    echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe" > /etc/apt/sources.list
-    echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
-    apt-get update
+    if [ "$(lsb_release -cs)" = "quantal" ]
+    then
+      echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe" > /etc/apt/sources.list
+      echo "deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe" > /etc/apt/sources.list
+      apt-get update
+    fi
+
+    # Ubuntu raring & wily need to use the old-releases mirror instead of the default one
+    # If any rackspace repo are there, replace them
+    if [ "$(lsb_release -cs)" = "raring" ] || [ "$(lsb_release -cs)" = "wily" ]
+    then
+      sed -i -e 's/archive.ubuntu.com\|security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+      sed -i -e 's/us.old-releases/old-releases/' /etc/apt/sources.list
+      sed -i -e 's/mirror.rackspace/old-releases.ubuntu/g' /etc/apt/sources.list
+    fi
   fi
+
+
 
   if hash service 2>/dev/null
   then
