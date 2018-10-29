@@ -5,104 +5,137 @@ name = $params['NAME']
 
 directiveFile = "/tmp/directive.json"
 ruleFile = "/tmp/rule.json"
+directiveName = "#{name}"
 
 describe "Add a user directive and a rule"  do
 
   # Add a User directive
-  describe command($rudderCli + " directive create --json=" + directiveFile + " userManagement user.directives.[0].id") do
+  describe command($rudderCli + " directive create --json=" + directiveFile + " userManagement " + "\"" + directiveName + " Directive\"" + " | jq '.directives[0].id'") do
     before(:all) {
       File.open(directiveFile, 'w') { |file| 
         file << <<EOF
 {
-  "displayName": "#{name} Directive",
-  "longDescription": "Test user management description",
-  "enabled": true,
-  "parameters": {
-    "section": {
-      "name": "sections",
-      "sections": [
-        {
-          "section": {
-            "name": "Users",
+    "displayName": "#{name} Directive",
+    "enabled": true, 
+    "id": "009f509d-6afc-47fb-bcfb-5212925f02bc", 
+    "longDescription": "", 
+    "parameters": {
+        "section": {
+            "name": "sections", 
             "sections": [
-              {
-                "section": {
-                  "name": "Password",
-                  "vars": [
-                    {
-                      "var": {
-                        "name": "USERGROUP_USER_PASSWORD",
-                        "value": "linux-shadow-md5:$1$.wI5w6TO$GJln9oltmP1JLnSmyTCX11"
-                      }
+                {
+                    "section": {
+                        "name": "Users", 
+                        "sections": [
+                            {
+                                "section": {
+                                    "name": "Home directory"
+                                }
+                            }, 
+                            {
+                                "section": {
+                                    "name": "Password", 
+                                    "vars": [
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_PASSWORD", 
+                                                "value": "linux-shadow-sha256:$5$YNADkZ07$htb77c7EFCvMnMriWLRK.MWDWkQOuZ8ErNJxW.TAK2A"
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_PASSWORD_AIX", 
+                                                "value": "aix-ssha256:{ssha256}10$Sa/QDr9A9NY2wu7y$Onehh4RXy32259lis.Wm.s3NqH3rhLYaxGXuRy/I.67"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }, 
+                            {
+                                "section": {
+                                    "name": "UNIX specific options", 
+                                    "vars": [
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_FORCE_USER_GROUP", 
+                                                "value": "false"
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_GROUP", 
+                                                "value": ""
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_HOME", 
+                                                "value": ""
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_HOME_MOVE", 
+                                                "value": "false"
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_HOME_PERSONNALIZE", 
+                                                "value": "true"
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_NAME", 
+                                                "value": ""
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_SHELL", 
+                                                "value": "/bin/bash"
+                                            }
+                                        }, 
+                                        {
+                                            "var": {
+                                                "name": "USERGROUP_USER_UID", 
+                                                "value": ""
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ], 
+                        "vars": [
+                            {
+                                "var": {
+                                    "name": "USERGROUP_USER_ACTION", 
+                                    "value": "add"
+                                }
+                            }, 
+                            {
+                                "var": {
+                                    "name": "USERGROUP_USER_LOGIN", 
+                                    "value": "testuser"
+                                }
+                            }, 
+                            {
+                                "var": {
+                                    "name": "USERGROUP_USER_PASSWORD_POLICY", 
+                                    "value": "everytime"
+                                }
+                            }
+                        ]
                     }
-                  ]
                 }
-              }
-            ],
-            "vars": [
-              {
-                "var": {
-                  "name": "USERGROUP_USER_ACTION",
-                  "value": "add"
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_GROUP",
-                  "value": ""
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_HOME",
-                  "value": ""
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_HOME_PERSONNALIZE",
-                  "value": "true"
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_LOGIN",
-                  "value": "testuser"
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_NAME",
-                  "value": "Test user"
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_PASSWORD_POLICY",
-                  "value": "oneshot"
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_SHELL",
-                  "value": "/bin/bash"
-                }
-              },
-              {
-                "var": {
-                  "name": "USERGROUP_USER_UID",
-                  "value": ""
-                }
-              }
             ]
-          }
         }
-      ]
-    }
-  },
-  "shortDescription": "Test User short desc",
-  "techniqueName": "userManagement"
+    }, 
+    "shortDescription": "", 
+    "techniqueName": "userManagement"
 }
+
 EOF
       }
     }
@@ -118,7 +151,7 @@ EOF
   end
 
   # create a rule
-  describe command($rudderCli + " rule create --json=" + ruleFile + " testRule") do
+  describe command($rudderCli + " rule create --json=" + ruleFile + " \"#{name} Rule\"") do
     before(:all) {
       File.open(ruleFile, 'w') { |file|
         file << <<EOF
