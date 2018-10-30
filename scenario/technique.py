@@ -27,6 +27,13 @@ if scenario.startTestNumber == 0:
     run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
 
 # Run all tests
+# First, do the init on the node, with the ruby script techniques/technique_init that send the
+# init script on the node, in /tmp/technique_init, and runs it. It may be ncf script, or plain executable
+# Then it will put shared files on the Rudder server
+# Directives & Rules are created, policy generation is done, and the a run on the server, an update on the relay, a 
+# run on the relay, and update on the node is made (in that order)
+# Agent is run on the node, and the output is in test_output.log
+# Specs tests are run on the *host*, and checks on the node itself, and compliance of the created rule is checked
 test_id=1
 for test in tests:
   # define rule name
