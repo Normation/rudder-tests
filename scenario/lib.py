@@ -64,7 +64,7 @@ def enum(*sequential, **named):
   return type('Enum', (), enums)
 
 # Error handling mode in scenario
-Err = enum('CONTINUE', 'BREAK', 'FINALLY')
+Err = enum('CONTINUE', 'BREAK', 'FINALLY', 'IGNORE')
 
 # This method is used to prevent running new test in cases of error
 # If there's been error in scenario, then only the test with Err.FINALLY must be run
@@ -92,6 +92,7 @@ def run(target, test, error_mode, **kwargs):
    - CONTINUE: continue testing even if this fail, should be the default
    - BREAK: stop the scenario if this fail, for tests that change a state
    - FINALLY: always run this test, for cleaning after a scenario, broken or not
+   - IGNORE: will ignore the test test result in the global testing result
   """
   if not should_run(test, error_mode):
     return
@@ -130,10 +131,24 @@ def run(target, test, error_mode, **kwargs):
     print("")
 
   if retcode != 0:
-    scenario.errors = True
-    if error_mode == Err.BREAK:
-      scenario.stop = True
+    if error_mode != Err.IGNORE:
+      scenario.errors = True
+      if error_mode == Err.BREAK:
+        scenario.stop = True
+    return retcode
+  else:
+    return 0
 
+def run_and_retry(target, test, retry, **kwargs):
+  """ Run a test and retry it <retry> times if it fails """
+  for iTry in range(1, retry):
+    if iTry == retry:
+      result = run(target, test, Err.BREAK, **kwargs)
+    else:
+      result = run(target, test, Err.IGNORE, **kwargs)
+    if result == 0 :
+      break
+    sleep(10)
 
 def run_on(kind = "all", *args, **kwargs):
   """ Run a test on nodes of type kind """
