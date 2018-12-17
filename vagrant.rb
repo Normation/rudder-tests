@@ -24,6 +24,11 @@ $centos6 = "geerlingguy/centos6"
 $centos6x32 = "bento/centos-6.7-i386"
 $centos7 = "geerlingguy/centos7"
 
+$rhel5 = $centos5
+$rhel6 = $centos6
+$rhel6x32 = $centos6x32
+$rhel7 = $centos7
+
 $fedora18 = "boxcutter/fedora18"
 
 $oracle6 = "kikitux/oracle6"
@@ -46,6 +51,12 @@ $ubuntu14_04 = "normation/ubuntu-14.04"
 $ubuntu15_10 = "wzurowski/wily64"
 $ubuntu16_04 = "normation/ubuntu-16-04-64"
 $ubuntu18_04 = "bento/ubuntu-18.04"
+
+$ubuntu10 = $ubuntu10_04
+$ubuntu12 = $ubuntu12_04
+$ubuntu14 = $ubuntu14_04
+$ubuntu16 = $ubuntu16_04
+$ubuntu18 = $ubuntu18_04
 
 $slackware14 = "ratfactor/slackware"
 
