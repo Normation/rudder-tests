@@ -21,7 +21,7 @@ WGET := $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY)) /usr/bin/wget -q
 .DEFAULT_GOAL := all
 
 scripts/technique-files:
-	$(WGET) -O scripts/technique-files https://www.rudder-project.org/tools/technique-files
+	$(WGET) -O scripts/technique-files https://repository.rudder.io/tools/technique-files
 	chmod +x scripts/technique-files
 
 all: scripts/technique-files

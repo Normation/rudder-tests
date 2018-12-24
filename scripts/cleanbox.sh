@@ -7,11 +7,11 @@ postclean() {
   ### THINGS TO DO ON AN ALREADY CLEAN BOX
   if type curl >/dev/null 2>/dev/null
   then
-    curl -s -o /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
-    curl -s -o /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
+    curl -s -o /usr/local/bin/rudder-setup https://repository.rudder.io/tools/rudder-setup
+    curl -s -o /usr/local/bin/ncf-setup https://repository.rudder.io/tools/ncf-setup
   else
-    wget -q -O /usr/local/bin/rudder-setup https://www.rudder-project.org/tools/rudder-setup
-    wget -q -O /usr/local/bin/ncf-setup https://www.rudder-project.org/tools/ncf-setup
+    wget -q -O /usr/local/bin/rudder-setup https://repository.rudder.io/tools/rudder-setup
+    wget -q -O /usr/local/bin/ncf-setup https://repository.rudder.io/tools/ncf-setup
   fi
   
   chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
@@ -181,7 +181,7 @@ then
       true
     else
       echo "Installing JDK8" 
-      wget -q -O /tmp/jdk.rpm https://www.normation.com/tarball/java/jdk-8u101-linux-x86_64.rpm
+      wget -q -O /tmp/jdk.rpm https://repository.rudder.io/build-dependencies/java/jdk-8u101-linux-x86_64.rpm
       rpm -iv /tmp/jdk.rpm | grep '^.$' || true
     fi
 
@@ -220,7 +220,7 @@ then
       true
     else
       echo "Installing JDK8"
-      wget -q -O /tmp/jdk.rpm http://www.normation.com/tarball/java/jdk-8u101-linux-i586.rpm
+      wget -q -O /tmp/jdk.rpm https://repository.rudder.io/build-dependencies/java/jdk-8u101-linux-i586.rpm
       rpm -iv /tmp/jdk.rpm | grep '^.$' || true
     fi
   fi
