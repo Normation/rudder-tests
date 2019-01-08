@@ -33,7 +33,7 @@ $fedora18 = "boxcutter/fedora18"
 
 $oracle6 = "kikitux/oracle6"
 
-$sles11 = "idar/sles11sp3"
+$sles11 = "normation/sles-11-03-64"
 $sles12 = "normation/sles-12-03-64"
 $sles15 = "normation/sles-15-64"
 
