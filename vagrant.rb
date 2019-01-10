@@ -150,7 +150,7 @@ $command = nil
 def provisioning_script(os, host_name, net, first_ip, 
               setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              aws: false, ncf_version:nil, cfengine_version:nil, ram:nil
+              aws: false, ncf_version:nil, cfengine_version:nil, ram:nil, provision:true
              )
 
   dev = false
@@ -190,29 +190,31 @@ def provisioning_script(os, host_name, net, first_ip,
     else
       proxy = get_proxy()
     end
-    if setup != "empty" and setup != "ncf" then
-      command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
-    end
-    if setup == "ncf" then
-      command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
-    end
-    if setup == "server" then
-      command += "/vagrant/scripts/create-token\n"
-      if dsc_plugin then
-        command += "/opt/rudder/bin/rudder-pkg install-file /vagrant/rudder-plugins/rudder-plugin-dsc.rpkg\n"
+    if provision == true then
+      if setup != "empty" and setup != "ncf" then
+        command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
       end
-      if windows_plugin then
-        command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
+      if setup == "ncf" then
+        command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
       end
-      if advanced_reporting then
-        command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
+      if setup == "server" then
+        command += "/vagrant/scripts/create-token\n"
+        if dsc_plugin then
+          command += "/opt/rudder/bin/rudder-pkg install-file /vagrant/rudder-plugins/rudder-plugin-dsc.rpkg\n"
+        end
+        if windows_plugin then
+          command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
+        end
+        if advanced_reporting then
+          command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
+        end
       end
-    end
-    if dev then
-      command += "/vagrant/scripts/dev.sh\n"
-    end
-    if demo then
-      command += "/vagrant/scripts/demo-server-setup.sh\n"
+      if dev then
+        command += "/vagrant/scripts/dev.sh\n"
+      end
+      if demo then
+        command += "/vagrant/scripts/demo-server-setup.sh\n"
+      end
     end
   end
   return command
@@ -240,7 +242,7 @@ end
 def configure_aws(config, os, pf_name, pf_id, host_name, host_id,
               setup:'empty', version:nil, server:'', host_list:'',
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil
+              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true
              )
 
   if setup == 'server' then
@@ -264,7 +266,7 @@ def configure_aws(config, os, pf_name, pf_id, host_name, host_id,
   command = provisioning_script(os, host_name, net, first_ip,
               setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
               advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, aws:true, ncf_version:"#{ncf_version}",
-              cfengine_version:"#{cfengine_version}")
+              cfengine_version:"#{cfengine_version}", provision:provision)
 
   # Configure
   config.vm.define (name).to_sym do |instance|
@@ -316,7 +318,7 @@ end
 def configure(config, os, pf_name, pf_id, host_name, host_id,
               setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil
+              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true
              )
   # Parameters
   dev =  setup == "dev-server" 
@@ -349,11 +351,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   ip = net + "." + (first_ip + host_id).to_s
   forward = 100*(80+pf_id)+80
 
-
   command = provisioning_script(os, host_name, net, first_ip,
               setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
-              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, ncf_version:"#{ncf_version}",
-              cfengine_version:"#{cfengine_version}")
+              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, ncf_version:"#{ncf_version}", cfengine_version:"#{cfengine_version}", provision:provision)
 
   # Configure
   config.vm.define (name).to_sym do |server_config|

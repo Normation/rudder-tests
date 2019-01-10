@@ -220,6 +220,8 @@ def host_lines(platform, hosts, pf_id):
   windows_support = False
   dsc_support = False
   for hostname in host_list:
+    # add pf_id to the host object
+    hosts[hostname].info['pf_id'] = str(pf_id)
     if hosts[hostname].info['provider'] == 'aws':
       command = "configure_aws"
     else:
@@ -275,6 +277,9 @@ def host_lines(platform, hosts, pf_id):
       # ram param
       if 'ram' in host:
         line += ", ram:"+ str(host['ram'])
+      # External provisionning
+      if 'provision' in host:
+        line += ", provision:false"
       line += ")\n"
       lines.append(line)
   return lines
@@ -600,6 +605,36 @@ class Platform:
       host_type.reset_platform(self.name, self.hosts)
     for hostname in sorted(self.hosts.keys(), reverse=True):
       self.hosts[hostname].start()
+
+    for hostname in sorted(self.hosts.keys(), reverse=True):
+      host = self.hosts[hostname]
+      if ('provision' in host.info and 'python' in host.info['provision']):
+        unsupported = os.getenv('UNSUPPORTED', "")
+        repoPrefix = "rtf/"
+        rudderSetup = host.info['rudder-setup']
+        rudderVersion = host.info['rudder-version']
+        proxy = have_proxy()
+
+        # guessing the authorized network
+        baseNetwork = 40
+        with open("Vagrantfile", "r+") as fd:
+          line = fd.readline()
+          reg = re.compile("\$NET_PREFIX=(\d+).*")
+          while line:
+            m = reg.match(line)
+            if m:
+                baseNetwork = int(m.group(1))
+                break
+            line = fd.readline()
+        try:
+          server = host.info['server']
+        except:
+          server = ""
+
+        allowedNetwork = "192.168." + str(int(host.info['pf_id']) + baseNetwork) + ".0"
+
+        host.run("sed -i s/set\ -e/set\ -xe/g /usr/local/bin/rudder-setup")
+        host.run("%s ALLOWEDNETWORK=%s/24 UNSUPPORTED=%s REPO_PREFIX=%s ; /usr/local/bin/rudder-setup setup-%s \"%s\" \"%s\"" %(proxy, allowedNetwork, unsupported, repoPrefix, rudderSetup, rudderVersion, server), live_output=True)
     relay_list = []
     # Find all relays uuid
     for host in self.hosts.values():
