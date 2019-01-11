@@ -349,7 +349,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   $NET_PREFIX ||= 40
   net = "192.168." + (pf_id+$NET_PREFIX).to_s
   ip = net + "." + (first_ip + host_id).to_s
-  forward = 100*(80+pf_id)+80
+  forward = 100*(2*$NET_PREFIX+pf_id)+80
 
   command = provisioning_script(os, host_name, net, first_ip,
               setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
