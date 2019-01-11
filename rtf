@@ -635,6 +635,8 @@ class Platform:
 
         host.run("sed -i s/set\ -e/set\ -xe/g /usr/local/bin/rudder-setup")
         host.run("%s ALLOWEDNETWORK=%s/24 UNSUPPORTED=%s REPO_PREFIX=%s ; /usr/local/bin/rudder-setup setup-%s \"%s\" \"%s\"" %(proxy, allowedNetwork, unsupported, repoPrefix, rudderSetup, rudderVersion, server), live_output=True)
+        if 'server' in host.info['rudder-setup']:
+          host.run("/vagrant/scripts/create-token")
     relay_list = []
     # Find all relays uuid
     for host in self.hosts.values():
