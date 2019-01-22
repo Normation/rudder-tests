@@ -7,8 +7,8 @@ postclean() {
   ### THINGS TO DO ON AN ALREADY CLEAN BOX
   if type curl >/dev/null 2>/dev/null
   then
-    curl -s -o /usr/local/bin/rudder-setup https://repository.rudder.io/tools/rudder-setup
-    curl -s -o /usr/local/bin/ncf-setup https://repository.rudder.io/tools/ncf-setup
+    curl -L -s -o /usr/local/bin/rudder-setup https://repository.rudder.io/tools/rudder-setup
+    curl -L -s -o /usr/local/bin/ncf-setup https://repository.rudder.io/tools/ncf-setup
   else
     wget -q -O /usr/local/bin/rudder-setup https://repository.rudder.io/tools/rudder-setup
     wget -q -O /usr/local/bin/ncf-setup https://repository.rudder.io/tools/ncf-setup
