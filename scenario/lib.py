@@ -65,6 +65,7 @@ def enum(*sequential, **named):
 
 # Error handling mode in scenario
 Err = enum('CONTINUE', 'BREAK', 'FINALLY', 'IGNORE')
+RudderLog = enum('APACHE', 'WEBAPP', 'ALL')
 
 # This method is used to prevent running new test in cases of error
 # If there's been error in scenario, then only the test with Err.FINALLY must be run
@@ -87,12 +88,20 @@ def should_run(test, mode):
 # If the test starts with a /, then the full path of the test will be used,
 # otherwise it will look for a ruby script in specs/tests directory
 def run(target, test, error_mode, **kwargs):
-  """ Run one test in a scenario 
+  """ Run one test in a scenario without any log dump """
+  return run_and_dump(target, test, error_mode, None, **kwargs)
+
+def run_and_dump(target, test, error_mode, rudder_log, **kwargs):
+  """ Run one test in a scenario and rudder_log <rudder_log> log file if it fails
   error_mode can be : 
    - CONTINUE: continue testing even if this fail, should be the default
    - BREAK: stop the scenario if this fail, for tests that change a state
    - FINALLY: always run this test, for cleaning after a scenario, broken or not
    - IGNORE: will ignore the test test result in the global testing result
+  rudder_log can be:
+   - APACHE: printing the apache access and error logs
+   - WEBAPP: printing the latest webapp log
+   - ALL   : printing all the logs described above
   """
   if not should_run(test, error_mode):
     return
@@ -135,20 +144,61 @@ def run(target, test, error_mode, **kwargs):
       scenario.errors = True
       if error_mode == Err.BREAK:
         scenario.stop = True
+    if rudder_log is not None:
+      dump_rudder_logs(target, rudder_log)
     return retcode
   else:
     return 0
 
-def run_and_retry(target, test, retry, **kwargs):
-  """ Run a test and retry it <retry> times if it fails """
-  for iTry in range(1, retry):
-    if iTry == retry:
-      result = run(target, test, Err.BREAK, **kwargs)
+def dump_apache_logs():
+  """ Print the rudder apache logs """
+  print("Dumping the apache error logs:\n")
+  dump_command = "tail -n 50 /var/log/rudder/apache2/error.log"
+  dump_process = shell_on('server', dump_command, live_output=True)
+  print("Dumping the apache access logs:\n")
+  dump_command = "tail -n 50 /var/log/rudder/apache2/access.log"
+  dump_process = shell_on('server', dump_command, live_output=True)
+
+def dump_webapp_logs():
+  """ Print the rudder webapp logs """
+  print("Dumping the webapp logs:\n")
+  dump_command = "tail -n 100 /var/log/rudder/webapp/$(date +%Y_%m_%d.stderrout.log)"
+  dump_process = shell_on('server', dump_command, live_output=True)
+
+def dump_all_logs():
+  """ Print the rudder server logs """
+  dump_webapp_logs
+  dump_apache_logs
+
+def dump_rudder_logs(target, rudder_log):
+  """ Print the given rudder logs, <rudder_log> is a RudderLog enum:
+   - APACHE: printing the apache access and error logs
+   - WEBAPP: printing the latest webapp log
+   - ALL   : printing all the logs described above """
+
+  switcher = {
+    RudderLog.APACHE: dump_apache_logs,
+    RudderLog.WEBAPP: dump_webapp_logs,
+    RudderLog.ALL   : dump_all_logs
+  }
+
+  return switcher[rudder_log]()
+
+def run_retry_and_dump(target, test, retry, rudder_log, **kwargs):
+  """ Run a test and retry it <retry> times if it fails
+   if every retries fail, the given <rudder_log> will be dumped """
+  for iTry in range(0, retry):
+    if iTry == retry-1:
+      result = run_and_dump(target, test, Err.BREAK, rudder_log, **kwargs)
     else:
       result = run(target, test, Err.IGNORE, **kwargs)
     if result == 0 :
       break
     sleep(10)
+
+def run_and_retry(target, test, retry, **kwargs):
+  """ Run a test and retry it <retry> times if it fails """
+  run_retry_and_dump(target, test, retry, None, **kwargs)
 
 def run_on(kind = "all", *args, **kwargs):
   """ Run a test on nodes of type kind """

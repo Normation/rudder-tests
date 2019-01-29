@@ -26,7 +26,7 @@ run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
 
 # accept nodes
 for host in scenario.nodes("agent"):
-  run_and_retry('localhost', 'agent_accept', 5, ACCEPT=host)
+  run_retry_and_dump('localhost', 'agent_accept', 5, RudderLog.APACHE, ACCEPT=host)
 
 # Add a rule
 date0 = host_date('wait', Err.CONTINUE, "server")
