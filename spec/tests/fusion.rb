@@ -32,7 +32,7 @@ end
 describe command("sed -ne '/<OPERATINGSYSTEM>/,/<.OPERATINGSYSTEM>/p' /tmp/test.ocs") do
    its(:stdout) { should match /<NAME>(?i:#{osname}).*<.NAME>/ }
    its(:stdout) { should match /<FULL_NAME>(?i:#{fullname}).*<.FULL_NAME>/ }
-   its(:stdout) { should match /<VERSION>(?i:#{version[osname]})<.VERSION>/ }
+   its(:stdout) { should match /<VERSION>(?i:#{version[osname.downcase()]})<.VERSION>/ }
 end
 # >-rm -rf /tmp/x
 # >-mkdir /tmp/x
