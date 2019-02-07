@@ -150,7 +150,8 @@ $command = nil
 def provisioning_script(os, host_name, net, first_ip, 
               setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              aws: false, ncf_version:nil, cfengine_version:nil, ram:nil, provision:true
+              aws: false, ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
+              sync_file:nil
              )
 
   dev = false
@@ -162,6 +163,11 @@ def provisioning_script(os, host_name, net, first_ip,
   if setup == "dev-server"
     setup = "server"
     dev = true
+  end
+
+  sync_file_prefix = "/vagrant"
+  unless sync_file.nil?
+    sync_file_prefix = sync_file
   end
 
   # provisioning script
@@ -180,8 +186,8 @@ def provisioning_script(os, host_name, net, first_ip,
     end
   else
     command = "echo 'Starting VM setup'\n"
-    command += "/vagrant/scripts/cleanbox.sh\n"
-    command += "/vagrant/scripts/network.sh #{net} #{first_ip} \"@host_list@\"\n"
+    command += sync_file_prefix + "/scripts/cleanbox.sh #{sync_file_prefix}\n"
+    command += sync_file_prefix + "/scripts/network.sh #{net} #{first_ip} \"@host_list@\"\n"
     command += "export DOWNLOAD_USER=#{ENV['DOWNLOAD_USER']} DOWNLOAD_PASSWORD=#{ENV['DOWNLOAD_PASSWORD']}\n"
     if aws then
       command += "echo 'Setting up hostname'\n"
@@ -198,7 +204,7 @@ def provisioning_script(os, host_name, net, first_ip,
         command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
       end
       if setup == "server" then
-        command += "/vagrant/scripts/create-token\n"
+        command += sync_file_prefix + "/scripts/create-token\n"
         if dsc_plugin then
           command += "/opt/rudder/bin/rudder-pkg install-file /vagrant/rudder-plugins/rudder-plugin-dsc.rpkg\n"
         end
@@ -210,10 +216,10 @@ def provisioning_script(os, host_name, net, first_ip,
         end
       end
       if dev then
-        command += "/vagrant/scripts/dev.sh\n"
+        command += sync_file_prefix + "/scripts/dev.sh\n"
       end
       if demo then
-        command += "/vagrant/scripts/demo-server-setup.sh\n"
+        command += sync_file_prefix + "/scripts/demo-server-setup.sh\n"
       end
     end
   end
@@ -242,7 +248,8 @@ end
 def configure_aws(config, os, pf_name, pf_id, host_name, host_id,
               setup:'empty', version:nil, server:'', host_list:'',
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true
+              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
+              sync_file:nil
              )
 
   if setup == 'server' then
@@ -318,7 +325,8 @@ end
 def configure(config, os, pf_name, pf_id, host_name, host_id,
               setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true
+              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
+              sync_file:nil
              )
   # Parameters
   dev =  setup == "dev-server" 
@@ -344,6 +352,11 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   end
   memory = memory.to_s
 
+  sync_file_prefix = "/vagrant"
+  unless sync_file.nil?
+    sync_file_prefix = sync_file
+  end
+
   name = pf_name + "_" + host_name
   first_ip = 2
   $NET_PREFIX ||= 40
@@ -353,7 +366,8 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
 
   command = provisioning_script(os, host_name, net, first_ip,
               setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
-              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, ncf_version:"#{ncf_version}", cfengine_version:"#{cfengine_version}", provision:provision)
+              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, ncf_version:"#{ncf_version}", cfengine_version:"#{cfengine_version}", provision:provision,
+              sync_file:sync_file)
 
   # Configure
   config.vm.define (name).to_sym do |server_config|
@@ -382,6 +396,10 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     # this is lazy evaluated and so will contain the last definition of host list
     pf_hostlist = $platforms.fetch(pf_name) { { 'host_list' => [] } }
     host_list = pf_hostlist['host_list'].join(" ") + " " + host_list
+    unless sync_file.nil?
+      config.vm.synced_folder ".", "/vagrant", disabled: true
+      config.vm.provision "file", source: "./scripts/", destination: sync_file_prefix + "/scripts"
+    end
     server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
   end
 end
