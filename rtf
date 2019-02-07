@@ -277,9 +277,15 @@ def host_lines(platform, hosts, pf_id):
       # ram param
       if 'ram' in host:
         line += ", ram:"+ str(host['ram'])
-      # External provisionning
+      # external provisionning
       if 'provision' in host:
         line += ", provision:false"
+      # sync_file, to pass mandatory scripts to the guest
+      # if defined, must be a path, without ending /
+      # scripts used to provision the machine will be put in the given path
+      # and will be uploaded with scp instead of file sharing
+      if 'sync_file' in host:
+        line += ", sync_file:'" + host['sync_file'] + "'"
       line += ")\n"
       lines.append(line)
   return lines
@@ -609,6 +615,7 @@ class Platform:
 
     for hostname in sorted(self.hosts.keys(), reverse=True):
       host = self.hosts[hostname]
+      vagrant_shared = host.info['sync_file'] if 'sync_file' in host.info else '/vagrant'
       if ('provision' in host.info and 'python' in host.info['provision']):
         unsupported = os.getenv('UNSUPPORTED', "")
         repoPrefix = "rtf/"
@@ -637,7 +644,7 @@ class Platform:
         host.run("sed -i s/set\ -e/set\ -xe/g /usr/local/bin/rudder-setup")
         host.run("%s ALLOWEDNETWORK=%s/24 UNSUPPORTED=%s REPO_PREFIX=%s ; /usr/local/bin/rudder-setup setup-%s \"%s\" \"%s\"" %(proxy, allowedNetwork, unsupported, repoPrefix, rudderSetup, rudderVersion, server), live_output=True)
         if 'server' in host.info['rudder-setup']:
-          host.run("/vagrant/scripts/create-token")
+          host.run(vagrant_shared + "/scripts/create-token")
     relay_list = []
     # Find all relays uuid
     for host in self.hosts.values():

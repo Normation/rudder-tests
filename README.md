@@ -117,6 +117,8 @@ Platforms are in platforms/
 - "rudder-setup" describe the type of setup, currently only "agent" and "server" are supported
 - "system" is one of the variable of known boxes from vagrant.rb
 - "osname" is a substring of the OS name that is discovered by fusion (this is used by the fusion test)
+- "provision" empty by default, define the script source to provision the vm, currently only "python" is supported
+- "sync_file" folder path (without trailing "/") to deposit script files used in provisioning. If not set, vagrant will use the shared-files to upload the files
 
 Using libvirt provider with rtf
 --------------------------

@@ -3,6 +3,11 @@
 # Various cleanups to apply on the Vagrant boxes we use.
 # no set -e since some things are expected to fail
 
+SCRIPTS_PREFIX="/vagrant"
+if [ "$1" != "" ]; then
+  SCRIPTS_PREFIX=$1
+fi
+
 postclean() {
   ### THINGS TO DO ON AN ALREADY CLEAN BOX
   if type curl >/dev/null 2>/dev/null
@@ -15,9 +20,9 @@ postclean() {
   fi
   
   chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
-  cp /vagrant/scripts/ncf /usr/local/bin/
-  cp /vagrant/scripts/lib.sh /usr/local/bin/
-  cp /vagrant/scripts/version-test.sh /usr/local/bin/
+  cp $SCRIPTS_PREFIX/scripts/ncf /usr/local/bin/
+  cp $SCRIPTS_PREFIX/scripts/lib.sh /usr/local/bin/
+  cp $SCRIPTS_PREFIX/scripts/version-test.sh /usr/local/bin/
   chmod +x /usr/local/bin/ncf
   
   id > /tmp/xxx
@@ -266,7 +271,10 @@ for user in root vagrant
 do
   home=`getent passwd ${user} | cut -d: -f6`
   shopt -s dotglob 2>/dev/null || true
-  rsync -rl /vagrant/scripts/files/ "${home}"/
+  if [ -d "/tmp/vagrant-cache" ]
+  then
+    rsync -rl $SCRIPTS_PREFIX/scripts/files/ "${home}"/
+  fi
 done
 
 # Clean vagrant-cachier cached files for rudder packages 
