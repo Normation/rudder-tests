@@ -589,11 +589,18 @@ class Platform:
   def __init__(self, name, platform_info, override):
     self.name = name
     self.hosts = {}
+    self.plugins = {}
     self.provider = "virtualbox"
     # manage default values
     default = platform_info['default']
+
+    try:
+      self.plugins = platform_info['plugins']
+    except:
+      pass
+
     for hostname, host in platform_info.items():
-      if hostname == "default":
+      if hostname in ["default", "plugins"]:
         continue
       host_info = copy.deepcopy(default)
       if not "provider" in host_info:
@@ -644,7 +651,21 @@ class Platform:
         host.run("sed -i s/set\ -e/set\ -xe/g /usr/local/bin/rudder-setup")
         host.run("%s ALLOWEDNETWORK=%s/24 UNSUPPORTED=%s REPO_PREFIX=%s ; /usr/local/bin/rudder-setup setup-%s \"%s\" \"%s\"" %(proxy, allowedNetwork, unsupported, repoPrefix, rudderSetup, rudderVersion, server), live_output=True)
         if 'server' in host.info['rudder-setup']:
-          host.run(vagrant_shared + "/scripts/create-token")
+          host.run("/vagrant/scripts/create-token")
+
+    # Install the plugins
+    for host in self.hosts.values():
+      if 'server' in host.info['rudder-setup']:
+        host.run("mkdir -p /tmp/plugins")
+        for pluginName, pluginVersion in self.plugins.items():
+          rudderVersion = host.info['rudder-version']
+          version_mode = "release"
+          if "-nightly" in pluginVersion:
+            pluginVersion = plugin_version.replace("-nightly", "")
+          print("Installing rudder-plugin-{0}-{1}-{2}\n".format(pluginName, rudderVersion, pluginVersion))
+          host.run("wget \"http://publisher.normation.com/plugins/{0}/{1}/{2}/rudder-plugin-{1}-{0}-{3}.rpkg\" -O \"/tmp/plugins/rudder-plugin-{1}-{0}-{3}.rpkg\" -q".format(rudderVersion, pluginName, version_mode, pluginVersion))
+          host.run("/opt/rudder/bin/rudder-pkg install-file /tmp/plugins/rudder-plugin-{1}-{0}-{2}.rpkg".format(rudderVersion, pluginName, pluginVersion))
+
     relay_list = []
     # Find all relays uuid
     for host in self.hosts.values():

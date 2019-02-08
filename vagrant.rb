@@ -205,15 +205,6 @@ def provisioning_script(os, host_name, net, first_ip,
       end
       if setup == "server" then
         command += sync_file_prefix + "/scripts/create-token\n"
-        if dsc_plugin then
-          command += "/opt/rudder/bin/rudder-pkg install-file /vagrant/rudder-plugins/rudder-plugin-dsc.rpkg\n"
-        end
-        if windows_plugin then
-          command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup windows-plugin /vagrant/rudder-plugins/rudder-plugin-windows-server.zip\n"
-        end
-        if advanced_reporting then
-          command += "REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup reporting-plugin /vagrant/rudder-plugins/advanced-reporting.tgz\n"
-        end
       end
       if dev then
         command += sync_file_prefix + "/scripts/dev.sh\n"

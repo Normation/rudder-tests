@@ -112,6 +112,7 @@ Platforms are in platforms/
 - Platforms are described in json format
 - A scenario may have some dependency on a platform content such as host types and names
 - The "default" entry in inherited by all other entries
+- The "plugins" entry is used to define the plugins that will be installed on the platform server, currently only available for the Rudder dev team.
 - Each entry is a node name
 - A node name should be "server" or "agentX", this is an assumption in some scenario and in the cleanbox initialization script
 - "rudder-setup" describe the type of setup, currently only "agent" and "server" are supported
@@ -119,6 +120,14 @@ Platforms are in platforms/
 - "osname" is a substring of the OS name that is discovered by fusion (this is used by the fusion test)
 - "provision" empty by default, define the script source to provision the vm, currently only "python" is supported
 - "sync_file" folder path (without trailing "/") to deposit script files used in provisioning. If not set, vagrant will use the shared-files to upload the files
+
+```json
+{
+  "default": { "run-with": "vagrant", "rudder-version": "5.0", "system": "debian9", "inventory-os": "debian" },
+  "plugins": { "branding": "1.3", "notify": "1.0" },
+  "server" : { "rudder-setup": "server", "sync_file": "/tmp/install" }
+}
+```
 
 Using libvirt provider with rtf
 --------------------------
