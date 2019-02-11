@@ -651,7 +651,7 @@ class Platform:
         host.run("sed -i s/set\ -e/set\ -xe/g /usr/local/bin/rudder-setup")
         host.run("%s ALLOWEDNETWORK=%s/24 UNSUPPORTED=%s REPO_PREFIX=%s ; /usr/local/bin/rudder-setup setup-%s \"%s\" \"%s\"" %(proxy, allowedNetwork, unsupported, repoPrefix, rudderSetup, rudderVersion, server), live_output=True)
         if 'server' in host.info['rudder-setup']:
-          host.run("/vagrant/scripts/create-token")
+          host.run(vagrant_shared + "/scripts/create-token")
 
     # Install the plugins
     for host in self.hosts.values():
