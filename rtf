@@ -22,6 +22,7 @@ Usage:
     rtf scenario doc <scenario>
     rtf scenario env <platform>
     rtf scenario ncf_tests <platform> <version> [--cfengine-version=<cfengine_version>]
+    rtf scenario ncf_tests <platform> <pull-request-number> [--cfengine-version=<cfengine_version>]
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]... [--destroy-on-error]
     rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--start=<test number>] [--destroy-on-error]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
@@ -115,6 +116,7 @@ Commands
         Setup the given platform, install ncf from git in the specified version and then run the ncf tests.
         When no cfengine version is specified, tests will be executed with the cfengine agent shipped with the
         Rudder agent in the same version than the ncf version specified.
+        You can also test a give ncf pull request by remplacing the version parameter by the redmine number, like 14641
 
     rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
         Run a single scenario on a given platform.
@@ -418,6 +420,14 @@ class Vagrant(Host):
     if not live_output:
       token = re.sub('==>.*\n', '', value)
       return token.rstrip()
+
+  def run_with_ret_code(self, command, fail_exit=True, live_output=False):
+    """ Run a command as root on this host """
+    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit, live_output=live_output)
+    if not live_output:
+      token = re.sub('==>.*\n', '', value)
+      return (code, token.rstrip())
+    return (code, "")
 
   def cached_run(self, command, fail_exit=True):
     if command in self.commands:

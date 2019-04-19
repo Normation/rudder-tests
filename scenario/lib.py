@@ -4,6 +4,8 @@ import re
 import copy
 import os
 import json
+import requests
+import traceback
 from subprocess import Popen, check_output, PIPE, CalledProcessError
 from time import sleep
 from datetime import datetime
@@ -231,25 +233,44 @@ def finish():
 
 def shell_on(hostname, command, live_output=False):
   """ Run a shell command on a host and return its output without failing if there is an error """
-  try:
-    if live_output:
-      print("+" + command)
-    if hostname == 'localhost':
-      return check_output("LANG=C " + command, shell=True)
-    else:
-      if hostname not in scenario.platform.hosts:
-        print("ERROR: No host named " + hostname)
-        return ""
-      host = scenario.platform.hosts[hostname]
-      return host.run(command, live_output=live_output)
-  except CalledProcessError, e:
-    print("ERROR(" + str(e.returncode) + ") in: " + command + " on " + hostname)
-    return e.output
-
+  return test_shell_on(hostname, command, error_mode=Err.IGNORE, live_output=live_output)
 
 def shell(command):
   """ Run a shell command on localhost and return its output without failing if there is an error """
   return shell_on('localhost', command)
+
+def test_shell_on(hostname, command, error_mode=Err.CONTINUE, live_output=False):
+  """
+      Run a shell command on a host and return its output without failing if there is an error
+      If the ret code is not zero, the test scenario will continue but will fail
+      Error_mode can be :
+       - CONTINUE: continue testing even if this fail, should be the default
+       - BREAK: stop the scenario if this fail, for tests that change a state
+       - IGNORE: will ignore the test test result in the global testing result
+  """
+  try:
+    if live_output:
+      print("+" + command)
+    if hostname == 'localhost':
+        return (0, check_output("LANG=C " + command, shell=True))
+    else:
+      if hostname not in scenario.platform.hosts:
+        print("ERROR: No host named " + hostname)
+        return (0, "")
+      host = scenario.platform.hosts[hostname]
+      fail_exit = True if error_mode == Err.BREAK else False
+      (returncode, output) = host.run_with_ret_code(command, fail_exit=fail_exit, live_output=live_output)
+      if returncode != 0:
+        raise CalledProcessError(returncode, command, output)
+      return (returncode, output)
+
+  except CalledProcessError as e:
+    print("ERROR(" + str(e.returncode) + ") in: " + command + " on " + hostname)
+    if error_mode != Err.IGNORE:
+      scenario.errors = True
+    if error_mode == Err.BREAK:
+      exit(1)
+    return(e.returncode, e.output)
 
 
 def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
@@ -358,3 +379,31 @@ def get_tests():
         tests.append(metadata)
 
   return tests
+
+def extract_redmine_issue_infos(ticket_id):
+  url="https://issues.rudder.io/issues/" + ticket_id + ".json"
+  ret = requests.get(url, headers = {'Content-Type': 'application/json' })
+  if ret.status_code == 200:
+    return ret.json()
+  else:
+   print("Could not found the issue " + ticket_id)
+   exit(1)
+
+def get_issue_rudder_branch(issue):
+  REDMINE_VERSION_DETECTOR = [ (r'master|.*~alpha\d+', r'master'), (r'4.2.0~prototype', r'prototype'), (r'(\d+\.\w\d*).*', r'\1') ]
+  for k,v in REDMINE_VERSION_DETECTOR:
+    if re.match(k, issue['issue']['fixed_version']['name']):
+      return re.sub(k, v, issue['issue']['fixed_version']['name'])
+
+def get_issue_rudder_version(issue):
+  return re.sub(r'(\d+\.\w\d*).*', r'\1', issue['issue']['fixed_version']['name'])
+
+def get_issue_pr(issue):
+    custom_fields = issue['issue']['custom_fields']
+    pr_counter = 0
+    for iField in custom_fields:
+      if iField['name'] == 'Pull Request' and iField['value'] != "":
+        pr_url = iField['value']
+        pr_counter += 1
+    if pr_counter == 1:
+      return pr_url
