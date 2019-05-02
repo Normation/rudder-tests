@@ -30,8 +30,8 @@ except:
 shell_on("agent", "wget -O /tmp/ncf-setup https://repository.rudder.io/tools/ncf-setup", live_output=True)
 # Call setup_ncf
 if not cfengine_version:
-  shell_on("agent", export_prefix + ";sh /tmp/ncf-setup test-local https://github.com/Normation/ncf.git#branches/rudder/" + tag + " rudder-" + tag + " --server-spec", live_output=True)
+  shell_on("agent", export_prefix + ";sh /tmp/ncf-setup test-local https://github.com/Normation/ncf.git#branches/rudder/" + tag + " rudder-" + tag + " --testinfra", live_output=True)
 else:
-  shell_on("agent", export_prefix + ";sh /tmp/ncf-setup test-local --server-spec https://github.com/Normation/ncf.git#branches/rudder/" + tag + " " + cfengine_version + " --server-spec", live_output=True)
+  shell_on("agent", export_prefix + ";sh /tmp/ncf-setup test-local --testinfra https://github.com/Normation/ncf.git#branches/rudder/" + tag + " " + cfengine_version + " --testinfra", live_output=True)
 
 finish()
