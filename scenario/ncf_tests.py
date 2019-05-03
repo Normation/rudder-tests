@@ -47,7 +47,7 @@ if re.match(r"^[0-9]+$", tag):
     branch_version = ret.text
     agent_version = redmine_version
 
-  test_shell_on("agent ", export_prefix + ";sh /tmp/ncf-setup test-pr https://github.com/Normation/ncf.git#" + branch_version + " rudder-" + agent_version + " " + pull_id + " --testinfra", live_output=True)
+  test_shell_on("agent", export_prefix + ";sh /tmp/ncf-setup test-pr https://github.com/Normation/ncf.git#" + branch_version + " rudder-" + agent_version + " " + pull_id + " --testinfra", live_output=True)
 # Testing a ncf version
 else:
   if not cfengine_version:
