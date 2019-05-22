@@ -36,3 +36,7 @@ ff02::1         ipv6-allnodes
 ff02::2         ipv6-allrouters
 ff02::3         ipv6-allhosts
 EOF
+
+# At least mandatory on debian10
+ifdown -a 2>/dev/null
+ifup -a 2>/dev/null
