@@ -1,6 +1,4 @@
 #!/bin/sh
-
-
 NET="$1"
 LAST_DIGIT_IP="$2"
 HOSTS="$3"
@@ -38,5 +36,14 @@ ff02::3         ipv6-allhosts
 EOF
 
 # At least mandatory on debian10
-ifdown -a 2>/dev/null
-ifup -a 2>/dev/null
+if [ -f "/etc/debian_version" ]
+then
+  cat /etc/debian_version | grep -q "10\."
+  retcode=$?
+  if [ "$retcode" = "0" ]
+  then
+    ifdown -a 2>/dev/null
+    ifup -a 2>/dev/null
+  fi
+fi
+
