@@ -279,6 +279,9 @@ def host_lines(platform, hosts, pf_id):
       # ram param
       if 'ram' in host:
         line += ", ram:"+ str(host['ram'])
+      # cpus param
+      if 'cpus' in host:
+        line += ", cpus:"+ str(host['cpus'])
       # external provisionning
       if 'provision' in host:
         line += ", provision:false"
