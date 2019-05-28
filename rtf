@@ -282,6 +282,9 @@ def host_lines(platform, hosts, pf_id):
       # cpus param
       if 'cpus' in host:
         line += ", cpus:"+ str(host['cpus'])
+      # disk_size param
+      if 'disk_size' in host:
+        line += ", disk_size:'"+ str(host['disk_size']) + "'"
       # external provisionning
       if 'provision' in host:
         line += ", provision:false"

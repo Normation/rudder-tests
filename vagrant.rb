@@ -98,7 +98,7 @@ require "open-uri"
 def configure_box(config, os, pf_name, host_name, 
                   setup:'empty', version:nil, server:'', host_list:'',
                   windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-                  ncf_version:nil, cfengine_version:nil, ram:nil, cpus:nil
+                  ncf_version:nil, cfengine_version:nil, ram:nil, cpus:nil, disk_size:nil
                  )
   pf = $platforms.fetch(pf_name) { |key| 
                                    $last_pf_id = $last_pf_id+1
@@ -113,7 +113,8 @@ def configure_box(config, os, pf_name, host_name,
   configure(config, os, pf_name, pf_id, host_name, host_id, 
             setup:setup, version:version, server:server, host_list:host_list,
             windows_plugin:windows_plugin, advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin,
-            ncf_version:ncf_version, cfengine_version:cfengine_version, ram:ram, cpus:cpus)
+            ncf_version:ncf_version, cfengine_version:cfengine_version, ram:ram, cpus:cpus, disk_size:disk_size
+)
 end
 
 $proxy = nil
@@ -151,7 +152,8 @@ def provisioning_script(os, host_name, net, first_ip,
               setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
               aws: false, ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil
+              sync_file:nil, cpus:nil, disk_size:nil
+
              )
 
   dev = false
@@ -240,7 +242,7 @@ def configure_aws(config, os, pf_name, pf_id, host_name, host_id,
               setup:'empty', version:nil, server:'', host_list:'',
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
               ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil
+              sync_file:nil, cpus:nil, disk_size:nil
              )
 
   if setup == 'server' then
@@ -317,7 +319,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
               setup:'empty', version:nil, server:'', host_list:'', 
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
               ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil
+              sync_file:nil, cpus:nil, disk_size:nil
              )
   # Parameters
   dev =  setup == "dev-server" 
@@ -372,6 +374,9 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       vb.customize ["modifyvm", :id, "--memory", memory]
       vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
       vb.cpus = allocated_cpus
+      unless disk_size.nil?
+        server_config.disksize.size = disk_size
+      end
     end
     server_config.vm.provider :libvirt do |vm|
       vm.memory = memory
