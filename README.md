@@ -12,6 +12,7 @@ To run Rudder Test Framework, first prepare the needed tools:
 - install serverspec http://serverspec.org/ (gem install serverspec)
 - install docopt, requests, pexpect and urllib3 python modules (pip install docopt requests pexpect urllib3)
 - install the vagrant-scp plugin (vagrant plugin install vagrant-scp)
+- install the vagrant-disksize plugin (vagrant plugin install vagrant-disksize)
 
 Additionally you can do this to get better performances:
 - have vagrant >= 1.8 (to be able to clone VM)
