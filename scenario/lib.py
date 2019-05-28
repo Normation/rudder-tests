@@ -156,16 +156,16 @@ def dump_apache_logs():
   """ Print the rudder apache logs """
   print("Dumping the apache error logs:\n")
   dump_command = "tail -n 50 /var/log/rudder/apache2/error.log"
-  dump_process = shell_on('server', dump_command, live_output=True)
+  (retcode, dump_process) = shell_on('server', dump_command, live_output=True)
   print("Dumping the apache access logs:\n")
   dump_command = "tail -n 50 /var/log/rudder/apache2/access.log"
-  dump_process = shell_on('server', dump_command, live_output=True)
+  (retcode, dump_process) = shell_on('server', dump_command, live_output=True)
 
 def dump_webapp_logs():
   """ Print the rudder webapp logs """
   print("Dumping the webapp logs:\n")
   dump_command = "tail -n 100 /var/log/rudder/webapp/$(date +%Y_%m_%d.stderrout.log)"
-  dump_process = shell_on('server', dump_command, live_output=True)
+  (retcode, dump_process) = shell_on('server', dump_command, live_output=True)
 
 def dump_all_logs():
   """ Print the rudder server logs """
@@ -278,7 +278,7 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
   if not should_run(name, error_mode):
     return
   # wait for promise generation
-  agent_uuid = shell(scenario.rcli + " nodes list | jq '.nodes | map(select(.hostname==\"" + hostname + "\")) | .[0].id'")
+  (retcode, agent_uuid) = shell(scenario.rcli + " nodes list | jq '.nodes | map(select(.hostname==\"" + hostname + "\" or .hostname ==\"" + hostname + ".rudder.local\")) | .[0].id'")
   agent_uuid = agent_uuid.rstrip().strip('"')
   if agent_uuid == "null":
     return
@@ -292,13 +292,13 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
     generated_old = "/var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder_promises_generated"
     generated_new = "/var/rudder/share/" + agent_uuid + "/rules/cfengine-community/rudder-promises-generated"
     cmd = "cat " + generated_new + " " + generated_old + " 2>/dev/null | head -n1"
-    datestr = shell_on(server, cmd)
+    (retcode, datestr) = shell_on(server, cmd)
     if datestr == "":
       continue
     if re.match(r'^\d+$', datestr):
       date = datestr
     else:
-      date = shell("date -d " + datestr + " +%s")
+      (retcode, date) = shell("date -d " + datestr + " +%s")
     if int(date) > int(date0):
       break
   if time >= timeout:
@@ -309,7 +309,7 @@ def host_date(name, error_mode, server):
   """ Return the current date on the host """
   if not should_run(name, error_mode):
     return None
-  return shell_on(server, "date +%s")
+  return shell_on(server, "date +%s")[1]
 
 
 def get_param(param, default):
