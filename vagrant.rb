@@ -399,7 +399,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       config.vm.synced_folder ".", "/vagrant", disabled: true
       config.vm.provision "file", source: "./scripts/", destination: sync_file_prefix + "/scripts"
     end
-    #server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
+    server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
     # Add new disk if specified
     config.trigger.after :up do |trigger|
       trigger.ruby do |env, machine|
