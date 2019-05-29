@@ -374,9 +374,6 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       vb.customize ["modifyvm", :id, "--memory", memory]
       vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
       vb.cpus = allocated_cpus
-      unless disk_size.nil?
-        server_config.disksize.size = disk_size
-      end
     end
     server_config.vm.provider :libvirt do |vm|
       vm.memory = memory
@@ -402,7 +399,18 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       config.vm.synced_folder ".", "/vagrant", disabled: true
       config.vm.provision "file", source: "./scripts/", destination: sync_file_prefix + "/scripts"
     end
-    server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
+    #server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
+    # Add new disk if specified
+    config.trigger.after :up do |trigger|
+      trigger.ruby do |env, machine|
+        unless disk_size.nil?
+          puts "Virtualbox UUID is #{machine.id}"
+          disk_path=File.dirname(__FILE__) + "/.vagrant/rtf_disks/#{machine.id}"
+          puts "RTF disk defined in #{disk_path}"
+          puts "Executing add_disk.sh on Host"
+          system("./scripts/add_disk.sh #{machine.id} #{disk_path} #{disk_size} #{name}")
+        end
+      end
+    end
   end
 end
-
