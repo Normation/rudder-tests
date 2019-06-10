@@ -36,9 +36,9 @@ for host in scenario.nodes("agent"):
 
 # Run agent
 run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
-run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="update")
+run_and_dump("relay", 'run_agent', Err.CONTINUE, RudderLog.APACHE, PARAMS="update")
 run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="update")
+run_and_dump("agent", 'run_agent', Err.CONTINUE, RudderLog.APACHE, PARAMS="update")
 run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="run")
 
 # Test rule result
