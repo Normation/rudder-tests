@@ -17,12 +17,12 @@ describe "Delete node"  do
   describe command($rudderCli + " nodes delete ") do
     # append uuid to command here because $uuid is not available within describe context
     it { subject.name << $uuid }
-    its(:exit_status) { 
-      should eq 0
-    }
     its(:stdout) { should match /"id": "#{$uuid}"/ }
     its(:stdout) { should match /"hostname": "#{acceptHost}/ }
     its(:stdout) { should match /"status": "deleted"/ }
+    its(:exit_status) { 
+      should eq 0
+    }
   end
 
 end

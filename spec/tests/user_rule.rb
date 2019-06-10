@@ -142,8 +142,8 @@ EOF
     after(:all) {
       File.delete(directiveFile)
     }
-    its(:exit_status) { should eq 0 }
     its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
+    its(:exit_status) { should eq 0 }
     it {
       # register output uuid for next command
       $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
@@ -181,8 +181,8 @@ EOF
     after(:all) {
       File.delete(ruleFile)
     }
-    its(:exit_status) { should eq 0 }
     its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
+    its(:exit_status) { should eq 0 }
     it {
       # register output uuid for next command
       $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()

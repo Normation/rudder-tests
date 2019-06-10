@@ -18,8 +18,8 @@ describe "Add a directive and a rule"  do
     $directive_id += 1
     # create directive
     describe command($rudderCli + " directive create --json=" + directiveFile + " " + technique + " '" + directiveName + "' | jq '.directives[0].id'") do
-      its(:exit_status) { should eq 0 }
       its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
+      its(:exit_status) { should eq 0 }
       it {
         # register output uuid for next command
         $directive_uuid ||= []
@@ -64,8 +64,8 @@ EOF
     after(:all) {
     #  File.delete(ruleFile)
     }
-    its(:exit_status) { should eq 0 }
     its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
+    its(:exit_status) { should eq 0 }
   end
 
 end

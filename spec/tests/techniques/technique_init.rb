@@ -9,7 +9,7 @@ describe "Initialise test"  do
   #describe command("PATH=#{root}:$PATH /usr/local/bin/ncf -f /tmp/init_technique.cf") do
     send_file(init, initfile)
     describe command("RUDDER_VERSION=#{version} #{initfile}") do
-      its(:exit_status) { should eq 0 }
       its(:stdout) { should_not match /error/i }
+      its(:exit_status) { should eq 0 }
     end
 end
