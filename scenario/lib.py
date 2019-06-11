@@ -112,6 +112,8 @@ def run_and_dump(target, test, error_mode, rudder_log, **kwargs):
   if target == 'localhost':
     env = 'TARGET_HOST=localhost '
   else:
+    if not target in scenario.platform.hosts:
+      return
     env = 'TARGET_HOST=' + scenario.pf + '_' + target + ' '
     # add version
     (major, minor) = scenario.host_rudder_version(target)
