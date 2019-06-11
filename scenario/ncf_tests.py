@@ -13,6 +13,20 @@ from pprint import pprint
 
 # Test begins, register start time
 start(__doc__)
+need_external_setup = ["ubuntu10_04", "ubuntu12_04", "ubuntu12_10", "ubuntu13_04", "sles11"]
+
+def execute(target, command):
+  shell("echo " + command, live_output=True)
+  test_shell_on(target, command, live_output=True)
+
+def external_setup():
+  tag = get_param("tag", "")
+  vagrant_shared = scenario.platform.hosts['agent'].info['sync_file'] if 'sync_file' in scenario.platform.hosts['agent'].info else '/vagrant'
+  execute("localhost", "$(pwd)/scripts/external_setup_host " + scenario.pf + " " + tag)
+  execute("agent", "mv " + vagrant_shared + "/external_files/" + scenario.pf + "/* /tmp/")
+  execute("agent", "rpm --import /tmp/rudder_rpm_key.pub")
+  execute("agent", "apt-key add /tmp/rudder_apt_key.pub")
+  return "/tmp/ncf"
 
 # Get CFEngine version used for the tests
 cfengine_version = get_param("cfengine_version", "")
@@ -27,7 +41,10 @@ except:
   export_prefix = ""
 
 # Get setup_ncf
-shell_on("agent", "wget -O /tmp/ncf-setup https://repository.rudder.io/tools/ncf-setup", live_output=True)
+if scenario.platform.hosts ['agent'].info['system'] in need_external_setup:
+  ncf_version = external_setup()
+else:
+  test_shell_on("agent", "wget -O /tmp/ncf-setup https://repository.rudder.io/tools/ncf-setup", live_output=True)
 
 # Get TAG
 tag = get_param("tag", "")
@@ -56,7 +73,10 @@ else:
   branch_version = ret.text
   if branch_version == "master":
     cfengine_version = cfengine_version + "-nightly"
-  test_shell_on("agent", export_prefix + ";sh /tmp/ncf-setup test-local https://github.com/Normation/ncf.git#" + branch_version + " " + cfengine_version + " --testinfra", live_output=True)
+
+  if scenario.platform.hosts ['agent'].info['system'] not in need_external_setup:
+    ncf_version = "https://github.com/Normation/ncf.git#" + branch_version
+  test_shell_on("agent", export_prefix + ";sh /tmp/ncf-setup test-local " + ncf_version + " " + cfengine_version + " --testinfra", live_output=True)
 
 # Re-dumping test results
 shell_on("agent", "find /tmp/tmp* -name \"test.log\" | xargs cat", live_output=True);
