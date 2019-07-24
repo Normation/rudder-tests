@@ -158,6 +158,7 @@ import pexpect
 import requests
 import docopt
 import scenario.lib
+import fcntl
 # Hack to import rudder lib, remove, some day ...
 sys.path.insert(0, "./rudder-api-client/lib.python")
 from rudder import RudderEndPoint, RudderError
@@ -351,15 +352,18 @@ class Vagrant(Host):
   def start(self):
     """ Setup and run this host """
     proxy = have_proxy()
+    lockFile = "/tmp/rtf-lock"
+    f = open(lockFile)
     while "making sure that no vagrant up are running":
-      (returncode, output) = shell("pgrep -f \"[v]agrant up\"", fail_exit=False)
-      if returncode != 1:
-        idle = random.randint(5, 10)
-        print("Another vagrant session is currently running, waiting " + str(idle) + " seconds")
-        time.sleep(idle)
-      else:
+      try:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
         break
+      except IOError:
+          idle = random.randint(5, 10)
+          print("Lock not available, waiting %s seconds"%idle)
+          time.sleep(idle)
     os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
+    f.close()
 
   def stop(self):
     """ Destroy this host """
