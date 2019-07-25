@@ -353,7 +353,7 @@ class Vagrant(Host):
     """ Setup and run this host """
     proxy = have_proxy()
     lockFile = "/tmp/rtf-lock"
-    f = open(lockFile)
+    f = open(lockFile, "w+")
     while "making sure that no vagrant up are running":
       try:
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
