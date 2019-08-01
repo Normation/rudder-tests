@@ -3,9 +3,21 @@
 sed -i "s/^IP=.*$/IP=*/" /opt/rudder/etc/rudder-slapd.conf 
 sed -i "s/^#IP=.*$/IP=*/" /etc/default/rudder-slapd
 
-echo "listen_addresses = '*'" >> /etc/postgresql/9.4/main/postgresql.conf
-echo "host    all         all         192.168.42.0/24       trust" >> /etc/postgresql/9.4/main/pg_hba.conf
-echo "host    all         all         10.0.0.0/16       trust" >> /etc/postgresql/9.4/main/pg_hba.conf
+PG_HBA_FILE=$(su - postgres -c "psql -t -P format=unaligned -c 'show hba_file';")
+if [ $? -ne 0 ]; then
+  echo "Postgresql failed to start! Halting"
+  exit 1
+fi
+
+PG_CONF_FILE=$(su - postgres -c "psql -t -P format=unaligned -c 'show config_file';")
+if [ $? -ne 0 ]; then
+  echo "Postgresql failed to start! Halting"
+  exit 1
+fi
+
+echo "listen_addresses = '*'" >> ${PG_CONF_FILE}
+echo "host    all         all         192.168.42.0/24       trust" >> ${PG_HBA_FILE}
+echo "host    all         all         10.0.0.0/16       trust" >> ${PG_HBA_FILE}
 /etc/init.d/postgresql restart
 
 
