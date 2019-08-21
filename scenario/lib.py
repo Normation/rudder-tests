@@ -237,9 +237,9 @@ def shell_on(hostname, command, live_output=False):
   """ Run a shell command on a host and return its output without failing if there is an error """
   return test_shell_on(hostname, command, error_mode=Err.IGNORE, live_output=live_output)
 
-def shell(command):
+def shell(command, live_output=False):
   """ Run a shell command on localhost and return its output without failing if there is an error """
-  return shell_on('localhost', command)
+  return shell_on('localhost', command, live_output=live_output)
 
 def test_shell_on(hostname, command, error_mode=Err.CONTINUE, live_output=False):
   """
