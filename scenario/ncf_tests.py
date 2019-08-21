@@ -27,7 +27,7 @@ except:
   export_prefix = ""
 
 # Get setup_ncf
-shell_on("agent", "wget -O /tmp/ncf-setup https://repository.rudder.io/tools/ncf-setup", live_output=True)
+test_shell_on("agent", "wget -O /tmp/ncf-setup https://repository.rudder.io/tools/ncf-setup", live_output=True)
 
 # Get TAG
 tag = get_param("tag", "")
