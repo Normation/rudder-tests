@@ -363,6 +363,7 @@ class Vagrant(Host):
           print("Lock not available, waiting %s seconds"%idle)
           time.sleep(idle)
     os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
+    fcntl.flock(f, fcntl.LOCK_UN)
     f.close()
 
   def stop(self):
