@@ -42,7 +42,7 @@ ENV.each { |key, value|
 
 url = $params['SERVER']
 token = $params['TOKEN']
-$rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token=' + token.to_s
+$rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token="' + token.to_s + '"'
 
 # Functions that can be used in tests
 def send_file(from, to)
