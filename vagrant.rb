@@ -42,6 +42,7 @@ $debian6 = "normation/debian-6-64"
 $debian7 = "normation/debian-7-64"
 $debian8 = "normation/debian-8-64"
 $debian9 = "normation/debian-9-64"
+$debian10 = "normation/debian-10-64"
 
 $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
@@ -165,6 +166,7 @@ def provisioning_script(os, host_name, net, first_ip,
   if setup == "dev-server"
     setup = "server"
     dev = true
+    dev_var="DEV_MODE=true"
   end
 
   sync_file_prefix = "/vagrant"
@@ -200,7 +202,7 @@ def provisioning_script(os, host_name, net, first_ip,
     end
     if provision == true then
       if setup != "empty" and setup != "ncf" then
-        command += "#{proxy} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
+        command += "#{proxy} #{dev_var} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
       end
       if setup == "ncf" then
         command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
