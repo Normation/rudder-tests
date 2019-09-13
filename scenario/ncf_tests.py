@@ -15,17 +15,13 @@ from pprint import pprint
 start(__doc__)
 need_external_setup = ["ubuntu10_04", "ubuntu12_04", "ubuntu12_10", "ubuntu13_04", "sles11"]
 
-def execute(target, command):
-  shell("echo " + command, live_output=True)
-  test_shell_on(target, command, live_output=True)
-
 def external_setup():
   tag = get_param("tag", "")
   vagrant_shared = scenario.platform.hosts['agent'].info['sync_file'] if 'sync_file' in scenario.platform.hosts['agent'].info else '/vagrant'
-  execute("localhost", "$(pwd)/scripts/external_setup_host " + scenario.pf + " " + tag)
-  execute("agent", "mv " + vagrant_shared + "/external_files/" + scenario.pf + "/* /tmp/")
-  execute("agent", "rpm --import /tmp/rudder_rpm_key.pub")
-  execute("agent", "apt-key add /tmp/rudder_apt_key.pub")
+  test_shell_on("localhost", "$(pwd)/scripts/external_setup_host " + scenario.pf + " " + tag, live_output=True)
+  test_shell_on("agent", "mv " + vagrant_shared + "/external_files/" + scenario.pf + "/* /tmp/", live_output=True)
+  shell_on("agent", "rpm --import /tmp/rudder_rpm_key.pub", live_output=True)
+  shell_on("agent", "apt-key add /tmp/rudder_apt_key.pub", live_output=True)
   return "/tmp/ncf"
 
 # Get CFEngine version used for the tests
