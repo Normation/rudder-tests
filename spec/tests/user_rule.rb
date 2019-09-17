@@ -10,7 +10,7 @@ directiveName = "#{name}"
 describe "Add a user directive and a rule"  do
 
   # Add a User directive
-  describe command($rudderCli + " directive create --json=" + directiveFile + " userManagement " + "\"" + directiveName + " Directive\"" + " | jq '.directives[0].id'") do
+  describe command($rudderCli + " directive create --json=" + directiveFile + " userManagement " + "\"" + directiveName + " Directive\"") do
     before(:all) {
       File.open(directiveFile, 'w') { |file| 
         file << <<EOF
