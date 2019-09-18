@@ -166,6 +166,7 @@ from rudder import RudderEndPoint, RudderError
 # Run a command in a shell like a script would do
 # And inform the user of its execution
 def shell(command, fail_exit=True, keep_output=True, live_output=False):
+  print("+" + command)
   if keep_output:
     if live_output:
       process = Popen(command, shell=True, universal_newlines=True)
@@ -448,20 +449,20 @@ class Vagrant(Host):
     return value
 
   def push(self, source, destination):
-    os.system("vagrant scp \"" + source + "\" \"" + self.hostid + ":" + destination + "\"")
+    shell("vagrant scp \"" + source + "\" \"" + self.hostid + ":" + destination + "\"")
 
   def pull(self, source, destination):
-    os.system("vagrant scp \"" + self.hostid + ":" + source + "\" \"" + destination + "\"")
+    shell("vagrant scp \"" + self.hostid + ":" + source + "\" \"" + destination + "\"")
 
   def push_techniques(self, directory):
     """ Replace all techniques with the provided ones """
     # First, erase technique directories matching the tested one
     name = os.path.basename(os.path.abspath(directory))
-    self.run("cd /var/rudder/configuration-repository/techniques/ && find -mindepth 1 -type d -name " + name + " | xargs rm -rf ", fail_exit=False)
+    self.run("cd /var/rudder/configuration-repository/techniques/ && find -mindepth 1 -type d -name " + name + " | xargs rm -rf ", fail_exit=False, live_output=True)
     # Then push new techniques
     self.push(directory, "/tmp/")
-    self.run("mv /tmp/" + name + " /var/rudder/configuration-repository/techniques/")
-    self.run("cd /var/rudder/configuration-repository/techniques/ && git add --all . && git commit --allow-empty -m 'Replacing all techniques with the test ones' && rudder server reload-techniques")
+    self.run("mv /tmp/" + name + " /var/rudder/configuration-repository/techniques/", live_output=True)
+    self.run("cd /var/rudder/configuration-repository/techniques/ && git add --all . && git commit --allow-empty -m 'Replacing all techniques with the test ones' && rudder server reload-techniques", live_output=True)
 
   def share(self, password):
     """ Shares this box via vagrant cloud """
@@ -837,6 +838,7 @@ class Platform:
       host_type.remove_platform(self.name)
 
   def push_techniques(self, directory):
+    print("Pushing technique to host")
     for host in self.hosts.values():
       if host.info['rudder-setup'] == 'server':
         host.push_techniques(directory)
