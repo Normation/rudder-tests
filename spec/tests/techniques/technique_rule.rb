@@ -17,7 +17,7 @@ describe "Add a directive and a rule"  do
 
     $directive_id += 1
     # create directive
-    describe command($rudderCli + " directive create --json=" + directiveFile + " " + technique + " '" + directiveName + "' | jq '.directives[0].id'") do
+    describe command($rudderCli + " directive create --json=" + directiveFile + " " + technique + " " + directiveName) do
       its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
       its(:exit_status) { should eq 0 }
       it {

@@ -207,9 +207,6 @@ def provisioning_script(os, host_name, net, first_ip,
       if setup == "ncf" then
         command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
       end
-      if setup == "server" then
-        command += sync_file_prefix + "/scripts/create-token\n"
-      end
       if dev then
         command += sync_file_prefix + "/scripts/dev.sh\n"
       end
