@@ -64,11 +64,9 @@ if re.match(r"^[0-9]+$", tag):
 # Testing a ncf version
 else:
   if not cfengine_version:
-    cfengine_version = "ci/rudder-" + tag
+    cfengine_version = "ci/rudder-" + tag + "-nightly"
   ret = requests.get("http://www.rudder-project.org/release-info/rudder/versions/" + tag + "/git_branch")
   branch_version = ret.text
-  if branch_version == "master":
-    cfengine_version = cfengine_version + "-nightly"
 
   if scenario.platform.hosts ['agent'].info['system'] not in need_external_setup:
     ncf_version = "https://github.com/Normation/ncf.git#" + branch_version
