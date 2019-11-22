@@ -1,6 +1,5 @@
 {
-  "default":{ "run-with": "vagrant", "rudder-version": "4.1", "system": "debian9", "inventory-os": "debian" },
+  "default":{ "run-with": "vagrant", "rudder-version": "5.0", "system": "debian10", "inventory-os": "debian" },
   "server": { "rudder-setup": "demo-server" },
-  "relay":  { "rudder-setup": "relay" },
-  "agentbr": { "rudder-setup": "agent", "server": "relay", "system": "centos7" }
+  "agentbr": { "rudder-setup": "agent", "system": "centos7" }
 }

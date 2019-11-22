@@ -1,5 +1,5 @@
 {
-  "default":{ "provider":"aws", "run-with": "vagrant", "rudder-version": "4.1", "system": "ubuntu16_04", "inventory-os": "debian" },
+  "default":{ "provider":"aws", "run-with": "vagrant", "rudder-version": "5.0", "system": "ubuntu16_04", "inventory-os": "debian" },
   "server": { "rudder-setup": "server" },
   "agent1": { "rudder-setup": "agent"}
 }
