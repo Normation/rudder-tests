@@ -165,10 +165,21 @@ We provide a platform to launch your environment, just run:
 ```
 You can also add a dev server to any platform by setting it's "rudder-setup" parameter to "dev-server" (like we do in dev.json)
 
-To use the provided configuration file in your Eclipse, just add this line the project run configuration arguments:
+To use the provided configuration file in your Eclipse/IntelliJ/IDE of your choice, just add this line the project run configuration arguments:
 ```
 -Drudder.configFile=<path-to-rudder-tests>/dev/configuration.properties
 ```
+
+You will also need:
+- techniques in /var/rudder/configuration-repository/techniques, writable by the user running Java
+- init a git repository in /var/rudder/configuration-repository
+```
+cd /var/rudder/configuration-repository
+git init
+git add .
+git commit -m "Initial commit"
+```
+- /var/log/rudder/core/ and /var/log/rudder/webapps folder writable by the user running Java
 
 Using aws to provide hosts
 ------------------------
