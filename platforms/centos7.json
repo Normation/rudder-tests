@@ -1,7 +1,7 @@
 {
-  "default":{ "run-with": "vagrant", "rudder-version": "4.1", "system": "centos7", "inventory-os": "centos" },
+  "default":{ "run-with": "vagrant", "rudder-version": "5.0", "system": "centos7", "inventory-os": "centos" },
   "server": { "rudder-setup": "server" },
   "relay": { "rudder-setup": "relay" },
-  "agent2": { "rudder-setup": "agent" , "system": "centos6", "server" : "relay" },
-  "agent3": { "rudder-setup": "agent" , "system": "centos5"}
+  "agent2": { "rudder-setup": "agent", "system": "centos6","server" : "relay" },
+  "agent3": { "rudder-setup": "agent", "system": "centos5"}
 }

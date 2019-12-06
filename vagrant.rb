@@ -23,6 +23,7 @@ $centos5 = "normation/centos-5-64"
 $centos6 = "geerlingguy/centos6"
 $centos6x32 = "bento/centos-6.7-i386"
 $centos7 = "geerlingguy/centos7"
+$centos8 = "geerlingguy/centos8"
 
 $rhel5 = $centos5
 $rhel6 = $centos6
@@ -324,7 +325,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   dev =  setup == "dev-server" 
 
   if setup =~ /server/ then
-    memory = 1536 
+    memory = 2048
     if windows_plugin then
       memory += 512
     end

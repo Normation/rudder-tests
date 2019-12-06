@@ -34,6 +34,17 @@ if [ -f /etc/yum.conf ] && [ $(getconf LONG_BIT) == 64 ]
 then
   echo "exclude=*.i386 *.i686" >> /etc/yum.conf
 fi
+# Temporary bis
+if [ $(uname -m) = "x86_64" ]
+then
+  curl -L -s -o /usr/bin/jq "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"
+  chmod +x /usr/bin/jq
+elif [ $(uname -m) = "i386" ]
+then
+  curl -L -s -o /usr/bin/jq "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux32"
+  chmod +x /usr/bin/jq
+fi
+
 
 # box is clean
 if [ -f /root/clean ]
