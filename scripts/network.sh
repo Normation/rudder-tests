@@ -35,15 +35,4 @@ ff02::2         ipv6-allrouters
 ff02::3         ipv6-allhosts
 EOF
 
-# At least mandatory on debian10
-if [ -f "/etc/debian_version" ]
-then
-  cat /etc/debian_version | grep -q "10\."
-  retcode=$?
-  if [ "$retcode" = "0" ]
-  then
-    ifdown -a 2>/dev/null
-    ifup -a 2>/dev/null
-  fi
-fi
 
