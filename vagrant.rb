@@ -388,6 +388,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
       server_config.vm.network :forwarded_port, guest: 5432, host: 15432
 
       server_config.vm.synced_folder "/var/rudder/share", "/var/rudder/share", :create => true
+      server_config.vm.synced_folder "/var/rudder/inventories", "/var/rudder/inventories", :create => true, :owner => "root", :group => "root"
       server_config.vm.synced_folder "/var/rudder/cfengine-community/inputs", "/var/rudder/cfengine-community/inputs", :create => true, :owner => "root", :group => "root"
     end
     server_config.vm.network :private_network, ip: ip
