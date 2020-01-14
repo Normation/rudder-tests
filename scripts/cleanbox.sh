@@ -9,6 +9,7 @@ if [ "$1" != "" ]; then
 fi
 
 postclean() {
+  mkdir -p /usr/local/bin
   ### THINGS TO DO ON AN ALREADY CLEAN BOX
   if type curl >/dev/null 2>/dev/null
   then
