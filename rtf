@@ -23,7 +23,7 @@ Usage:
     rtf scenario env <platform>
     rtf scenario ncf_tests <platform> <version> [--cfengine-version=<cfengine_version>]
     rtf scenario ncf_tests <platform> <pull-request-number> [--cfengine-version=<cfengine_version>]
-    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]... [--destroy-on-error]
+    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]... [--destroy-on-error] [--json=<json>]
     rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--start=<test number>] [--destroy-on-error]
     rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
     rtf test from-directive <platform> <uuid> <test_name> <path>
@@ -613,6 +613,10 @@ class Platform:
     self.hosts = {}
     self.plugins = {}
     self.provider = "virtualbox"
+
+    # Initialized at setup time
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    self.client_path = script_dir + "/rudder-api-client"
     # manage default values
     default = platform_info['default']
 
@@ -702,7 +706,7 @@ class Platform:
           # Environment setup
           rudder_url = host.get_url()
           token = host.run('cat /var/rudder/run/api-token')
-          setenv(client_path, rudder_url, token)
+          scenario.lib.setenv(client_path, rudder_url, token)
           for relay in relay_list:
             # Accept the relay
             rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
@@ -907,7 +911,7 @@ class Platform:
     #  exit(2)
     return (rudder_url, token)
 
-  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params, startTestNumber, destroyOnError=False):
+  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params, startTestNumber, destroyOnError=False, json_file=None):
     """ Run a scenario on this platform """
     try:
       # test ruby binary
@@ -934,8 +938,18 @@ class Platform:
         kv = param.split('=')
         parameters[kv[0]] = kv[1]
       scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters, startTestNumber)
-      setenv(client_path, rudder_url, token)
-      importlib.import_module("scenario." + name)
+      scenario.lib.setenv(client_path, rudder_url, token)
+      module = importlib.import_module("scenario." + name)
+
+      scenario_to_run = getattr(module, "Scenario")
+      if json_file is not None:
+        with open(json_file) as f:
+          data = json.load(f)
+      else:
+          data = None
+      s = scenario_to_run(data)
+      s.run()
+
       if scenario.lib.scenario.errors:
         print("Test scenario '"+ name +"' failed on platform '" + self.name + "'")
         exit(5)
@@ -946,7 +960,7 @@ class Platform:
   def print_environment(self, client_path):
     """ Print environment used to run tests on this platform """
     (rudder_url, token) = self.api_connection_info()
-    setenv(client_path, rudder_url, token)
+    scenario.lib.setenv(client_path, rudder_url, token)
     print("export PATH=" + os.environ['PATH'])
     print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
     print("export RUDDER_SERVER=" + os.environ['RUDDER_SERVER'])
@@ -1062,14 +1076,6 @@ The test content has been generated in %s, it contains:
 
 def empty_handler(signum, frame):
   pass
-
-def setenv(client_path, url, token):
-  """ Set environment variables for command calls """
-  if client_path is not None:
-    os.environ['PATH'] += ":" + client_path + "/cli"
-    os.environ['PYTHONPATH'] = client_path +  "/lib.python"
-  os.environ['RUDDER_SERVER'] = url
-  os.environ['RUDDER_TOKEN'] = token
 
 def load_json(filename):
   """ Load a commented json """
@@ -1383,7 +1389,7 @@ if __name__ == "__main__":
       if filter == []:
         filter = None
       platform = get_platform(args['<platform>'])
-      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'], args['--start'], destroyOnError=args['--destroy-on-error'])
+      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'], args['--start'], destroyOnError=args['--destroy-on-error'], json_file=args['--json'])
     elif args['ncf_tests']:
       platform = get_platform(args['<platform>'], {})
       platform.setup(client_path)

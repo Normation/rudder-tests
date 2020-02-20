@@ -12,7 +12,7 @@ from datetime import datetime
 from pprint import pprint
 
 class Scenario:
-  """ Holds a scenario data 
+  """ Holds a scenario data
   Most scenario related methods are global and not in this class to make scenario writing look like script writing
   """
   def __init__(self, platform, rspec, rcli, frmt, run_only, run_finally, err_stop, params, startTestNumber):
@@ -46,7 +46,7 @@ class Scenario:
     match = re.match(r'^Rudder agent (\d+)\.(\d+)\..*', version_line)
     if match:
       return (match.group(1), match.group(2))
-    else: 
+    else:
       return ("", "")
 
   def server_rudder_version(self):
@@ -95,7 +95,7 @@ def run(target, test, error_mode, **kwargs):
 
 def run_and_dump(target, test, error_mode, rudder_log, **kwargs):
   """ Run one test in a scenario and rudder_log <rudder_log> log file if it fails
-  error_mode can be : 
+  error_mode can be :
    - CONTINUE: continue testing even if this fail, should be the default
    - BREAK: stop the scenario if this fail, for tests that change a state
    - FINALLY: always run this test, for cleaning after a scenario, broken or not
@@ -345,7 +345,7 @@ def get_tests():
         root = os.path.abspath(os.path.dirname(metadata_file))
         metadata['local_root'] = root
         metadata['remote_root'] = root.replace(technique_root,  "/var/rudder/configuration-repository/techniques/")
- 
+
         # make directives path absolute
         directives = []
         for directive in metadata['directives']:
@@ -353,7 +353,7 @@ def get_tests():
           _file_must_exist(path)
           directives.append(path)
         metadata['directives'] = directives
-  
+
         # make checks path absolute
         checks = []
         for check in metadata['checks']:
@@ -367,7 +367,7 @@ def get_tests():
         for init in metadata['inits']:
           path = root+'/'+init
           _file_must_exist(path)
-          inits.append(path)        
+          inits.append(path)
         metadata['inits'] = inits
 
         # make sharedFiles path absolute
@@ -375,7 +375,7 @@ def get_tests():
         for iFile in metadata['sharedFiles']:
           path = root+'/'+iFile
           _file_must_exist(path)
-          sharedFiles.append(path)        
+          sharedFiles.append(path)
         metadata['sharedFiles'] = sharedFiles
 
         tests.append(metadata)
@@ -409,3 +409,11 @@ def get_issue_pr(issue):
         pr_counter += 1
     if pr_counter == 1:
       return pr_url
+
+def setenv(client_path, url, token):
+  """ Set environment variables for command calls """
+  if client_path is not None:
+    os.environ['PATH'] += ":" + client_path + "/cli"
+    os.environ['PYTHONPATH'] = client_path +  "/lib.python"
+  os.environ['RUDDER_SERVER'] = url
+  os.environ['RUDDER_TOKEN'] = token

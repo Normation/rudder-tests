@@ -2,6 +2,8 @@ require 'spec_helper'
 
 group = $params['GROUP']
 name = $params['NAME']
+username = $params['USERNAME']
+directive_id = $params['DIRECTIVE_ID']
 
 directiveFile = "/tmp/directive.json"
 ruleFile = "/tmp/rule.json"
@@ -12,117 +14,117 @@ describe "Add a user directive and a rule"  do
   # Add a User directive
   describe command($rudderCli + " directive create --json=" + directiveFile + " userManagement " + "\"" + directiveName + " Directive\"") do
     before(:all) {
-      File.open(directiveFile, 'w') { |file| 
+      File.open(directiveFile, 'w') { |file|
         file << <<EOF
 {
     "displayName": "#{name} Directive",
-    "enabled": true, 
-    "id": "009f509d-6afc-47fb-bcfb-5212925f02bc", 
-    "longDescription": "", 
+    "enabled": true,
+    "id": "#{directive_id}",
+    "longDescription": "",
     "parameters": {
         "section": {
-            "name": "sections", 
+            "name": "sections",
             "sections": [
                 {
                     "section": {
-                        "name": "Users", 
+                        "name": "Users",
                         "sections": [
                             {
                                 "section": {
                                     "name": "Home directory"
                                 }
-                            }, 
+                            },
                             {
                                 "section": {
-                                    "name": "Password", 
+                                    "name": "Password",
                                     "vars": [
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_PASSWORD", 
+                                                "name": "USERGROUP_USER_PASSWORD",
                                                 "value": "linux-shadow-sha256:$5$YNADkZ07$htb77c7EFCvMnMriWLRK.MWDWkQOuZ8ErNJxW.TAK2A"
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_PASSWORD_AIX", 
+                                                "name": "USERGROUP_USER_PASSWORD_AIX",
                                                 "value": "aix-ssha256:{ssha256}10$Sa/QDr9A9NY2wu7y$Onehh4RXy32259lis.Wm.s3NqH3rhLYaxGXuRy/I.67"
                                             }
                                         }
                                     ]
                                 }
-                            }, 
+                            },
                             {
                                 "section": {
-                                    "name": "UNIX specific options", 
+                                    "name": "UNIX specific options",
                                     "vars": [
                                         {
                                             "var": {
-                                                "name": "USERGROUP_FORCE_USER_GROUP", 
+                                                "name": "USERGROUP_FORCE_USER_GROUP",
                                                 "value": "false"
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_GROUP", 
+                                                "name": "USERGROUP_USER_GROUP",
                                                 "value": ""
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_HOME", 
+                                                "name": "USERGROUP_USER_HOME",
                                                 "value": ""
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_HOME_MOVE", 
+                                                "name": "USERGROUP_USER_HOME_MOVE",
                                                 "value": "false"
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_HOME_PERSONNALIZE", 
+                                                "name": "USERGROUP_USER_HOME_PERSONNALIZE",
                                                 "value": "true"
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_NAME", 
+                                                "name": "USERGROUP_USER_NAME",
                                                 "value": ""
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_SHELL", 
+                                                "name": "USERGROUP_USER_SHELL",
                                                 "value": "/bin/bash"
                                             }
-                                        }, 
+                                        },
                                         {
                                             "var": {
-                                                "name": "USERGROUP_USER_UID", 
+                                                "name": "USERGROUP_USER_UID",
                                                 "value": ""
                                             }
                                         }
                                     ]
                                 }
                             }
-                        ], 
+                        ],
                         "vars": [
                             {
                                 "var": {
-                                    "name": "USERGROUP_USER_ACTION", 
+                                    "name": "USERGROUP_USER_ACTION",
                                     "value": "add"
                                 }
-                            }, 
+                            },
                             {
                                 "var": {
-                                    "name": "USERGROUP_USER_LOGIN", 
-                                    "value": "testuser"
+                                    "name": "USERGROUP_USER_LOGIN",
+                                    "value": "#{username}"
                                 }
-                            }, 
+                            },
                             {
                                 "var": {
-                                    "name": "USERGROUP_USER_PASSWORD_POLICY", 
+                                    "name": "USERGROUP_USER_PASSWORD_POLICY",
                                     "value": "everytime"
                                 }
                             }
@@ -157,7 +159,7 @@ EOF
         file << <<EOF
 {
   "directives": [
-    "#{$uuid}"
+    "#{directive_id}"
   ],
   "displayName": "#{name} Rule",
   "longDescription": "Test User Rule Description",

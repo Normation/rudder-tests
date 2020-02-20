@@ -8,14 +8,18 @@ It may not be useful as a standalone test but can be used after another scenario
 """
 
 from scenario.lib import *
+class Scenario():
+  def __init__(self, data):
+    self.data = data
 
-# test begins, register start time
-start(__doc__)
+  def run(self):
+    # test begins, register start time
+    start(__doc__)
 
-# remove everything
-delete = get_param("nodes", "yes")
-for host in scenario.nodes("agent"):
-  run('localhost', 'delete_all', Err.FINALLY, DELETE_NODES=delete)
+    # remove everything
+    delete = get_param("nodes", "yes")
+    for host in scenario.nodes("agent"):
+      run('localhost', 'delete_all', Err.FINALLY, DELETE_NODES=delete)
 
-# test end, print summary
-finish()
+    # test end, print summary
+    finish()
