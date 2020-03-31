@@ -207,20 +207,20 @@ then
     # Add the repositories corresponding to the running SLES version
     if [ ${SLES_VERSION} -eq 11 ] && [ ${SLES_SERVICEPACK} -eq 1 ]
     then
-      zypper ar -f "http://ci.normation.com/sles-repo/SLES-11-SP1-DVD-x86_64-GM-DVD1/" "SLES_11_SP1_DVD1" > /dev/null
-      zypper ar -f "http://ci.normation.com/sles-repo/SLES-11-SP1-64-SDK-DVD1/"        "SLES_11_SP1_DVD2" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-11-SP1-Server-DVD-x86_64-GM-DVD1/" "SLES_11_SP1_DVD1" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-11-SP1-Server-64-SDK-DVD1/"        "SLES_11_SP1_DVD2" > /dev/null
     fi
 
     if [ ${SLES_VERSION} -eq 11 ] && [ ${SLES_SERVICEPACK} -eq 3 ]
     then
-      zypper ar -f "http://ci.normation.com/sles-repo/SLES-11-SP3-DVD-x86_64-GM-DVD1/" "SLES_11_SP3_DVD1" > /dev/null
-      zypper ar -f "http://ci.normation.com/sles-repo/SLES-11-SP3-DVD-x86_64-GM-DVD2/" "SLES_11_SP3_DVD2" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-11-SP3-Server-DVD-x86_64-GM-DVD1/" "SLES_11_SP3_DVD1" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-11-SP3-Server-DVD-x86_64-GM-DVD2/" "SLES_11_SP3_DVD2" > /dev/null
     fi
 
     if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -eq 1 ]
     then
-      zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
-      zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD2/" "SLES_12_SP1_DVD2" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-12-SP1-Server-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-12-SP1-Server-DVD-x86_64-GM-DVD2/" "SLES_12_SP1_DVD2" > /dev/null
       # preinstall mod_wsgi
       zypper --non-interactive install apache2 | grep '^.$'
       rpm -iv http://download.opensuse.org/repositories/Apache:/Modules/SLE_12_SP1/x86_64/apache2-mod_wsgi-4.5.2-58.1.x86_64.rpm
@@ -228,7 +228,7 @@ then
 
     if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -eq 2 ]
     then
-      zypper ar -f "http://ci.normation.com/sles-repo/SLES-12-SP1-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-12-SP1-Server-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
     fi
 
   else
