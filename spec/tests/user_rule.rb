@@ -17,7 +17,7 @@ describe "Add a user directive and a rule"  do
       File.open(directiveFile, 'w') { |file|
         file << <<EOF
 {
-    "displayName": "#{name} Directive",
+    "displayName": "#{name}",
     "enabled": true,
     "id": "#{directive_id}",
     "longDescription": "",
