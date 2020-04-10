@@ -10,9 +10,9 @@ chmod -R go-rwsx /home/vagrant/.ssh
 
 echo "UseDNS no" >> /etc/ssh/sshd_config
 
-# Minimize disk size
-dd if=/dev/zero of=/EMPTY bs=1M
-rm -f /EMPTY
-# Block until the empty file has been removed, otherwise, Packer
-# will try to kill the box while the disk is still full and that's bad
-sync
+# Add vagrant user to sudoers.
+echo "vagrant        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
+sed -i "s/^.*requiretty/#Defaults requiretty/" /etc/sudoers
+
+# Disable daily apt unattended updates.
+#echo 'APT::Periodic::Enable "0";' >> /etc/apt/apt.conf.d/10periodic

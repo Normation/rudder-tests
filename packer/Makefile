@@ -12,6 +12,7 @@ $(OS):
 	cp $@/*.dhall $(DESTDIR)/build
 	cp common/*.dhall $(DESTDIR)/build
 	dhall-to-json --file $(DESTDIR)/build/template.dhall > $(DESTDIR)/result.json
+	packer validate $(DESTDIR)/result.json
 
 clean:
 	rm -rf target

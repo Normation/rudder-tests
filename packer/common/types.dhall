@@ -32,6 +32,8 @@ let Virtualbox_iso =
       ,boot_command : List Text
       ,boot_wait : Text
       ,disk_size : Text
+      ,hard_drive_interface: Text
+      ,memory: Text
       ,shutdown_command : Text
       ,headless : Bool
       ,http_directory : Text
@@ -45,7 +47,7 @@ let Virtualbox_iso =
       ,ssh_username : Text
       ,ssh_password : Text
       ,ssh_port : Text
-      ,ssh_wait_timeout : Text
+      ,ssh_timeout : Text
     }
 
 let Builder = < file_builder: File_builder | vbox_builder: Virtualbox_iso>

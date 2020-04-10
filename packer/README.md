@@ -6,6 +6,7 @@ Small project to generate Packer files to maintain our vagrant cloud boxes.
 ## Dependencies
 
 * `dhall-to-json` binary, from [https://dhall-lang.org/](https://dhall-lang.org/)
+* packer: https://packer.io/downloads.html
 
 ## Build
 

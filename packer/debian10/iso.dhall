@@ -10,5 +10,7 @@ in {
 iso_urls = iso_urls,
 iso_checksum_type = iso_checksum_type,
 iso_checksum = iso_checksum,
-guest_os_type = guest_os_type
+guest_os_type = guest_os_type,
+os_name = "debian10",
+os_arch = "amd64"
 }

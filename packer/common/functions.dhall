@@ -7,11 +7,9 @@ let run = \(x : List Text) -> {
         ,scripts = x
 }
 
-let mk_virtualbox_iso : List Text -> Text -> Types.Vagrant_ssh -> Types.Virtualbox_iso =
+let mk_virtualbox_iso =
         \(boot_command : List Text) ->
-        \(os_name : Text) ->
         \(vagrant : Types.Vagrant_ssh) ->
-        let os = os_name
         let boot_command = boot_command
         let vagrant = vagrant
         let iso = ./iso.dhall
@@ -20,26 +18,28 @@ let mk_virtualbox_iso : List Text -> Text -> Types.Vagrant_ssh -> Types.Virtualb
         type = "virtualbox-iso"
         ,boot_command = boot_command
         ,boot_wait = "10s"
-        ,disk_size = "8192"
+        ,disk_size = "16384"
+        ,hard_drive_interface = "sata"
+        ,memory = "2048"
         ,shutdown_command = "echo 'vagrant'|sudo -S shutdown -P now"
         ,headless = True
-        ,http_directory = "http"
+        ,http_directory = "${iso.os_name}/http"
         ,guest_additions_path = "VBoxGuestAdditions_{{.Version}}.iso"
         ,virtualbox_version_file = ".vbox_version"
         ,iso_urls = iso.iso_urls
         ,iso_checksum_type = iso.iso_checksum_type
         ,iso_checksum = iso.iso_checksum
         ,guest_os_type = iso.guest_os_type
-        ,vm_name = "packer-${os}-amd64"
+        ,vm_name = "packer-${iso.os_name}-${iso.os_arch}"
         ,ssh_username = vagrant.ssh_username
         ,ssh_password = vagrant.ssh_password
         ,ssh_port = vagrant.ssh_port
-        ,ssh_wait_timeout = vagrant.ssh_wait_timeout
+        ,ssh_timeout = vagrant.ssh_wait_timeout
         }
         in virtualbox_iso
 
 
-let mk_file_builder : Text -> Text -> Types.File_builder =
+let mk_file_builder =
     \(content : Text) ->
     \(target : Text) ->
     let content = content
@@ -52,17 +52,17 @@ let mk_file_builder : Text -> Text -> Types.File_builder =
     }
     in file_builder
 
-let mk_shell_local : List Text -> Types.Shell_local =
+let mk_shell_local =
     \(inline : List Text) ->
     let inline = inline
     let shell_local : Types.Shell_local =
     {
-      type = "shell_local"
+      type = "shell-local"
     , inline = inline
     }
     in shell_local
 
-let mk_vagrant_post_processor : Text -> Types.Vagrant_post_processor =
+let mk_vagrant_post_processor =
     \(box : Text) ->
     let box = box
     let postproc : Types.Vagrant_post_processor =
@@ -72,7 +72,7 @@ let mk_vagrant_post_processor : Text -> Types.Vagrant_post_processor =
     }
     in postproc
 
-let mk_vagrant : Text -> Types.Vagrant_ssh =
+let mk_vagrant =
     \(user : Text) ->
     let user = user
     let vagrant : Types.Vagrant_ssh =

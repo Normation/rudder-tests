@@ -3,7 +3,7 @@
 "install <wait>",
 " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg <wait>",
 "debian-installer=en_US.UTF-8 <wait>",
-"auto <wait>",
+"auto=true <wait>",
 "kbd-chooser/method=fr <wait>",
 "keyboard-configuration/xkb-keymap=fr <wait>",
 "netcfg/get_hostname={{ .Name }} <wait>",
