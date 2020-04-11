@@ -12,45 +12,34 @@ let mk_virtualbox_iso =
         \(vagrant : Types.Vagrant_ssh) ->
         let boot_command = boot_command
         let vagrant = vagrant
-        let iso = ./iso.dhall
+        let system = ./system.dhall
         let virtualbox_iso : Types.Virtualbox_iso =
         {
-        type = "virtualbox-iso"
-        ,boot_command = boot_command
-        ,boot_wait = "10s"
-        ,disk_size = "16384"
-        ,hard_drive_interface = "sata"
-        ,memory = "2048"
-        ,shutdown_command = "echo 'vagrant'|sudo -S shutdown -P now"
-        ,headless = True
-        ,http_directory = "${iso.os_name}/http"
-        ,guest_additions_path = "VBoxGuestAdditions_{{.Version}}.iso"
-        ,virtualbox_version_file = ".vbox_version"
-        ,iso_urls = iso.iso_urls
-        ,iso_checksum_type = iso.iso_checksum_type
-        ,iso_checksum = iso.iso_checksum
-        ,guest_os_type = iso.guest_os_type
-        ,vm_name = "packer-${iso.os_name}-${iso.os_arch}"
-        ,ssh_username = vagrant.ssh_username
-        ,ssh_password = vagrant.ssh_password
-        ,ssh_port = vagrant.ssh_port
-        ,ssh_timeout = vagrant.ssh_wait_timeout
+            type = "virtualbox-iso"
+            ,boot_command = boot_command
+            ,boot_wait = "10s"
+            ,cpus = "1"
+            ,disk_size = "16384"
+            ,hard_drive_interface = "sata"
+            ,memory = "2048"
+            ,shutdown_command = "echo 'vagrant'|sudo -S shutdown -h -P now"
+            ,headless = True
+            ,http_directory = "systems/${system.system_dir}/http"
+            ,guest_additions_path = "VBoxGuestAdditions_{{.Version}}.iso"
+            ,virtualbox_version_file = ".vbox_version"
+            ,iso_urls = system.iso_urls
+            ,iso_checksum_type = "sha256"
+            ,iso_checksum = system.iso_checksum
+            ,guest_os_type = system.guest_os_type
+            ,vm_name = "packer-${system.os_name}-${system.os_arch}"
+            ,ssh_username = vagrant.ssh_username
+            ,ssh_password = vagrant.ssh_password
+            ,ssh_port = vagrant.ssh_port
+            ,ssh_timeout = vagrant.ssh_wait_timeout
+            ,vboxmanage_post = [["modifymedium", "disk", "--compact", "output-virtualbox-iso/packer-${system.os_name}-${system.os_arch}.vdi"]]
         }
         in virtualbox_iso
 
-
-let mk_file_builder =
-    \(content : Text) ->
-    \(target : Text) ->
-    let content = content
-    let target = target
-    let file_builder : Types.File_builder =
-    {
-      type = "file"
-    , content = content
-    , target = target
-    }
-    in file_builder
 
 let mk_shell_local =
     \(inline : List Text) ->
@@ -80,13 +69,12 @@ let mk_vagrant =
       ssh_username = user
       ,ssh_password = user
       ,ssh_port = "22"
-      ,ssh_wait_timeout = "1000s"
+      ,ssh_wait_timeout = "2000s"
     }
     in vagrant
 
 in {run = run
    ,mk_virtualbox_iso = mk_virtualbox_iso
-   ,mk_file_builder = mk_file_builder
    ,mk_vagrant = mk_vagrant
    ,mk_shell_local = mk_shell_local
    ,mk_vagrant_post_processor = mk_vagrant_post_processor

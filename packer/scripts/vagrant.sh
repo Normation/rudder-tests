@@ -1,14 +1,17 @@
 #!/bin/bash
 
+set -xe
+
 # vagrant connection
 mkdir -p /home/vagrant/.ssh
-wget --no-check-certificate \
-    'https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub' \
-    -O /home/vagrant/.ssh/authorized_keys
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key" > /home/vagrant/.ssh/authorized_keys
 chown -R vagrant /home/vagrant/.ssh
 chmod -R go-rwsx /home/vagrant/.ssh
 
+sed -i '/UseDNS/d' /etc/ssh/sshd_config
 echo "UseDNS no" >> /etc/ssh/sshd_config
+sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
+echo "PermitRootLogin yes" >> /etc/ssh/sshd_confi
 
 # Add vagrant user to sudoers.
 echo "vagrant        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers

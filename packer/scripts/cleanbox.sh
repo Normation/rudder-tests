@@ -35,29 +35,10 @@ then
   echo "exclude=*.i386 *.i686" >> /etc/yum.conf
 fi
 
-# add common usefull packages
-if type apt-get 2> /dev/null
-then
-  export DEBIAN_FRONTEND=noninteractive
-  PM_INSTALL="apt-get -y install"
-elif type yum 2> /dev/null
-then
-  # Fix Centos5 issue installing, which install both architecture, this has no effects on other distros
-  echo "multilib_policy=best" >> /etc/yum.conf
-  PM_INSTALL="yum -y install"
-elif type zypper 2> /dev/null
-then
-  PM_INSTALL="zypper --non-interactive install"
-elif [ -x /opt/csw/bin/pkgutil ] 2> /dev/null
-then
-  PM_INSTALL="/opt/csw/bin/pkgutil --install --parse --yes"
-else
-  PM_INSTALL="echo TODO install "
-fi
-# this can be very long, we should make it optional
+. common.sh
 
 # package that should exist everywhere
-${PM_INSTALL} zsh vim less curl binutils rsync
+${PM_INSTALL} zsh vim less curl binutils rsync tree ntp htop dos2unix zip python
 ${PM_INSTALL} git || ${PM_INSTALL} git-core
 # install that may fail
 ${PM_INSTALL} htop ldapscripts uuid-runtime tree
@@ -236,30 +217,12 @@ then
 fi
 
 
-
-# In case the vagrant box is very minimal
-if [ "${DEBIAN_VERSION}" = "8" ]
-then
-  ${PM_INSTALL} dbus
-fi
-
 # add common useful files
 for user in root vagrant
 do
   home=`getent passwd ${user} | cut -d: -f6`
-  shopt -s dotglob 2>/dev/null || true
-  if [ -d "/tmp/vagrant-cache" ]
-  then
-    rsync -rl $SCRIPTS_PREFIX/scripts/files/ "${home}"/
-  fi
+  rsync -rl $SCRIPTS_PREFIX/scripts/files/ "${home}"/
 done
-
-# Clean vagrant-cachier cached files for rudder packages
-if [ -d "/tmp/vagrant-cache" ]
-then
-    find /tmp/vagrant-cache -name 'Rudder' -type d | xargs rm -rf
-    find /tmp/vagrant-cache -name 'rudder*' -o -name 'ncf*' | xargs rm -f
-fi
 
 postclean
 exit 0
