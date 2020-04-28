@@ -1,7 +1,7 @@
 require 'serverspec'
 require 'net/ssh'
 require 'tempfile'
-
+require 'resources/api_call'
 host = ENV['TARGET_HOST']
 
 if host == "localhost"
@@ -24,7 +24,7 @@ else
 end
 
 # Set environment variables
-set :env, :LANG => 'C', :LC_MESSAGES => 'C' 
+set :env, :LANG => 'C', :LC_MESSAGES => 'C'
 
 # Set PATH
 # set :path, '/sbin:/usr/local/sbin:$PATH'
@@ -40,9 +40,9 @@ ENV.each { |key, value|
 }
 
 
-url = $params['SERVER']
-token = $params['TOKEN']
-$rudderCli = 'rudder-cli --skip-verify --url=' + url.to_s + ' --token="' + token.to_s + '"'
+$rudderUrl = $params['SERVER']
+$rudderToken = $params['TOKEN']
+$rudderCli = 'rudder-cli --skip-verify --url=' + $rudderUrl.to_s + ' --token="' + $rudderToken.to_s + '"'
 
 # Functions that can be used in tests
 def send_file(from, to)
