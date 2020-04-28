@@ -197,7 +197,7 @@ def have_proxy():
   global use_proxy
   nrm_proxy = "http://filer.interne.normation.com:3128"
   proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
-  if use_proxy is not '':
+  if use_proxy != '':
     return use_proxy
   socket.gethostbyname(socket.gethostname())
   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
