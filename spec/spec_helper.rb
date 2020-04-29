@@ -2,6 +2,7 @@ require 'serverspec'
 require 'net/ssh'
 require 'tempfile'
 require 'resources/api_call'
+require 'resources/agent_run'
 host = ENV['TARGET_HOST']
 
 if host == "localhost"
