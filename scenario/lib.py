@@ -89,7 +89,7 @@ def should_run(test, mode):
 # Run a test
 # If the test starts with a /, then the full path of the test will be used,
 # otherwise it will look for a ruby script in specs/tests directory
-def run(target, test, error_mode, **kwargs):
+def run(target, test, error_mode=Err.CONTINUE, **kwargs):
   """ Run one test in a scenario without any log dump """
   return run_and_dump(target, test, error_mode, None, **kwargs)
 
