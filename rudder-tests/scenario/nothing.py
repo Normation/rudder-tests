@@ -18,7 +18,7 @@ class Scenario(ScenarioInterface):
 
     # Generic tests
     for host in self.datastate.keys():
-      self.run(host, 'fusion', OSNAME="sles")
+      self.run(host, 'fusion', OSNAME="SUSE")
 
     # test end, print summary
     self.finish()

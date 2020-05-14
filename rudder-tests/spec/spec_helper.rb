@@ -1,35 +1,13 @@
 require 'serverspec'
 require 'net/ssh'
-require 'tempfile'
+require 'json'
 require 'resources/api_call'
 require 'resources/agent_run'
+require 'formatters/junit_formatter'
+
 host = ENV['TARGET_HOST']
-
-if host == "localhost"
-  set :backend, :exec
-  set :host, host
-  set :disable_sudo, true
-else
-  set :backend, :ssh
-  `vagrant up #{host}`
-
-  config = Tempfile.new('', Dir.tmpdir)
-  `vagrant ssh-config #{host} > #{config.path}`
-
-  options = Net::SSH::Config.for(host, [config.path])
-
-  options[:user] ||= Etc.getlogin
-
-  set :host,        options[:host_name] || host
-  set :ssh_options, options
-end
-
-# Set environment variables
-set :env, :LANG => 'C', :LC_MESSAGES => 'C'
-
-# Set PATH
-# set :path, '/sbin:/usr/local/sbin:$PATH'
-
+datastate_path = ENV['DATASTATE']
+$rudderToken = ENV['TOKEN']
 
 # Some common rudder test elements
 $params = {}
@@ -40,54 +18,41 @@ ENV.each { |key, value|
   end
 }
 
+file = File.open datastate_path
+data = JSON.load file
 
-$rudderUrl = $params['SERVER']
-$rudderToken = $params['TOKEN']
-$rudderCli = 'rudder-cli --skip-verify --url=' + $rudderUrl.to_s + ' --token="' + $rudderToken.to_s + '"'
+$servers = data.select {|key, value| value.fetch("role", "none") == "server"}
+$rudderUrl = $servers.first[1]["webapp_url"] || "undefined_url"
 
-# Functions that can be used in tests
-def send_file(from, to)
-  host = ENV['TARGET_HOST']
-  `vagrant scp #{from} #{host}:#{to}`
+if host == "localhost"
+  set :backend, :exec
+  set :host, host
+  set :disable_sudo, true
+else
+  set :backend, :ssh
+
+  options = Net::SSH::Config.for(host)
+
+  options[:user] = data[host]["ssh_user"]
+  options[:port] = data[host]["ssh_port"]
+  options[:keys_only] = true
+  options[:auth_methods] = ["publickey"]
+
+  # keys are an array of path
+  options[:keys] = [data[host]["ssh_cred"]]
+  # hostname can be different than the actual ip where to ssh
+  set :host,        options[:host_name] || data[host]["ip"]
+  set :ssh_options, options
 end
 
-## monkeypatching serverspec
+# Set environment variables
+set :env, :LANG => 'C', :LC_MESSAGES => 'C'
 
-if defined? RSpec::Core::Formatters::BaseTextFormatter
-  # print test duration in dicumentation format
-  module RSpec
-    module Core
-      module Formatters
-        # @private
-        class DocumentationFormatter < BaseTextFormatter
-  
-          def example_passed(passed)
-            output.puts passed_output(passed.example)
-            output.puts "#{current_indentation}time: #{passed.example.execution_result.run_time}s"
-          end
-  
-          def example_pending(pending)
-            output.puts pending_output(pending.example, pending.example.execution_result.pending_message)
-            output.puts "#{current_indentation}time: #{pending.example.execution_result.run_time}s"
-          end
-  
-          def example_failed(failure)
-            output.puts failure_output(failure.example)
-            output.puts "#{current_indentation}time: #{failure.example.execution_result.run_time}s"
-          end
-  
-        end
-      end
-    end
-  end
+# Set PATH
+# set :path, '/sbin:/usr/local/sbin:$PATH'
+
+
+RSpec.configure do |c|
+  c.output_stream = File.open('serverspec-result.xml', 'w')
+  c.formatter = 'JUnit'
 end
-
-
-# Look for the message in rudder logs
-def test_report_present(techniqueName, status, componentKey, value, message)
-
-  describe file("/var/rudder/cfengine-community/outputs/previous") do
-    its(:content) { should match /.*?R: @@#{techniqueName}@@#{status}@@.*?@@.*?@@.*?@@#{componentKey}@@#{value}@@.*?##.*?@##{message}.*/ }
-  end
-end
-

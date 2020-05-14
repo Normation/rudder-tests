@@ -1,27 +1,11 @@
 require 'spec_helper'
 
-name = $params['DELETE']
+rule_id = $params['RULE_ID']
 
 describe "Delete rule"  do
-
-  # find rule uuid
-  describe command($rudderCli + " rules list | jq '.rules | map(select(.displayName==\"" + name + "\")) | .[0].id'") do
-    it {
-      # register output uuid for next command
-      $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
-    }
-    its(:exit_status) { should eq 0 }
+  describe api_call("delete", $rudderUrl + "/api/latest/rules/" + rule_id, $rudderToken, {}) do
+    its(:content_as_json) {should include("result" => "success")}
+    its(:return_code) { should eq 200 }
+    its(:data) {should include("rules")}
   end
-
-  # delete uuid
-  describe command($rudderCli + " rule delete ") do
-    # append uuid to command here because $uuid is not available within describe context
-    it { subject.name << $uuid }
-    its(:stdout) { should match /"id": "#{$uuid}"/ }
-    its(:stdout) { should match /"displayName": "#{name}"/ }
-    its(:exit_status) { 
-      should eq 0
-    }
-  end
-
 end
