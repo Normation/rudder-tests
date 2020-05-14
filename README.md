@@ -186,51 +186,47 @@ Using aws to provide hosts
 
 It is possible to use rtf with aws. It requires the aws plugin.
 ```
-vagrant plugin install vagrant-aws
+# The aws plugin available via direct plugin install is wayyy to old (0.0.1) so you must build it (now 0.7.1)
+git clone https://github.com/mitchellh/vagrant-aws.git
+cd vagrant-aws
+apt-get install rake bundler
+vi Gemfile # comment last 3 lines referencing vagrant-aws gem
+bundle install --path vendor/bundle
+rake build
+vagrant plugin install pkg/vagrant-aws-*.gem
 vagrant box add dummy https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box
 ```
 
-To deploy aws instances with rtf you need to define aws as your vagrant provider.
-This can be done easily:
+Install and configure aws cli: see https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html
 ```
-export VAGRANT_ACTIVE_PROVIDER=aws
+apt install awscli
+aws configure
 ```
 
-Vagrant does not support multi-provider setup in the same Vagrantfile, make sure to comment all your non-aws instances in your Vagrantfile before executing any rtf command.
-
-To ensure the communication between aws instances you must:
-  -put your AWS ssh key-pair (region specific) in ~/.aws/<myKeyName>.pem
-  -create a VPC for your rudder instances
-  -create at least 2 security groups inside your VPC with the following
-    Create them in the VPC panel => security_group, not in the classic EC2 board.
-      * server: Inbound ports TCP:22 (ssh mandatory for vagrant install)
-                              TCP:80
-                              TCP:443
-                              TCP/UDP:514 (reporting default config use UDP)
-                              TCP:5309
-
-                If you are thinking of using ubuntu servers with a 4.1 or older agent you will most likely also need to open the port 5514.
-
-      * agent: Inbound ports TCP:22
-                             TCP:5309
-
+Configure VPC: 
+- Create a VPC
+- Give it one subnet (note the id)
+- Give it one internet gateway
+- Edit the subnet routing table to route default route through the gateway
+Configure a security group (note the id):
+- Allow https and ssh from outside: TCP:22, TCP:80, TCP:443
+- Allow syslog, and cfengine from inside: previous ones + TCP/UDP:514 TCP:5309
+Create a key pair (note the name):
+- store the pem on your machine
 
 Configure the parameters at the top of the Vagrantfile:
 ```
-$AWS_KEY='xxxxxxxxxxxxxxxxxxxx'
-$AWS_SECRET='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-
-# name of your key (region specific)
-$AWS_KEYNAME='myKeyName'
-# vpc id
-$AWS_VPC='subnet-c412ccbf'
-# vpc security groups id, do not use the group name
-$AWS_SERVER_GROUP='sg-8dcb97e4'
-$AWS_RELAY_GROUP='sg-8ec894e7'
-$AWS_AGENT_GROUP='sg-8ec894e7'
+# name of your ssh keypair
+$AWS_KEYNAME='rtf-XXX'
+# Path of the private key file
+$AWS_KEYPATH="rtf-XXX.pem"
+# Subnet id in the VPC (id, not name)
+$AWS_SUBNET='subnet-0760ec7afa0c7448e'
+# Security group id in the VPC (id not name)
+$AWS_SECURITY_GROUP='sg-062906d71ed329ae8'
 ```
+
 You can now use rtf with aws as you usually do with virtualbox.
-There is still no windows support.
 
 
 Useful Knowledge

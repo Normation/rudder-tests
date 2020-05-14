@@ -19,6 +19,8 @@
 #####################################################################################
 #
 # find more : https://atlas.hashicorp.com/boxes/search
+
+# TOO deprecated
 $centos5 = "normation/centos-5-64"
 $centos6 = "geerlingguy/centos6"
 $centos6x32 = "bento/centos-6.7-i386"
@@ -71,54 +73,246 @@ $windows2012 = "opentable/win-2012r2-standard-amd64-nocm"
 $windows2008r2 = "opentable/win-2008r2-standard-amd64-nocm"
 $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
-#AWS ami
-$aws_sles11 = "ami-2e1aad53"
-$aws_sles12 = "ami-d29b2daf"
+# end of deprecated
 
-$aws_ubuntu14_04 = "ami-933482ee"
-$aws_ubuntu16_04 = "ami-0e55e373"
+$vagrant_systems = {
+  "centos5" => "normation/centos-5-64",
+  "centos6" => "geerlingguy/centos6",
+  "centos6x32" => "bento/centos-6.7-i386",
+  "centos7" => "geerlingguy/centos7",
+  "centos8" => "geerlingguy/centos8",
 
-$aws_windows2012 = "ami-802492fd"
+  "rhel5" => "normation/centos-5-64",
+  "rhel6" => "geerlingguy/centos6",
+  "rhel6x32" => "bento/centos-6.7-i386",
+  "rhel7" => "geerlingguy/centos7",
+  "rhel8" => "geerlingguy/centos8",
 
-$aws_os = {
-    "ami-2e1aad53" => "sles",
-    "ami-d29b2daf" => "sles",
-    "ami-933482ee" => "ubuntu",
-    "ami-0e55e373" => "ubuntu",
-    "ami-802492fd" => "windows"
-  }
+  "fedora18" => "boxcutter/fedora18",
 
+  "oracle6" => "kikitux/oracle6",
 
-# Format pf_name => { 'pf_id' => 0, 'last_host_id' => 0, 'host_list' => [ 'host1', 'host2' ] }
-$platforms = {
+  "sles11" => "normation/sles-11-03-64",
+  "sles12" => "normation/sles-12-03-64",
+  "sles15" => "normation/sles-15-64",
+
+  "debian5" => "normation/debian-5-64",
+  "debian6" => "normation/debian-6-64",
+  "debian7" => "normation/debian-7-64",
+  "debian8" => "normation/debian-8-64",
+  "debian9" => "normation/debian-9-64",
+  "debian10" => "normation/debian-10-64",
+
+  "ubuntu10_04" => "bento/ubuntu-10.04",
+  "ubuntu12_04" => "normation/ubuntu-12.04",
+  "ubuntu12_10" => "chef/ubuntu-12.10",
+  "ubuntu13_04" => "rafaelrosafu/raring64-vanilla",
+  "ubuntu14_04" => "normation/ubuntu-14.04",
+  "ubuntu15_10" => "wzurowski/wily64",
+  "ubuntu16_04" => "normation/ubuntu-16-04-64",
+  "ubuntu18_04" => "bento/ubuntu-18.04",
+  "ubuntu20_04" => "ubuntu/focal64",
+
+  "ubuntu10" => "bento/ubuntu-10.04",
+  "ubuntu12" => "normation/ubuntu-12.04",
+  "ubuntu14" => "normation/ubuntu-14.04",
+  "ubuntu16" => "normation/ubuntu-16-04-64",
+  "ubuntu18" => "bento/ubuntu-18.04",
+  "ubuntu20" => "ubuntu/focal64",
+
+  "slackware14" => "ratfactor/slackware",
+
+  "solaris10" => "uncompiled/solaris-10",
+  "solaris11" => "ruby-concurrency/oracle-solaris-11",
+
+  "windows7" => "designerror/windows-7",
+  "windows2008" => "normation/windows-2008r2-64",
+  "windows2012" => "opentable/win-2012r2-standard-amd64-nocm",
+  "windows2008r2" => "opentable/win-2008r2-standard-amd64-nocm",
+  "windows2012r2" => "opentable/win-2012r2-standard-amd64-nocm",
 }
-$last_pf_id = 0
+
+$vboxfsbug = [ 
+  "geerlingguy/centos6",
+  "bento/centos-6.7-i386",
+
+  "bento/ubuntu-10.04",
+  "chef/ubuntu-12.10",
+  "ubuntu/focal64",
+]
+
+$aws = {
+  # please use community AMI
+  "centos8" => [ "ami-078905c4b06b2108a", "ec2-user" ],
+
+  "sles11" => [ "ami-2e1aad53", "ec2-user" ],
+  "sles12" => [ "ami-d29b2daf", "ec2-user" ],
+
+  "ubuntu14_04" => [ "ami-933482ee", "ubuntu" ],
+  "ubuntu16_04" => [ "ami-0e55e373", "ubuntu" ],
+  "ubuntu18_04" => [ "ami-0701e7be9b2a77600", "ubuntu" ],
+
+  "ubuntu14" => [ "ami-933482ee", "ubuntu" ],
+  "ubuntu16" => [ "ami-0e55e373", "ubuntu" ],
+  "ubuntu18" => [ "ami-0701e7be9b2a77600", "ubuntu" ],
+
+  "windows2012" => [ "ami-802492fd", "ec2-user" ],
+}
 
 require 'socket'
-require "open-uri"
+require 'open-uri'
+require 'json'
+require 'ipaddr'
 
-def configure_box(config, os, pf_name, host_name, 
-                  setup:'empty', version:nil, server:'', host_list:'',
-                  windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-                  ncf_version:nil, cfengine_version:nil, ram:nil, cpus:nil, disk_size:nil
-                 )
-  pf = $platforms.fetch(pf_name) { |key| 
-                                   $last_pf_id = $last_pf_id+1
-                                   { 'pf_id' => $last_pf_id-1, 'host_list' => [ ]}
-                                 }
-  # autodetect platform id and host id
-  pf_id = pf['pf_id']
-  host_id = pf['host_list'].length
-  pf['host_list'].push(host_name)
-  host_list = host_list + " "
-  $platforms[pf_name] = pf
-  configure(config, os, pf_name, pf_id, host_name, host_id, 
-            setup:setup, version:version, server:server, host_list:host_list,
-            windows_plugin:windows_plugin, advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin,
-            ncf_version:ncf_version, cfengine_version:cfengine_version, ram:ram, cpus:cpus, disk_size:disk_size
-)
+# Configure a complete platform by just providing an id and a json file
+def platform(config, pf_id, pf_name)
+  conffile = "platforms/"+pf_name+".json"
+  unless File.file?(conffile)
+    puts "File " + conffile + " doesn't exist"
+    exit(1)
+  end
+  file = open(conffile)
+  json = file.read
+  data = JSON.parse(json)
+
+  default = data['default']
+  prio = { 'server' => '0', 'relay' => '1', 'agent' => '2', 'empty' => '3' }
+  machines = data.keys
+  machines.delete('default')
+  machines = machines.sort_by { |k| prio[data[k]['rudder-setup']] + k } # sort by type then by name
+  hosts = {}
+  host_id=0
+  machines.each do |host_name|
+    machine = default.merge(data[host_name])
+
+    # Machine name
+    name = pf_name + "_" + host_name
+
+    # Network information
+    network, ip, port = network_info(machine, pf_id, host_id)
+  
+    # Configure
+    config.vm.define name do |cfg|
+      # Synchronize at least scripts
+      if $vboxfsbug.include?(machine['system']) then
+        cfg.vm.synced_folder ".", "/vagrant", disabled: true
+        cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
+      end
+      # the provisioning script is generated
+      cfg.vm.provision :shell, :inline => provisioning_command(machine, host_name, network, machines)
+
+      # provider specific code
+      if machine['provider'] == "aws" then
+        aws_machine(cfg, machines, host_name, machine, name, ip)
+      else
+        vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
+      end
+    end
+
+    host_id += 1
+  end
 end
 
+
+# Configure a single machine
+def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
+  # RAM allocation
+  if machine['rudder-setup'] =~ /server/ then
+    memory = 2048
+  elsif machine['system'] =~ /win/ then
+    memory = 512
+  elsif machine['system'] =~ /solaris/ then
+    memory = 1024
+  else
+    memory = 256
+  end
+  # override allocated ram
+  memory = machine['ram'] if machine.key?('ram')
+  memory = memory.to_s
+
+  cfg.vm.box = $vagrant_systems[machine['system']]
+  cfg.vm.provider :virtualbox do |vm|
+    vm.customize ['modifyvm', :id, '--cableconnected1', 'on']
+    vm.name = name
+    vm.memory = memory
+    vm.cpus = machine.key?('cpus') ? machine['cpus'] : 1
+  end
+  cfg.vm.provider :libvirt do |vm|
+    vm.memory = memory
+    vm.cpus = machine.key?('cpus') ? machine['cpus'] : 1
+    vm.nic_model_type = "e1000"
+  end
+  if machine['rudder-setup'] =~ /server/ then
+    cfg.vm.network :forwarded_port, guest: 80, host: port
+    cfg.vm.network :forwarded_port, guest: 443, host: port+1
+  end
+  if machine['rudder-setup'] == "dev-server" then
+    cfg.vm.network :forwarded_port, guest: 389, host: 1389
+    cfg.vm.network :forwarded_port, guest: 5432, host: 15432
+
+    cfg.vm.synced_folder "/var/rudder/share", "/var/rudder/share", :create => true
+    cfg.vm.synced_folder "/var/rudder/inventories", "/var/rudder/inventories", :create => true, :owner => "root", :group => "root"
+    cfg.vm.synced_folder "/var/rudder/cfengine-community/inputs", "/var/rudder/cfengine-community/inputs", :create => true, :owner => "root", :group => "root"
+  end
+
+  # common conf
+  cfg.vm.network :private_network, ip: ip.to_s()
+  cfg.vm.hostname = host_name
+
+  # Add new disk if specified
+  cfg.trigger.after :up do |trigger|
+    trigger.ruby do |env, m|
+      if machine.key?('disk_size')
+        puts "Virtualbox UUID is #{m.id}"
+        disk_path=File.dirname(__FILE__) + "/.vagrant/rtf_disks/#{m.id}"
+        puts "RTF disk defined in #{disk_path}"
+        puts "Executing add_disk.sh on Host"
+        system("./scripts/add_disk.sh #{m.id} #{disk_path} #{machine['disk_size']} #{name}")
+      end
+    end
+  end
+end
+
+# Configure a single machine for AWS
+def aws_machine(cfg, machines, host_name, machine, name, ip)
+  # Machine allocation
+  if machine['rudder-setup'] == 'server' or machine['rudder-setup'] == 'relay' or machine['system'] =~ /win/ then
+    instance_type = "t2.medium"
+  else
+    instance_type = "t2.micro"
+  end
+
+  # Configure
+  cfg.vm.provider 'aws' do |aws|
+    # Instance
+    aws.ami = $aws[machine['system']][0]
+    aws.instance_type = instance_type
+    # Security
+    aws.security_groups = $AWS_SECURITY_GROUP
+    aws.keypair_name = $AWS_KEYNAME
+    # Network
+    aws.subnet_id = $AWS_SUBNET
+    aws.private_ip_address = ip
+    aws.associate_public_ip = true
+    # Tags
+    aws.tags = {
+      'Name': "#{name}"
+    }
+  end
+
+  cfg.vm.box = 'dummy' # aws plugin does not use regular boxes
+  
+  # Specify username and private key path
+  cfg.ssh.username = $aws[machine['system']][1]
+  cfg.ssh.private_key_path = $AWS_KEYPATH
+
+  # TODO handle windows
+  #cfg.vm.communicator = "winrm"
+  #cfg.winrm.username = "Administrator"
+  #cfg.winrm.password = "VagrantRocks"
+end
+
+# Returns a proxy configuration if we are in Normation office
 $proxy = nil
 def get_proxy()
   unless $proxy.nil?
@@ -149,17 +343,41 @@ def get_proxy()
   return $proxy
 end
 
-$command = nil
-def provisioning_script(os, host_name, net, first_ip, 
-              setup:'empty', version:nil, server:'', host_list:'', 
-              windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              aws: false, ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil, disk_size:nil
+# compute network information
+def network_info(machine, pf_id, host_id)
+  # Network configuration
+  # TODO deprecated
+  first_ip = 2
+  $NET_PREFIX ||= 40
+  net = "192.168." + (pf_id+$NET_PREFIX).to_s
+  ip = net + "." + (first_ip + host_id).to_s
+  net = IPAddr.new ip + "/24"
+  forward = 100*(2*$NET_PREFIX+pf_id)+80
+  # end of deprecated
 
-             )
+  unless $NETWORK.nil? then
+    net = IPAddr.new $NETWORK
+    # calculate base network (can do better ?)
+    pf_id.times { net = net.to_range.last.succ }
+    # calculate new ip
+    ip = net
+    (host_id+$SKIP_IP+1).times { ip = ip.succ() }
+    # Check the ip is still valid
+    unless net.include?(ip) then
+      puts "Ip address for #{name} out of range"
+      exit(1)
+    end
+    forward = (80+pf_id)*100 + 80 # start at 8080
+  end
 
+  return net, ip, forward
+end
+
+# Create the command used to provision the machine
+def provisioning_command(machine, host_name, net, machines)
   dev = false
   demo = false
+  setup = machine['rudder-setup']
   if setup =="demo-server"
     setup = "server"
     demo = true
@@ -170,148 +388,68 @@ def provisioning_script(os, host_name, net, first_ip,
     dev_var="DEV_MODE=true"
   end
 
-  sync_file_prefix = "/vagrant"
-  unless sync_file.nil?
-    sync_file_prefix = sync_file
-  end
+  host_list = machines.join(" ")
+  # TODO this should work with cidr
+  net_prefix = net.to_s.split('.')[0..2].join('.')
+  first_ip = net.to_s.split('.')[3]
 
   # provisioning script
-  if os =~ /win/ then
-    command = "c:/vagrant/scripts/network.cmd #{net} #{first_ip} @host_list@\n"
+  command = ""
+  if machine['system'] =~ /win/ then
+    command += "c:/vagrant/scripts/network.cmd #{net_prefix} #{first_ip} #{host_list} \n"
     if setup != "empty" and setup != "ncf" then
-      if setup == "rudder-agent-cfengine" then
-        command += "mkdir \"c:/Program Files/Cfengine\"\n"
-        command += "echo #{server} > \"c:/Program Files/Cfengine/policy_server.dat\"\n"
-        command += "c:/vagrant/rudder-plugins/Rudder-agent-x64.exe /S\n"
-      else
-        command += "mkdir \"c:/Program Files/Rudder\"\n"
-        command += "echo #{server} > \"c:/Program Files/Rudder/policy_server.dat\"\n"
-        command += "c:/vagrant/rudder-plugins/rudder-agent-dsc.exe /S\n"
-      end
+      command += "mkdir \"c:/Program Files/Rudder\"\n"
+      command += "echo #{machine['server']} > \"c:/Program Files/Rudder/policy_server.dat\"\n"
+      command += "c:/vagrant/rudder-plugins/rudder-agent-dsc.exe /S\n"
     end
   else
-    command = "echo 'Starting VM setup'\n"
-    command += sync_file_prefix + "/scripts/cleanbox.sh #{sync_file_prefix}\n"
-    command += sync_file_prefix + "/scripts/network.sh #{net} #{first_ip} \"@host_list@\"\n"
-    command += "export DOWNLOAD_USER=#{ENV['DOWNLOAD_USER']} DOWNLOAD_PASSWORD=#{ENV['DOWNLOAD_PASSWORD']}\n"
-    if aws then
-      command += "echo 'Setting up hostname'\n"
+    command += "echo 'Starting VM setup'\n"
+    if machine['provider'] == "aws" then
       command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
       proxy = ""
     else
       proxy = get_proxy()
     end
-    if provision == true then
-      if setup != "empty" and setup != "ncf" then
-        command += "#{proxy} #{dev_var} ALLOWEDNETWORK=#{net}.0/24 UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{version}\" \"#{server}\"\n"
-      end
+    command += "/vagrant/scripts/cleanbox.sh /vagrant\n"
+    command += "/vagrant/scripts/network.sh #{net_prefix} #{first_ip} \"#{host_list}\"\n"
+    command += "export DOWNLOAD_USER=#{ENV['DOWNLOAD_USER']} DOWNLOAD_PASSWORD=#{ENV['DOWNLOAD_PASSWORD']}\n"
+    unless machine.key?('provision') then
       if setup == "ncf" then
-        command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{ncf_version}\" \"#{cfengine_version}\"\n"
+        command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"
+      elsif setup != "empty" then
+        arg3 = ""
+        if setup == "server" then
+          arg3 = "\"#{machine['plugins']}\""
+        else
+          arg3 = "\"#{machine['server']}\""
+        end
+        network = net.to_s + "/" + net.prefix.to_s
+        command += "#{proxy} #{dev_var} ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{machine['rudder-version']}\" #{arg3}\n"
       end
       if dev then
-        command += sync_file_prefix + "/scripts/dev.sh\n"
+        command += "/vagrant/scripts/dev.sh\n"
       end
       if demo then
-        command += sync_file_prefix + "/scripts/demo-server-setup.sh\n"
+        command += "/vagrant/scripts/demo-server-setup.sh\n"
       end
     end
   end
   return command
 end
 
-def ssh_user(ami)
-  aws_users = {
-    "ubuntu" => "ubuntu",
-    "sles" => "ec2-user",
-    "debian" => "admin",
-    "centos" => "centos",
-    "fedora" => "ec2-user",
-    "windows" => "Administrator"
-  }
-  begin
-    os_name = $aws_os[ami]
-    return aws_users[os_name]
-  rescue
-    puts "No suitable user found to ssh on the remote system"
-    return "ec2-user"
-  end
+# Workaround for a bug in vagrant-aws plugin : https://github.com/mitchellh/vagrant-aws/issues/566
+class Hash
+  def slice(*keep_keys)
+    h = {}
+    keep_keys.each { |key| h[key] = fetch(key) if has_key?(key) }
+    h
+  end unless Hash.method_defined?(:slice)
+  def except(*less_keys)
+    slice(*keys - less_keys)
+  end unless Hash.method_defined?(:except)
 end
 
-# keep this function separate for compatibility with older Vagrantfiles
-def configure_aws(config, os, pf_name, pf_id, host_name, host_id,
-              setup:'empty', version:nil, server:'', host_list:'',
-              windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil, disk_size:nil
-             )
-
-  if setup == 'server' then
-    instance_type = "t2.medium"
-    security_groups = $AWS_SERVER_GROUP
-  elsif setup == 'relay' then
-    instance_type = "t2.medium"
-    security_groups = $AWS_RELAY_GROUP
-  else
-    instance_type = "t2.micro"
-    security_groups = $AWS_AGENT_GROUP
-  end
-
-  user = ssh_user(os)
-  name = pf_name + "_" + host_name
-  # Because AWS keep the 4 first @ips of each subnet
-  first_ip = 5
-  net = "10.0.0"
-  ip = net + "." + (first_ip + host_id).to_s
-
-  command = provisioning_script(os, host_name, net, first_ip,
-              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
-              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, aws:true, ncf_version:"#{ncf_version}",
-              cfengine_version:"#{cfengine_version}", provision:provision)
-
-  # Configure
-  config.vm.define (name).to_sym do |instance|
-    instance.vm.provider 'aws' do |aws, override|
-      # Use dummy AWS box
-      config.vm.box = 'dummy'
-  
-      # Read AWS authentication information from environment variables
-      aws.aws_dir = ENV['HOME'] + "/.aws/"
-      aws.access_key_id = $AWS_KEY
-      aws.secret_access_key = $AWS_SECRET
-      aws.keypair_name = $AWS_KEYNAME
-  
-      # Specify SSH keypair to use
-      aws.region = 'eu-west-3'
-      aws.ami = os
-      aws.instance_type = instance_type
-      # Specify region, AMI ID, and security group(s)
-      aws.security_groups = security_groups
-      # Private network
-      aws.subnet_id = $AWS_VPC
-      aws.associate_public_ip = true
-      aws.private_ip_address = ip
-      aws.tags = {
-        'Name': "#{name}"
-      }
-  
-      # Specify username and private key path
-      override.ssh.username = user
-      override.ssh.private_key_path = ENV['HOME'] + "/.aws/" + $AWS_KEYNAME + ".pem"
-
-      #override.vm.communicator = "winrm"
-      #override.winrm.username = "Administrator"
-      #override.winrm.password = "VagrantRocks"
-
-      # Provisionning
-      pf_hostlist = $platforms.fetch(pf_name) { { 'host_list' => [] } }
-      host_list = pf_hostlist['host_list'].join(" ") + " " + host_list
-    end
-    instance.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
-  end
-end
-
-    
-
+# TODO deprecated
 
 # keep this function separate for compatibility with older Vagrantfiles
 # NET_PREFIX must be a an int between 40 and 150.
@@ -321,97 +459,33 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
               ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
               sync_file:nil, cpus:nil, disk_size:nil
              )
-  # Parameters
-  dev =  setup == "dev-server" 
+  machine = {
+    "system": os,
+    "setup": setup,
+    "version": version,
+    "server": server,
+    "host_list": host_list,
+    "ram": ram,
+    "cpus": cpus,
+    "sync_file": sync_file,
+  }
+  machines = host_list.split(/\s+/)
 
-  if setup =~ /server/ then
-    memory = 2048
-    if windows_plugin then
-      memory += 512
-    end
-    if advanced_reporting then
-      memory += 512
-    end
-  elsif os =~ /win/ then
-    memory = 512
-  elsif os == $solaris10 or os == $solaris11 then
-    memory = 1024
-  else
-    memory = 256
-  end
-  # override allocated ram
-  unless ram.nil?
-    memory = ram
-  end
-  memory = memory.to_s
-
-  allocated_cpus = 1
-  unless cpus.nil?
-    allocated_cpus = cpus
-  end
-
-  sync_file_prefix = "/vagrant"
-  unless sync_file.nil?
-    sync_file_prefix = sync_file
-  end
-
+  # Machine name
   name = pf_name + "_" + host_name
-  first_ip = 2
-  $NET_PREFIX ||= 40
-  net = "192.168." + (pf_id+$NET_PREFIX).to_s
-  ip = net + "." + (first_ip + host_id).to_s
-  forward = 100*(2*$NET_PREFIX+pf_id)+80
 
-  command = provisioning_script(os, host_name, net, first_ip,
-              setup:"#{setup}", version:"#{version}", server:"#{server}", host_list:"#{host_list}", windows_plugin:windows_plugin,
-              advanced_reporting:advanced_reporting, dsc_plugin:dsc_plugin, ncf_version:"#{ncf_version}", cfengine_version:"#{cfengine_version}", provision:provision,
-              sync_file:sync_file)
+  # Network information
+  network, ip, port = network_info(machine, pf_id, host_id)
 
   # Configure
-  config.vm.define (name).to_sym do |server_config|
-    server_config.vm.box = os
-    server_config.vm.provider :virtualbox do |vb|
-      vb.customize ["modifyvm", :id, "--memory", memory]
-      vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
-      vb.cpus = allocated_cpus
-    end
-    server_config.vm.provider :libvirt do |vm|
-      vm.memory = memory
-      vm.nic_model_type = "e1000"
-    end
-    if setup =~ /server/ then
-      server_config.vm.network :forwarded_port, guest: 80, host: forward
-      server_config.vm.network :forwarded_port, guest: 443, host: forward+1
-    end
-    if dev then
-      server_config.vm.network :forwarded_port, guest: 389, host: 1389
-      server_config.vm.network :forwarded_port, guest: 5432, host: 15432
+  config.vm.define name do |cfg|
+    # the provisioning script is generated
+    cfg.vm.synced_folder ".", "/vagrant", disabled: true # disable default sync
+    cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
+    cfg.vm.provision :shell, :inline => provisioning_command(machine, host_name, network, machines)
 
-      server_config.vm.synced_folder "/var/rudder/share", "/var/rudder/share", :create => true
-      server_config.vm.synced_folder "/var/rudder/inventories", "/var/rudder/inventories", :create => true, :owner => "root", :group => "root"
-      server_config.vm.synced_folder "/var/rudder/cfengine-community/inputs", "/var/rudder/cfengine-community/inputs", :create => true, :owner => "root", :group => "root"
-    end
-    server_config.vm.network :private_network, ip: ip
-    server_config.vm.hostname = host_name
-    # this is lazy evaluated and so will contain the last definition of host list
-    pf_hostlist = $platforms.fetch(pf_name) { { 'host_list' => [] } }
-    host_list = pf_hostlist['host_list'].join(" ") + " " + host_list
-    unless sync_file.nil?
-      config.vm.synced_folder ".", "/vagrant", disabled: true
-      config.vm.provision "file", source: "./scripts/", destination: sync_file_prefix + "/scripts"
-    end
-    server_config.vm.provision :shell, :inline => command.sub("@host_list@", host_list)
-    # Add new disk if specified
-    config.trigger.after :up do |trigger|
-      trigger.ruby do |env, machine|
-        unless disk_size.nil?
-          puts "Virtualbox UUID is #{machine.id}"
-          disk_path=File.dirname(__FILE__) + "/.vagrant/rtf_disks/#{machine.id}"
-          puts "RTF disk defined in #{disk_path}"
-          puts "Executing add_disk.sh on Host"
-          system("./scripts/add_disk.sh #{machine.id} #{disk_path} #{disk_size} #{name}")
-        end
-      end
-    end
+    vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   end
 end
+
+# end of deprecated

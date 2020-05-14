@@ -127,6 +127,8 @@ au BufRead,BufNewFile *.cf set ft=cf3
 au BufRead,BufNewFile *.cf.2 set ft=cf3
 au BufRead,BufNewFile *.st set ft=cf3
 au BufRead,BufNewFile *.st.2 set ft=cf3
+au BufRead,BufNewFile *.ps1 set ft=ps1
+au BufRead,BufNewFile *.ps1.st set ft=ps1
 " enable vim_cf3 plugin abbreviations
 let g:EnableCFE3KeywordAbbreviations=1
 fun! Getchar()

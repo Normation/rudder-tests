@@ -1,5 +1,5 @@
 {
-  "default":{ "run-with": "vagrant", "rudder-version": "5.0", "system": "debian10", "inventory-os": "debian" },
+  "default":{ "rudder-version": "5.0", "system": "debian10", "inventory-os": "debian" },
   "server": { "rudder-setup": "server" },
   "relay":  { "rudder-setup": "relay" },
   "agent1": { "rudder-setup": "agent", "system" : "debian9", "server": "relay" },

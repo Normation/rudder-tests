@@ -184,14 +184,6 @@ def shell(command, fail_exit=True, keep_output=True, live_output=False):
     exit(1)
   return (retcode, output)
 
-class Host:
-  """Generic Host
-  Inherit to create host managed by a specific provider
-  Look at Vagrant class for the list of methods to implement
-  """
-  def __init__(self, host_info):
-    self.info = host_info
-
 use_proxy = ''
 def have_proxy():
   global use_proxy
@@ -210,95 +202,9 @@ def have_proxy():
         use_proxy = proxy_line
   return use_proxy
 
-### Vagrant specific code ###
-
-def host_lines(platform, hosts, pf_id):
+def host_lines(platform, pf_id):
   """ Return a Vagrantfile host line """
-  pf = platform.split('.')[0]
-  lines = []
-  i = 1
-  host_list = sorted(hosts.keys(), reverse=True)
-  hostnames = " ".join(host_list)
-
-  # detect the need for windows support
-  windows_support = False
-  dsc_support = False
-  for hostname in host_list:
-    # add pf_id to the host object
-    hosts[hostname].info['pf_id'] = str(pf_id)
-    if hosts[hostname].info['provider'] == 'aws':
-      command = "configure_aws"
-    else:
-      command = "configure"
-    if hosts[hostname].info['system'].startswith("win"):
-      if hosts[hostname].info['rudder-setup'] == "rudder-agent-cfengine":
-        windows_support = True
-      else:
-        dsc_support = True
-
-  # detect default server node
-  server = ""
-  for hostname in host_list:
-    if 'server' in hosts[hostname].info['rudder-setup']:
-      server = hostname
-
-  # write a line for each host
-  for hostname in host_list:
-    host = hosts[hostname].info
-    if host['run-with'] == 'vagrant':
-      os = host['system']
-      if  host['provider'] == 'aws':
-        os = "aws_" + os
-
-      if 'server' in host['rudder-setup']:
-        host_id = "0"
-      else:
-        host_id = str(i)
-        i += 1
-
-      # Define server the node is pointing to
-      own_server = ""
-      if 'server' in host:
-        own_server = host['server']
-      elif host['rudder-setup'] != 'server':
-        own_server = server
-
-      # generic host
-      line = command + "(config, $" + os + ", '" + pf + "', " + str(pf_id) + ", '" + hostname +"', " + host_id
-      line += ", setup:'" + host['rudder-setup']  + "', host_list:'" + hostnames + "'"
-      # rudder host
-      if host['rudder-setup'] != 'ncf' and host['rudder-setup'] != 'empty':
-        line += ", version:'" +  host['rudder-version'] + "', server:'" + own_server + "'"
-      # ncf host
-      if host['rudder-setup'] == 'ncf':
-        line += ", ncf_version:'" + host['ncf-version'] + "', cfengine_version:'" +  host['cfengine-version'] + "'"
-
-      # windows support
-      if 'server' in host['rudder-setup'] and windows_support:
-        line += ", windows_plugin:true"
-      if 'server' in host['rudder-setup'] and dsc_support:
-        line += ", dsc_plugin:true"
-      # ram param
-      if 'ram' in host:
-        line += ", ram:"+ str(host['ram'])
-      # cpus param
-      if 'cpus' in host:
-        line += ", cpus:"+ str(host['cpus'])
-      # disk_size param
-      if 'disk_size' in host:
-        line += ", disk_size:'"+ str(host['disk_size']) + "'"
-      # external provisionning
-      if 'provision' in host:
-        line += ", provision:false"
-      # sync_file, to pass mandatory scripts to the guest
-      # if defined, must be a path, without ending /
-      # scripts used to provision the machine will be put in the given path
-      # and will be uploaded with scp instead of file sharing
-      if 'sync_file' in host:
-        line += ", sync_file:'" + host['sync_file'] + "'"
-      line += ")\n"
-      lines.append(line)
-  return lines
+  return "platform(config, " + str(pf_id) + ", '" + platform + "')\n"
 
 def init_vagrantfile():
   """ Initialize an empty Vagrantfile """
@@ -308,28 +214,29 @@ def init_vagrantfile():
     vagrant.write("""# -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# Network to use for first platform
+$NETWORK="192.168.0.0/24"
+# Number of ip to skip per network (1 for vagrant 5 for aws)
+$SKIP_IP=1
+
+# name of your ssh keypair
+$AWS_KEYNAME='xxx'
+# Path of the private key file
+$AWS_KEYPATH="./xxx.pem"
+# Subnet id in the VPC (id, not name)
+$AWS_SUBNET='subnet-0760ec7afa0c7448e'
+# Security group id in the VPC (id not name)
+$AWS_SECURITY_GROUP='sg-062906d71ed329ae8'
+
 require_relative 'vagrant.rb'
 
 Vagrant.configure("2") do |config|
-config.vm.provider 'virtualbox' do |v|
-    v.linked_clone = true if Vagrant::VERSION =~ /^1.8/
-end
-if Vagrant.has_plugin?("vagrant-cachier")
-  config.cache.scope = :box
-end
-
-if Vagrant.has_plugin?("vagrant-aws")
-  #$AWS_KEY='xxxxxxxxxxxxxxxxxxxx'
-  #$AWS_SECRET='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-  
-  # name of your key (region specific)
-  #$AWS_KEYNAME='my_keyPair'
-  # vpc id
-  #$AWS_VPC='subnet-xxxxxxxx'
-  # vpc security groups id, do not use the group name
-  #$AWS_SERVER_GROUP='sg-xxxxxxxx'
-  #$AWS_RELAY_GROUP='sg-xxxxxxxx'
-  #$AWS_AGENT_GROUP='sg-xxxxxxxx'
+  config.vm.provider 'virtualbox' do |v|
+      v.linked_clone = true if Vagrant::VERSION =~ /^1.8/
+  end
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+  end
   
 end
 ### AUTOGEN TAG
@@ -338,11 +245,11 @@ end
 """)
 
 
-class Vagrant(Host):
+class Vagrant:
   """ Vagrant managed host """
   def __init__(self, platform, name, host_info):
-    Host.__init__(self, host_info)
     pf = platform.split('.')[0]
+    self.info = host_info
     self.platform = pf
     self.name = name
     self.hostid = pf + '_' + name
@@ -507,13 +414,7 @@ class Vagrant(Host):
     return "https://localhost:" + str(port) + "/rudder"
 
   @staticmethod
-  def status(platform, hosts):
-    """ Return the status of all hosts on a given platform """
-    host_list = [platform + '_' + h for h in hosts]
-    os.system("vagrant status " + " ".join(host_list))
-
-  @staticmethod
-  def reset_platform(name, hosts):
+  def reset_platform(name):
     """ Update or replace the Vagrantfile configuration for the given platform """
     lines = []
     # parse Vagrantfile into the lines array (and update it)
@@ -540,7 +441,7 @@ class Vagrant(Host):
           pf_id = int(m.group(2))
           while not re.match(r'### END OF AUTOGENERATION FOR ' + name, line):
             line = fd.readline()
-          lines.extend(host_lines(name, hosts, pf_id))
+          lines.extend(host_lines(name, pf_id))
           lines.append(line) # re-add the footer
           updated = True
         # no existing platform, create a new one
@@ -562,7 +463,7 @@ class Vagrant(Host):
             print(" New platform id will be "+next_id+" which will fail (invalid ip, ...) , please delete some platform before creating a new one")
             exit(6)
           lines.append('### AUTOGENERATED FOR PLATFORM ' + name + " (" + str(next_id) + ") https://localhost:" + str(80+next_id) + "81/ \n")
-          lines.extend(host_lines(name, hosts, next_id))
+          lines.extend(host_lines(name, next_id))
           lines.append('### END OF AUTOGENERATION FOR ' + name + "\n")
           lines.append("\n### AUTOGEN TAG\n")
           updated = True
@@ -599,10 +500,6 @@ class Vagrant(Host):
       fd.truncate()
       fd.writelines(lines)
 
-### End of vagrant specific code ###
-# Global list of host type
-host_types = {'vagrant': Vagrant}
-
 class Platform:
   """ A test platform
   Can be setup or teared down at once
@@ -635,14 +532,11 @@ class Platform:
         self.provider = host_info["provider"]
       host_info.update(host)
       host_info.update(override)
-      class_name = host_info['run-with']
-      # New host object (Vagrant/AWS/...)
-      self.hosts[hostname] = host_types[class_name](name, hostname, host_info)
+      self.hosts[hostname] = Vagrant(name, hostname, host_info)
 
   def setup(self, client_path):
     """ Startup the full platform """
-    for host_type in host_types.values():
-      host_type.reset_platform(self.name, self.hosts)
+    Vagrant.reset_platform(self.name)
     for hostname in sorted(self.hosts.keys(), reverse=True):
       self.hosts[hostname].start()
 
@@ -836,8 +730,7 @@ class Platform:
     for host in self.hosts.values():
       host.stop()
     # remove it from vagrant
-    for host_type in host_types.values():
-      host_type.remove_platform(self.name)
+    Vagrant.remove_platform(self.name)
 
   def push_techniques(self, directory):
     print("Pushing technique to host")
@@ -889,12 +782,8 @@ class Platform:
 
   def status(self):
     """ Show platform status """
-    for host_type in host_types.values():
-      host_list = []
-      for hostname, host in self.hosts.items():
-        if isinstance(host, host_type):
-          host_list.append(hostname)
-      host_type.status(self.name, host_list)
+    host_list = [self.name + '_' + h for h in self.hosts.keys()]
+    os.system("vagrant status " + " ".join(host_list))
 
   def api_connection_info(self):
     """ Get informations to connect to the server via the api """

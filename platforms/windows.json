@@ -1,5 +1,5 @@
 {
-  "default":{ "run-with": "vagrant", "rudder-version": "5.0" },
+  "default":{ "rudder-version": "5.0" },
   "server": { "rudder-setup": "server", "system": "ubuntu18_04", "inventory-os": "debian" },
   "agent1": { "rudder-setup": "agent", "system": "windows2008", "inventory-os": "Windows" }
 }
