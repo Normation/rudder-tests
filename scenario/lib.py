@@ -297,8 +297,8 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
     (retcode, datestr) = shell_on(server, cmd)
     if datestr == "":
       continue
-    if re.match(r'^\d+$', datestr):
-      date = datestr
+    if re.match(r'^\d+\s*$', datestr):
+        date = datestr[0:10]
     else:
       (retcode, date) = shell("date -d " + datestr + " +%s")
     if int(date) > int(date0):

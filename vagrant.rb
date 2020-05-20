@@ -132,9 +132,13 @@ $vagrant_systems = {
   "windows2012r2" => "opentable/win-2012r2-standard-amd64-nocm",
 }
 
-$vboxfsbug = [ 
+# list of boxes that don't have vboxsf enabled
+$vboxsfbug = [ 
   "geerlingguy/centos6",
   "bento/centos-6.7-i386",
+
+  "normation/debian-7-64",
+  "normation/debian-6-64",
 
   "bento/ubuntu-10.04",
   "chef/ubuntu-12.10",
@@ -164,12 +168,14 @@ require 'open-uri'
 require 'json'
 require 'ipaddr'
 
+$SKIP_IP ||= 1
+raise 'Ruby should be >2.4' unless RUBY_VERSION.to_f > 2.4
+
 # Configure a complete platform by just providing an id and a json file
-def platform(config, pf_id, pf_name)
+def platform(config, pf_id, pf_name, override={})
   conffile = "platforms/"+pf_name+".json"
   unless File.file?(conffile)
     puts "File " + conffile + " doesn't exist"
-    exit(1)
   end
   file = open(conffile)
   json = file.read
@@ -180,10 +186,16 @@ def platform(config, pf_id, pf_name)
   machines = data.keys
   machines.delete('default')
   machines = machines.sort_by { |k| prio[data[k]['rudder-setup']] + k } # sort by type then by name
+  machines.each do |machine|
+    if data[machine].include? "rudder-setup" and data[machine]["rudder-setup"] =~ /server/ then
+      default['server'] = machine
+    end
+  end
   hosts = {}
   host_id=0
+  override = override.map { |k,v| [k.to_s, v] }.to_h
   machines.each do |host_name|
-    machine = default.merge(data[host_name])
+    machine = default.merge(data[host_name]).merge(override)
 
     # Machine name
     name = pf_name + "_" + host_name
@@ -193,8 +205,11 @@ def platform(config, pf_id, pf_name)
   
     # Configure
     config.vm.define name do |cfg|
+      unless $vagrant_systems.include? machine['system'] then
+        puts "Unknown system #{machine['system']}"
+      end
       # Synchronize at least scripts
-      if $vboxfsbug.include?(machine['system']) then
+      if $vboxsfbug.include?($vagrant_systems[machine['system']]) then
         cfg.vm.synced_folder ".", "/vagrant", disabled: true
         cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
       end
@@ -389,9 +404,11 @@ def provisioning_command(machine, host_name, net, machines)
   end
 
   host_list = machines.join(" ")
-  # TODO this should work with cidr
+
+  # This works because even with cidr we will never cross the digit boundary
+  # This is because ce don't use cidr wider than 24 with more than 255 hosts
   net_prefix = net.to_s.split('.')[0..2].join('.')
-  first_ip = net.to_s.split('.')[3]
+  first_ip = $SKIP_IP+1
 
   # provisioning script
   command = ""
@@ -412,10 +429,14 @@ def provisioning_command(machine, host_name, net, machines)
     end
     command += "/vagrant/scripts/cleanbox.sh /vagrant\n"
     command += "/vagrant/scripts/network.sh #{net_prefix} #{first_ip} \"#{host_list}\"\n"
-    command += "export DOWNLOAD_USER=#{ENV['DOWNLOAD_USER']} DOWNLOAD_PASSWORD=#{ENV['DOWNLOAD_PASSWORD']}\n"
     unless machine.key?('provision') then
+      network = net.to_s + "/" + net.prefix.to_s
+      environment = "#{proxy} #{dev_var}"
+      environment += " DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\" DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\" PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
+      environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/"
+
       if setup == "ncf" then
-        command += "#{proxy} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"
+        command += "#{environment} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"
       elsif setup != "empty" then
         arg3 = ""
         if setup == "server" then
@@ -423,8 +444,8 @@ def provisioning_command(machine, host_name, net, machines)
         else
           arg3 = "\"#{machine['server']}\""
         end
-        network = net.to_s + "/" + net.prefix.to_s
-        command += "#{proxy} #{dev_var} ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/ /usr/local/bin/rudder-setup setup-#{setup} \"#{machine['rudder-version']}\" #{arg3}\n"
+
+        command += "#{environment} /usr/local/bin/rudder-setup setup-#{setup} \"#{machine['rudder-version']}\" #{arg3}\n"
       end
       if dev then
         command += "/vagrant/scripts/dev.sh\n"
