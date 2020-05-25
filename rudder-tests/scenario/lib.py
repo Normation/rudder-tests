@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-
+import tempfile
 import re
 import copy
 import os
 import json
 import requests
 import traceback
+from jsonschema import validate, draft7_format_checker, Draft7Validator, RefResolver
 from subprocess import Popen, check_output, PIPE, CalledProcessError
 from lxml import etree
 from time import sleep
@@ -45,30 +46,17 @@ class ScenarioInterface:
   """ Holds a scenario data
   Most scenario related methods are global and not in this class to make scenario writing look like script writing
   """
-  def __init__(self, name, datastate):
+  def __init__(self, name, datastate, schema={}):
     self.name = name
     self.stop = False
     self.errors = False
     self.datastate = datastate
     self.rspec = "ruby -S rspec --order defined --fail-fast"
     self.token = ""
+    self.schema = schema
+    if not self.validate_schema():
+      raise ValueError("The given datastate is not compatible with the expected platform schema")
     self.__set_token()
-
-  def __test_ruby_cli(self):
-    try:
-      # test ruby binary
-      (code, rubyver) = shell("ruby --version")
-      if re.match(r'jruby', rubyver):
-        if not re.match(r'jruby 1.7', rubyver):
-          print("WARNING: this is not JRuby 1.7, compatibility unknown")
-
-      elif not re.match(r'ruby 2', rubyver):
-        print("ERROR: MRI Ruby needs to be version 2")
-        exit(3)
-      shell(self.rcli)
-    finally:
-      print("ERROR: something went wrong while checking for ruby and rspec")
-      exit(1)
 
   def __set_token(self):
     self.token = self.ssh_on(self.nodes("server")[0], "cat /var/rudder/run/api-token")[1]
@@ -79,11 +67,11 @@ class ScenarioInterface:
   """
   def __merge_reports(self):
     # Assume the report exists
-    single_report_file = "/home/fdallidet/Rudder/rtfr/serverspec-result.xml"
+    single_report_file = self.workspace + "/serverspec-result.xml"
     single_tree = etree.parse(single_report_file)
 
     try:
-      global_report_file = "/home/fdallidet/Rudder/rtfr/result.xml"
+      global_report_file = "result.xml"
       global_tree = etree.parse(global_report_file)
     except:
       global_tree = etree.ElementTree(etree.Element("testsuites", name=self.name))
@@ -93,6 +81,68 @@ class ScenarioInterface:
 
     with open(global_report_file, 'wb+') as f:
       f.write(etree.tostring(global_tree))
+
+  # Validate that the given datastate is compatible with the scenario specific
+  # required platform
+  # TODO try to ssh on each host?
+  def validate_schema(self):
+    # Count each expected type
+    found = {}
+    result = True
+
+    # Stored errors are dict on the following form:
+    # { "message": "", "type": "<schema type>"}
+    entries = { k: { "type": "unknow", "err": []} for k in self.datastate.keys()}
+    missing_entries = list(self.schema.keys())
+    for k in self.schema.keys():
+      found[k] = 0
+    try:
+        # TODO take it from repo
+        with open("rudder.jsonschema", "r") as json_file:
+          rudder_schema = json.load(json_file)
+        resolver = RefResolver.from_schema(rudder_schema)
+        # Iterate over input to compare with schema
+        for data_key, data_entry in self.datastate.items():
+          for schema_key, schema_entry in self.schema.items():
+            try:
+              validate(instance=data_entry, schema=schema_entry["schema"], format_checker=draft7_format_checker, resolver=resolver)
+              found[schema_key] = found[schema_key] + 1
+              entries[data_key]["type"] = schema_key
+            except Exception as e:
+              entries[data_key]["err"].append({ "message":e, "type":schema_key})
+
+        # Compare with expected occurences
+        for k in self.schema.keys():
+          if "min" in self.schema[k] and self.schema[k]["min"] > found[k]:
+            print("Expected at least %s %s, but found %s"%(self.schema[k]["min"], k, found[k]))
+            result = False
+          elif "max" in self.schema[k] and self.schema[k]["max"] < found[k]:
+            print("Expected at most %s %s, but found %s"%(self.schema[k]["max"], k, found[k]))
+            result = False
+          else:
+            missing_entries.remove(k)
+
+        # Display missing schema
+        if result == False:
+          # Print failures for the first error
+          print("\n")
+          first_wrong_entry = [{ "name": k, "value": entries[k]} for k in entries.keys() if entries[k]["type"] == "unknow"][0]
+          print("ERROR for data entry %s:"%first_wrong_entry["name"])
+          print(next(x["message"] for x in first_wrong_entry["value"]["err"] if x["type"] == missing_entries[0]))
+
+          # Print parsing resume
+          print("\n")
+          print("Parsing resume:")
+          to_print = { k: entries[k]["type"] for k in entries.keys()}
+          print(json.dumps(to_print, indent=2, sort_keys=True))
+
+
+    except Exception as err:
+      print(err)
+      result = False
+    finally:
+      return result
+
 
   def nodes(self, kind = "all"):
     # kind not defined, return all nodes
@@ -123,12 +173,16 @@ class ScenarioInterface:
 
   def start(self):
     self.start = datetime.now().isoformat()
+    self.workspace = tempfile.mkdtemp(dir="/tmp/rtf_scenario")
+    os.makedirs("/tmp/rtf_scenario" + self.workspace, exist_ok=True)
     print("[" + self.start + "] Begining of scenario" + self.name)
 
 
   def finish(self):
     """ Finish a scenario """
     self.end = datetime.now().isoformat()
+    import shutil
+    shutil.rmtree(self.workspace, ignore_errors=True)
     print("[" + self.end + "] End of scenario")
 
   # If there's been error in scenario, then only the test with Err.FINALLY must be run
@@ -170,10 +224,10 @@ class ScenarioInterface:
       return
 
     # prepare command
-    datastate_file = "/tmp/datastate.json"
-    with open(datastate_file, 'w+') as fp:
-      json.dump(self.datastate, fp)
-    env = 'DATASTATE=%s '%datastate_file
+    datastate_file = self.workspace + "/datastate.json"
+    with open(datastate_file, 'w+') as outfile:
+      json.dump(self.datastate, outfile)
+    env = 'WORKSPACE=%s '%self.workspace
     if target != "localhost" and not target in self.datastate.keys():
       return
     env += 'TARGET_HOST=%s '%target

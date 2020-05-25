@@ -10,10 +10,15 @@ describe "Set policy mode of directive %s to %s" %[directive_id, policy_mode] do
     its(:content_as_json) {should include("result" => "success")}
     its(:return_code) { should eq 200 }
     its(:data) {should include("directives")}
-    $directive_detail = (described_class.data)["directives"][0]
+
+    begin
+      $directive_detail = (described_class.data)["directives"][0]
+      $directive_detail["policyMode"] = policy_mode
+    rescue => e
+       "expected not empty directive"
+    end
   end
 
-  $directive_detail["policyMode"] = policy_mode
 
   describe api_call("post", $rudderUrl + "/api/latest/directives/" + directive_id, $rudderToken, $directive_detail) do
     its(:content_as_json) {should include("result" => "success")}

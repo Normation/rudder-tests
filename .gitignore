@@ -14,3 +14,7 @@ scripts/rudder-setup
 
 # Local testing platforms are not commited
 platforms/test*.json
+
+# Scenarios result
+result.html
+result.xml

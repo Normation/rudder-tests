@@ -6,7 +6,8 @@ require 'resources/agent_run'
 require 'formatters/junit_formatter'
 
 host = ENV['TARGET_HOST']
-datastate_path = ENV['DATASTATE']
+workspace = ENV['WORKSPACE']
+datastate_path = workspace + "./datastate.json"
 $rudderToken = ENV['TOKEN']
 
 # Some common rudder test elements
@@ -53,6 +54,6 @@ set :env, :LANG => 'C', :LC_MESSAGES => 'C'
 
 
 RSpec.configure do |c|
-  c.output_stream = File.open('serverspec-result.xml', 'w')
+  c.output_stream = File.open(workspace + './serverspec-result.xml', 'w')
   c.formatter = 'JUnit'
 end

@@ -10,10 +10,15 @@ describe "Removing directive %s to rule %s" %[directive_id, rule_id] do
     its(:content_as_json) {should include("result" => "success")}
     its(:return_code) { should eq 200 }
     its(:data) {should include("rules")}
-    $rule_detail = (described_class.data)["rules"][0]
+    begin
+      $rule_detail = (described_class.data)["rules"][0]
+      $rule_detail["directives"] = $rule_detail["directives"] - [ directive_id ]
+    rescue => e
+       "expected not empty directive"
+    end
+
   end
 
-  $rule_detail["directives"] = $rule_detail["directives"] - [ directive_id ]
 
   describe api_call("post", $rudderUrl + "/api/latest/rules/" + rule_id, $rudderToken, $rule_detail) do
     its(:content_as_json) {should include("result" => "success")}

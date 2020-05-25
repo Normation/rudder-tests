@@ -1,0 +1,59 @@
+{
+  "ssh": {
+    "type": "object",
+    "properties": {
+      "ssh_cred": { "type": "string" },
+      "ssh_user": { "type": "string" },
+      "ssh_port": { "type": "integer", "minimum": 1, "maximum": 65535}
+    },
+    "required": ["ip", "ssh_cred", "ssh_user", "ssh_port"]
+  },
+  "host": {
+    "allOf": [
+      { "properties":
+          {
+            "ip": { "format": "ipv4" }
+          },
+         "required": ["ip"]
+      },
+      { "$ref": "#ssh" }
+    ]
+  },
+
+  "webapp": {
+      "properties": {
+          "webapp_url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          }
+      },
+      "required": ["webapp_url"]
+  },
+  "rudder_server": {
+    "allOf": [
+      { "properties":
+        {
+          "role": {"const": "server"}
+        },
+        "required": ["role"]
+      },
+      { "$ref": "#webapp"},
+      { "$ref": "#host" }
+    ]
+  },
+  "rudder_agent": {
+    "allOf": [
+      { "properties":
+        {
+          "role":   {"const": "agent"},
+          "server": {"type": "string",
+                     "format": "ipv4"
+                    }
+        },
+        "required": ["role", "server"]
+      },
+      { "$ref": "#host" }
+    ]
+  }
+}

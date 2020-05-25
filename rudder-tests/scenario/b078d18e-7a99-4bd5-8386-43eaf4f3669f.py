@@ -35,7 +35,10 @@ class Report():
 
 class Scenario(ScenarioInterface):
   def __init__(self, name, datastate):
-    super().__init__(name, datastate)
+    schema = {
+      "servers": { "schema": { "$ref": "#rudder_server"} , "min": 1, "max": 1},
+    }
+    super().__init__(name, datastate, schema)
     self.username = "user_test"
 
   def execute(self):
@@ -44,6 +47,7 @@ class Scenario(ScenarioInterface):
     ruleId = "e12b9720-66c0-4887-8026-f72cdc423a69"
     directiveId = "b078d18e-7a99-4bd5-8386-43eaf4f3669f"
     nodeId = "root"
+    server = self.nodes(kind="server")[0]
 
     condition_report            = Report(component="condition_from_variable_existence", key="skip_item_" + directiveId, nodeId=nodeId)
     kernel_configuration_report = Report(component="kernel_module_configuration",       key="freevxfs",                 nodeId=nodeId)
@@ -57,9 +61,9 @@ class Scenario(ScenarioInterface):
     # Create Test rule
     self.run('localhost', 'create_rule', DIRECTIVES=directiveId, RULE_ID=ruleId, TARGETS="policyServer:root")
     # Remove /etc/modprobe.d/managed_by_rudder.conf if it already exists
-    self.run('server', 'run_command', COMMAND="rm -f /etc/modprobe.d/managed_by_rudder.conf")
+    self.run(server, 'run_command', COMMAND="rm -f /etc/modprobe.d/managed_by_rudder.conf")
     # Unload freevxfs if already loaded
-    self.run('server', 'run_command', COMMAND="rmmod freevxfs || true")
+    self.run(server, 'run_command', COMMAND="rmmod freevxfs || true")
 
     # RUN in audit (1 non compliant)
     self.run('localhost', 'directive_policy_mode', DIRECTIVE_ID=directiveId, POLICY_MODE="audit")
@@ -67,38 +71,38 @@ class Scenario(ScenarioInterface):
     expected_reports["kernel_configuration_report"].status = "audit_noncompliant"
     expected_reports["kernel_not_loaded_report"].status = "audit_compliant"
 
-    self.run('server', 'run_command', COMMAND="rudder agent update")
-    self.run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
+    self.run(server, 'run_command', COMMAND="rudder agent update")
+    self.run(server, 'report', REPORTS="\n".join(map(str, expected_reports.values())))
 
     # LOAD module
     # $ is espaced since the command is run through a ssh wrapper
-    self.run('server', 'run_command', COMMAND="rudder agent update")
-    self.run('server', 'run_command', COMMAND="find /lib/modules/\$(uname -r)/kernel/fs/ | grep freevxfs.ko | xargs insmod")
+    self.run(server, 'run_command', COMMAND="rudder agent update")
+    self.run(server, 'run_command', COMMAND="find /lib/modules/\$(uname -r)/kernel/fs/ | grep freevxfs.ko | xargs insmod")
 
     # RUN in audit (2 non-compliant)
     expected_reports["kernel_not_loaded_report"].status = "audit_noncompliant"
-    self.run('server', 'run_command', COMMAND="rudder agent update")
-    self.run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
+    self.run(server, 'run_command', COMMAND="rudder agent update")
+    self.run(server, 'report', REPORTS="\n".join(map(str, expected_reports.values())))
 
     # RUN in enforce mode (2 repaired)
     self.run('localhost', 'directive_policy_mode', DIRECTIVE_ID=directiveId, POLICY_MODE="enforce")
     expected_reports["condition_report"].status = "result_success"
     expected_reports["kernel_configuration_report"].status = "result_repaired"
     expected_reports["kernel_not_loaded_report"].status = "result_repaired"
-    self.run('server', 'run_command', COMMAND="rudder agent update")
-    self.run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
+    self.run(server, 'run_command', COMMAND="rudder agent update")
+    self.run(server, 'report', REPORTS="\n".join(map(str, expected_reports.values())))
 
     # VERIFY that the module is unloaded
-    self.run('server', 'run_command', COMMAND="lsmod | grep -q freevxfs", EXIT_STATUS="1")
+    self.run(server, 'run_command', COMMAND="lsmod | grep -q freevxfs", EXIT_STATUS="1")
     # VERIFY that the module is disabled
-    self.run('server', 'run_command', COMMAND="modprobe -n -v freevxfs | grep -q 'install /bin/false'")
+    self.run(server, 'run_command', COMMAND="modprobe -n -v freevxfs | grep -q 'install /bin/false'")
 
     # RUN in enforce mode (2 success)
     expected_reports["condition_report"].status = "result_success"
     expected_reports["kernel_configuration_report"].status = "result_success"
     expected_reports["kernel_not_loaded_report"].status = "result_success"
-    self.run('server', 'run_command', COMMAND="rudder agent update")
-    self.run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
+    self.run(server, 'run_command', COMMAND="rudder agent update")
+    self.run(server, 'report', REPORTS="\n".join(map(str, expected_reports.values())))
 
     # Remove directive from test rule
     self.run('localhost', 'remove_directive_from_rule', DIRECTIVE_ID="8971d9c9-615a-491a-851f-d124cc09f188", RULE_ID=ruleId)
