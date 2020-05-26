@@ -169,7 +169,6 @@ require 'json'
 require 'ipaddr'
 
 $SKIP_IP ||= 1
-raise 'Ruby should be >2.4' unless RUBY_VERSION.to_f > 2.4
 
 # Configure a complete platform by just providing an id and a json file
 def platform(config, pf_id, pf_name, override={})
@@ -209,7 +208,7 @@ def platform(config, pf_id, pf_name, override={})
         puts "Unknown system #{machine['system']}"
       end
       # Synchronize at least scripts
-      if $vboxsfbug.include?($vagrant_systems[machine['system']]) then
+      if $vboxsfbug.include?($vagrant_systems[machine['system']]) or machine['provider'] == "aws" then
         cfg.vm.synced_folder ".", "/vagrant", disabled: true
         cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
       end
@@ -433,7 +432,7 @@ def provisioning_command(machine, host_name, net, machines)
       network = net.to_s + "/" + net.prefix.to_s
       environment = "#{proxy} #{dev_var}"
       environment += " DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\" DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\" PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
-      environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} REPO_PREFIX=rtf/"
+      environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} ADMIN_PASSWORD=admin REPO_PREFIX=rtf/"
 
       if setup == "ncf" then
         command += "#{environment} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"
@@ -468,6 +467,27 @@ class Hash
   def except(*less_keys)
     slice(*keys - less_keys)
   end unless Hash.method_defined?(:except)
+end
+
+class IPAddr
+  # Returns the prefix length in bits for the ipaddr.
+  def prefix
+    case @family
+    when Socket::AF_INET
+      n = IN4MASK ^ @mask_addr
+      i = 32
+    when Socket::AF_INET6
+      n = IN6MASK ^ @mask_addr
+      i = 128
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+    while n.positive?
+      n >>= 1
+      i -= 1
+    end
+    i
+  end
 end
 
 # TODO deprecated
