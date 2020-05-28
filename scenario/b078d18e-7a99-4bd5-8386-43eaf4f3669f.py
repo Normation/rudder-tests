@@ -54,47 +54,52 @@ class Scenario():
                          "kernel_not_loaded_report": kernel_not_loaded_report
                        }
 
+    ## INIT
     # Add directive to test rule
-    run('localhost', 'add_directive_to_rule', Err.BREAK, DIRECTIVE_ID=directiveId, RULE_ID=ruleId)
     # Remove /etc/modprobe.d/managed_by_rudder.conf if it already exists
-    run('server', 'run_command', Err.CONTINUE, COMMAND="rm -f /etc/modprobe.d/managed_by_rudder.conf")
     # Unload freevxfs if already loaded
-    run('server', 'run_command', Err.CONTINUE, COMMAND="rmmod freevxfs || true")
+    run('localhost', 'add_directive_to_rule', DIRECTIVE_ID=directiveId, RULE_ID=ruleId)
+    run('server', 'run_command', COMMAND="rm -f /etc/modprobe.d/managed_by_rudder.conf")
+    run('server', 'run_command', COMMAND="rmmod freevxfs || true")
 
+    ## TEST 1
     # RUN in audit (1 non compliant)
-    run('localhost', 'directive_policy_mode', Err.CONTINUE, DIRECTIVE_ID=directiveId, POLICY_MODE="audit")
+    run('localhost', 'directive_policy_mode', DIRECTIVE_ID=directiveId, POLICY_MODE="audit")
     expected_reports["condition_report"].status = "audit_compliant"
     expected_reports["kernel_configuration_report"].status = "audit_noncompliant"
     expected_reports["kernel_not_loaded_report"].status = "audit_compliant"
 
-    print(condition_report)
-    run('server', 'report', Err.CONTINUE, REPORTS="\n".join(map(str, expected_reports.values())))
+    run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
+
+    ## TEST 2
     # LOAD module
     # $ is espaced since the command is run through a ssh wrapper
-    run('server', 'run_command', Err.CONTINUE, COMMAND="find /lib/modules/\$(uname -r)/kernel/fs/ | grep freevxfs.ko | xargs insmod")
+    run('server', 'run_command', COMMAND="find /lib/modules/\$(uname -r)/kernel/fs/ | grep freevxfs.ko | xargs insmod")
 
     # RUN in audit (2 non-compliant)
     expected_reports["kernel_not_loaded_report"].status = "audit_noncompliant"
-    run('server', 'report', Err.CONTINUE, REPORTS="\n".join(map(str, expected_reports.values())))
+    run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
 
+    ## TEST 3
     # RUN in enforce mode (2 repaired)
-    run('localhost', 'directive_policy_mode', Err.CONTINUE, DIRECTIVE_ID=directiveId, POLICY_MODE="enforce")
+    run('localhost', 'directive_policy_mode', DIRECTIVE_ID=directiveId, POLICY_MODE="enforce")
     expected_reports["condition_report"].status = "result_success"
     expected_reports["kernel_configuration_report"].status = "result_repaired"
     expected_reports["kernel_not_loaded_report"].status = "result_repaired"
-    run('server', 'report', Err.CONTINUE, REPORTS="\n".join(map(str, expected_reports.values())))
-
+    run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
     # VERIFY that the module is unloaded
-    run('server', 'run_command', Err.CONTINUE, COMMAND="lsmod | grep -q freevxfs", EXIT_STATUS="1")
+    run('server', 'run_command', COMMAND="lsmod | grep -q freevxfs", EXIT_STATUS="1")
     # VERIFY that the module is disabled
-    run('server', 'run_command', Err.CONTINUE, COMMAND="modprobe -n -v freevxfs | grep -q 'install /bin/false'")
+    run('server', 'run_command', COMMAND="modprobe -n -v freevxfs | grep -q 'install /bin/false'")
 
+    ## TEST 4
     # RUN in enforce mode (2 success)
     expected_reports["condition_report"].status = "result_success"
     expected_reports["kernel_configuration_report"].status = "result_success"
     expected_reports["kernel_not_loaded_report"].status = "result_success"
-    run('server', 'report', Err.CONTINUE, REPORTS="\n".join(map(str, expected_reports.values())))
+    run('server', 'report', REPORTS="\n".join(map(str, expected_reports.values())))
 
+    ## CLEAN
     # Remove directive from test rule
-    run('localhost', 'remove_directive_from_rule', Err.BREAK, DIRECTIVE_ID="8971d9c9-615a-491a-851f-d124cc09f188", RULE_ID=ruleId)
+    run('localhost', 'remove_directive_from_rule', DIRECTIVE_ID="8971d9c9-615a-491a-851f-d124cc09f188", RULE_ID=ruleId)
     finish()
