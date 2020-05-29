@@ -161,6 +161,7 @@ import requests
 import docopt
 import scenario.lib
 import fcntl
+from pprint import pprint
 # Hack to import rudder lib, remove, some day ...
 sys.path.insert(0, "./rudder-api-client/lib.python")
 from rudder import RudderEndPoint, RudderError
@@ -322,6 +323,16 @@ class Host:
       shutil.copy(src, key_directory+'/'+self.hostid)
     return output
 
+  def get_version(self):
+    """Get rudder version (x.y) if any"""
+    if 'rudder-version' not in self.info:
+      return None
+    m = re.search('(\d+\.\d+)', self.info['rudder-version'])
+    if m:
+      return float(m.group(1))
+    else:
+      return 7.0 # not used currently but this is fragile
+
   def halt(self):
     """ Halt this host """
     os.system("vagrant halt " + self.hostid)
@@ -334,16 +345,24 @@ class Host:
     """ Go to last snapshot on this host """
     os.system("vagrant snapshot pop " + self.hostid)
 
-  def run(self, command, fail_exit=True, live_output=False):
+  def run(self, command, fail_exit=True, live_output=False, quiet=True):
     """ Run a command as root on this host """
-    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit, live_output=live_output)
+    if quiet:
+      q="-q"
+    else:
+      q=""
+    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q, fail_exit=fail_exit, live_output=live_output)
     if not live_output:
       token = re.sub('==>.*\n', '', value)
       return token.rstrip()
 
-  def run_with_ret_code(self, command, fail_exit=True, live_output=False):
+  def run_with_ret_code(self, command, fail_exit=True, live_output=False, quiet=True):
     """ Run a command as root on this host """
-    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- -q", fail_exit=fail_exit, live_output=live_output)
+    if quiet:
+      q="-q"
+    else:
+      q=""
+    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q, fail_exit=fail_exit, live_output=live_output)
     if not live_output:
       token = re.sub('==>.*\n', '', value)
       return (code, token.rstrip())
@@ -406,6 +425,14 @@ class Host:
         return "https://" + adress.group(1) + "/rudder"
     return None
 
+  def wait_for_generation(self, uuid, date0):
+    """ If we are on a server, wait for uuid promises to be generated """
+    if 'rudder-setup' not in self.info or self.info['rudder-setup'] != 'server':
+      print("ERROR: called wait_for_generation on a non server")
+      exit(1)
+    file_path = "/var/rudder/share/" + uuid + "/rules/cfengine-community/rudder_promises_generated"
+    self.run("true; while true; do [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ] && break; sleep 1; done", quiet=False, live_output=True)
+
 class Platform:
   """ A test platform
   Can be setup or teared down at once
@@ -417,7 +444,11 @@ class Platform:
     self.provider = "virtualbox"
     self.override = override
     self.has_relay = False
-    platform_info = load_json("platforms/" + name + ".json")
+    filename = "platforms/" + name + ".json"
+    if not os.path.isfile(filename):
+      print("Platform " + name + " does not exist")
+      exit(1)
+    platform_info = load_json(filename)
 
     # manage default values
     default = platform_info['default']
@@ -430,49 +461,94 @@ class Platform:
         host_info["provider"] = self.provider
       else:
         self.provider = host_info["provider"]
-      if 'rudder-setup' in host_info and 'relay' in host_info['rudder-setup']:
-        self.has_relay = True
       host_info.update(host)
       host_info.update(override)
+      if 'rudder-setup' in host_info and 'relay' in host_info['rudder-setup']:
+        self.has_relay = True
       self.hosts[hostname] = Host(name, hostname, host_info)
 
     # add the scale out plugin when we have a relay
     if self.has_relay:
       if 'plugins' in self.override:
         if self.override['plugins'] != "all":
-          self.override['plugins'] += " rudder-scale-out-relay"
+          self.override['plugins'] += " rudder-plugin-scale-out-relay"
       else:
-        self.override['plugins'] = " rudder-scale-out-relay"
+        self.override['plugins'] = "rudder-plugin-scale-out-relay"
 
   def setup(self, client_path):
     """ Startup the full platform """
     self.reset_platform()
-    for hostname in sorted(self.hosts.keys(), reverse=True):
-      self.hosts[hostname].start()
-
-    relay_list = []
-    # Find all relays uuid
+    # guess the server if there is one
+    server = None
     for host in self.hosts.values():
-      if 'relay' in host.info['rudder-setup']:
-        uuid = host.run("cat /opt/rudder/etc/uuid.hive")
-        relay_list.append(uuid)
+      if 'server' in host.info['rudder-setup']:
+        server = host
+          
+    # use same order as vagrant.rb
+    def key(name):
+      setup = self.hosts[name].info['rudder-setup']
+      prio = { 'server': '0', 'relay': '1', 'agent': '2' }
+      if setup in prio:
+        return prio[setup] + name
+      else:
+        return '9' + name
 
-    # Promote relays on servers
-    if relay_list:
-      for host in self.hosts.values():
-        if 'server' in host.info['rudder-setup']:
-          # Treat inventory received on the server
-          print(host.run("/opt/rudder/bin/rudder agent run"))
-          # Environment setup
-          rudder_url = host.get_url()
-          token = host.run('cat /var/rudder/run/api-token')
-          for relay in relay_list:
-            print("Accepting : " + relay)
-            # Accept the relay (double quotes must be escaped in call to run)
-            print(host.run('curl --insecure --header \\"X-API-Token: ' + token + '\\" --request POST https://localhost/rudder//api/latest/nodes/pending/' + relay + ' --data \\"status=accepted\\"'))
-            # Promote to relay
-            print(host.run("/opt/rudder/bin/rudder-node-to-relay "+relay))
-            print(host.run("curl --insecure https://localhost/rudder/api/deploy/reload -k"))
+    # do the startup procedure
+    for hostname in sorted(self.hosts.keys(), key=key):
+      host = self.hosts[hostname]
+      host.start()
+      setup = self.hosts[hostname].info['rudder-setup']
+      if server is not None and setup != "server":
+        # accept agents
+        if setup == "relay" or setup == "agent":
+          uuid = host.run("cat /opt/rudder/etc/uuid.hive")
+          uuids = [uuid]
+          # get relay chain
+          relays = []
+          cur = host
+          while 'server' in cur.info and self.hosts[cur.info['server']] != server:
+            next = self.hosts[cur.info['server']]
+            relays.append(next)
+            uuids.append(next.run("cat /opt/rudder/etc/uuid.hive"))
+            cur = next
+
+          # run agent on the server pre 6.0 and on the whole relay chain
+          if server.get_version() < 6.0:
+            for h in relays:
+              h.run("rudder agent run", quiet=False, live_output=True)
+            server.run("rudder agent run", quiet=False, live_output=True)
+          # we need the date on the server since it is where we compare at the end
+          date0 = server.run("date +%s%3N")
+          # accept
+          curl_cmd = 'curl --insecure --silent --header \\"X-API-Token: \\$(cat /var/rudder/run/api-token)\\"'
+          status_cmd = curl_cmd + ' https://localhost/rudder//api/latest/nodes/' + uuid + " | grep -q success"
+          accept_cmd = curl_cmd + ' --request POST https://localhost/rudder//api/latest/nodes/pending/' + uuid + ' --data \\"status=accepted\\"'
+          server.run("true; while ! " + status_cmd + "; do sleep 1; done; " + accept_cmd, quiet=False, live_output=True)
+
+        # register relays
+        if setup == "relay":
+          date0 = server.run("date +%s%3N") # just in case generation happened before promotion
+          if server.get_version() < 6.1:
+            server.run("/opt/rudder/bin/rudder-node-to-relay "+uuid, quiet=False, live_output=True)
+          else:
+            server.run("rudder server node-to-relay "+uuid, quiet=False, live_output=True)
+          # TODO <6.0 only after https://github.com/Normation/rudder-plugins/pull/307
+          server.run("curl --insecure https://localhost/rudder/api/deploy/reload", quiet=False, live_output=True)
+
+        # wait for new generation
+        uuids.reverse()
+        server.wait_for_generation("/share/".join(uuids), date0)
+        if len(uuids) > 1:
+          # wait for generation on the first relay to make sure it gets the agent acceptation rules
+          uuids.pop()
+          server.wait_for_generation("/share/".join(uuids), date0)
+
+        # update promises on the whole chain
+        relays.append(server)
+        relays.reverse()
+        for h in relays:
+          h.run("rudder agent run -u", quiet=False, live_output=True)
+        host.run("rudder agent run -ui", quiet=False, live_output=True)
 
   def reset_platform(self):
     """ Update or replace the Vagrantfile configuration for the given platform """
@@ -652,11 +728,11 @@ class Platform:
       line = fd.readline()
       matched = False
       while line:
-        if re.match(r'### AUTOGENERATED FOR PLATFORM ' + self.name, line):
+        if re.match(r'^### AUTOGENERATED FOR PLATFORM ' + self.name + ' .*', line):
           matched = True
         if not matched:
           lines.append(line)
-        if re.match(r'### END OF AUTOGENERATION FOR ' + self.name, line):
+        if re.match(r'^### END OF AUTOGENERATION FOR ' + self.name + '$', line):
           # Remove trailing new line
           line = fd.readline()
           matched = False

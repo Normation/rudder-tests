@@ -181,10 +181,16 @@ def platform(config, pf_id, pf_name, override={})
   data = JSON.parse(json)
 
   default = data['default']
-  prio = { 'server' => '0', 'relay' => '1', 'agent' => '2', 'empty' => '3' }
+  prio = { 'server' => '0', 'relay' => '1', 'agent' => '2' }
   machines = data.keys
   machines.delete('default')
-  machines = machines.sort_by { |k| prio[data[k]['rudder-setup']] + k } # sort by type then by name
+  machines = machines.sort_by { |k| # sort by type then by name
+    if prio.include?(data[k]['rudder-setup']) then
+      prio[data[k]['rudder-setup']] + k
+    else
+      '9' +k
+    end
+  }
   machines.each do |machine|
     if data[machine].include? "rudder-setup" and data[machine]["rudder-setup"] =~ /server/ then
       default['server'] = machine
@@ -444,7 +450,15 @@ def provisioning_command(machine, host_name, net, machines)
           arg3 = "\"#{machine['server']}\""
         end
 
-        command += "#{environment} /usr/local/bin/rudder-setup setup-#{setup} \"#{machine['rudder-version']}\" #{arg3}\n"
+        if machine['live'] == "true" then
+          # no wait between char display, but newlines may be inserted
+          filter = ""
+        else
+          # this forces vagrant to wait for the end of the line before displaying it
+          # this avoid progress bars messing with the output
+          filter = "| head -n 1G"
+        end
+        command += "#{environment} /usr/local/bin/rudder-setup setup-#{setup} \"#{machine['rudder-version']}\" #{arg3} #{filter}\n"
       end
       if dev then
         command += "/vagrant/scripts/dev.sh\n"
