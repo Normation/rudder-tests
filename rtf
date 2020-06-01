@@ -15,6 +15,7 @@ Usage:
     rtf platform rollback <platform>
     rtf platform update-rudder <platform> <version>
     rtf platform update-os <platform> <version>
+    rtf platform dump <platform>
     rtf host list <platform>
     rtf host update-rudder <host> <version>
     rtf host update-os <host> <version>
@@ -168,8 +169,9 @@ from rudder import RudderEndPoint, RudderError
 
 # Run a command in a shell like a script would do
 # And inform the user of its execution
-def shell(command, fail_exit=True, keep_output=True, live_output=False):
-  print("+" + command)
+def shell(command, fail_exit=True, keep_output=True, live_output=False, quiet=False):
+  if not quiet:
+     print("+" + command)
   if keep_output:
     if live_output:
       process = Popen(command, shell=True, universal_newlines=True)
@@ -968,6 +970,43 @@ The test content has been generated in %s, it contains:
   -> Please edit it!
 """ % (path, file_metadata, file_directive, file_check))
 
+  def dump_datastate(self):
+      effective_hosts = {}
+      for host in self.hosts:
+        host_infos = {}
+        hostname = self.name + "_" + host
+
+        # Basic infos
+        host_infos = self.hosts[host].info
+
+        # Vagrant ssh infos
+        (code, output) = shell("vagrant ssh-config " + hostname, fail_exit=False, quiet=True)
+        user_re = re.compile(r'User (\S+)')
+        hostname_re = re.compile(r'HostName (\S+)')
+        port_re = re.compile(r'Port (\S+)\s*')
+        creds_re = re.compile(r'IdentityFile (.+)')
+
+
+        for line in [l.strip() for l in output.split('\n')]:
+            m = user_re.match(line)
+            if m:
+              host_infos["ssh_user"] = str(m.group(1))
+
+            m = hostname_re.match(line)
+            if m:
+              host_infos["ip"] = str(m.group(1))
+
+            m = port_re.match(line)
+            if m:
+              host_infos["ssh_port"] = str(m.group(1))
+
+            m = creds_re.match(line)
+            if m:
+              host_infos["ssh_cred"] = str(m.group(1))
+
+        effective_hosts[hostname] = host_infos
+      print(json.dumps(effective_hosts, sort_keys=True, indent=2))
+
 
 ###################
 # Utility methods #
@@ -1262,6 +1301,9 @@ if __name__ == "__main__":
         platform.update_rudder(args['<version>'])
       elif args['update-os']:
         pass
+      elif args['dump']:
+        platform = Platform(args['<platform>'])
+        platform.dump_datastate()
   elif args['host']:
     pass
   elif args['scenario']:
