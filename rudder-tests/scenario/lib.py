@@ -392,7 +392,7 @@ def wait_for_generation(name, error_mode, server, date0, hostname, timeout=10):
     if re.match(r'^\d+$', datestr):
       date = datestr
     else:
-      (retcode, date) = shell("date -d " + datestr + " +%s")
+      (retcode, date) = shell("date -d " + datestr + " +%s%3N")
     if int(date) > int(date0):
       break
   if time >= timeout:
@@ -403,7 +403,7 @@ def host_date(name, error_mode, server):
   """ Return the current date on the host """
   if not should_run(name, error_mode):
     return None
-  return shell_on(server, "date +%s")[1]
+  return shell_on(server, "date +%s%3N")[1]
 
 
 def get_param(param, default):

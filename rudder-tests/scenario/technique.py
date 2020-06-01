@@ -21,15 +21,6 @@ class Scenario():
     # Get test list from parameters
     tests = get_tests()
 
-    # Force inventory
-    run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="inventory")
-    run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
-
-    if scenario.startTestNumber == 0:
-    # Accept nodes
-      for host in scenario.nodes("agent"):
-        run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
-
     # Run all tests
     # First, do the init on the node, with the ruby script techniques/technique_init that send the
     # init script on the node, in /tmp/technique_init, and runs it. It may be ncf script, or plain executable

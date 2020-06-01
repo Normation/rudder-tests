@@ -24,19 +24,6 @@ class Scenario():
       osname = hostinfo['inventory-os'] if 'inventory-os' in hostinfo else ""
       run(host, 'fusion', Err.CONTINUE, OSNAME=osname)
 
-    run_on("all", 'agent', Err.CONTINUE)
-
-    # force inventory
-    run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="update")
-    run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
-    run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="inventory")
-    run_on("relay", 'run_agent', Err.CONTINUE, PARAMS="run")
-    run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
-
-    # accept nodes
-    for host in scenario.nodes("agent"):
-      run_retry_and_dump('localhost', 'agent_accept', 5, RudderLog.APACHE, ACCEPT=host)
-
     # Add a rule
     date0 = host_date('wait', Err.CONTINUE, "server")
     run('localhost', 'user_rule', Err.BREAK, NAME="Test User", GROUP="special:all", USERNAME=self.username, DIRECTIVE_ID=self.directive_id )
@@ -56,10 +43,6 @@ class Scenario():
     # remove rule/directive
     run('localhost', 'directive_delete', Err.FINALLY, DELETE="Test User Directive")
     run('localhost', 'rule_delete', Err.FINALLY, DELETE="Test User Rule")
-
-    # remove agent
-    for host in scenario.nodes("agent"):
-      run('localhost', 'agent_delete', Err.FINALLY, DELETE=host)
 
     # test end, print summary
     finish()
