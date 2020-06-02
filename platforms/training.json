@@ -1,5 +1,5 @@
 {
-  "default":{ "rudder-version": "5.0", "system": "centos7", "osname": "centos", "forget_credentials": "true" },
+  "default":{ "rudder-version": "6.1", "system": "centos8", "osname": "centos", "forget_credentials": "true" },
   "server": { "rudder-setup": "server" },
   "agent1": { "rudder-setup": "agent" },
   "agent2": { "rudder-setup": "empty" }

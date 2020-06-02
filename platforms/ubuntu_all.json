@@ -1,0 +1,12 @@
+{
+  "default":{ "rudder-version": "6.1", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
+  "server": { "rudder-setup": "server" },
+  "agent1": { "rudder-setup": "agent", "system": "ubuntu10_04" },
+  "agent2": { "rudder-setup": "agent", "system": "ubuntu12_04" },
+  "agent3": { "rudder-setup": "agent", "system": "ubuntu13_04" },
+  "agent4": { "rudder-setup": "agent", "system": "ubuntu14_04" },
+  "agent5": { "rudder-setup": "agent", "system": "ubuntu15_10" },
+  "agent6": { "rudder-setup": "agent", "system": "ubuntu16_04" },
+  "agent7": { "rudder-setup": "agent", "system": "ubuntu18_04" },
+  "agent8": { "rudder-setup": "agent", "system": "ubuntu20_04" }
+}

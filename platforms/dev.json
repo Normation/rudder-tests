@@ -1,5 +1,5 @@
 {
-  "default":{ "rudder-version": "5.0", "system": "debian9", "inventory-os": "debian" },
+  "default":{ "rudder-version": "6.0", "system": "debian10", "inventory-os": "debian" },
   "server": { "rudder-setup": "dev-server" },
   "relay":  { "rudder-setup": "relay" },
   "agent1": { "rudder-setup": "agent", "server": "relay" },

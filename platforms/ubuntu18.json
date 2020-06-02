@@ -1,7 +1,6 @@
 {
-  "default":{ "rudder-version": "5.0", "system": "ubuntu18_04", "inventory-os": "ubuntu" },
+  "default":{ "rudder-version": "6.1", "system": "ubuntu18_04", "inventory-os": "ubuntu" },
   "server": { "rudder-setup": "server" },
-  "relay":  { "rudder-setup": "relay", "system": "ubuntu14_04" },
-  "agent1": { "rudder-setup": "agent", "server": "relay", "system": "ubuntu16_04" },
-  "agent2": { "rudder-setup": "agent", "system": "ubuntu12_04" }
+  "relay":  { "rudder-setup": "relay" },
+  "agent1": { "rudder-setup": "agent", "server": "relay" }
 }

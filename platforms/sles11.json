@@ -1,7 +1,0 @@
-{
-  "default":{ "rudder-version": "4.3", "system": "sles11", "inventory-os": "suse" },
-  "server": { "rudder-setup": "server" },
-  "relay":  { "rudder-setup": "relay" },
-  "agent1": { "rudder-setup": "agent", "server": "relay" },
-  "agent2": { "rudder-setup": "agent" }
-}

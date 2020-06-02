@@ -1,6 +1,6 @@
 {
-  "default":{ "rudder-version": "5.0", "system": "ubuntu18_04", "inventory-os": "ubuntu" },
-  "server": { "rudder-setup": "server" },
+  "default":{ "rudder-version": "6.1" },
+  "server": { "rudder-setup": "server", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
   "agent1": { "rudder-setup": "agent", "system": "centos5", "inventory-os": "centos" },
   "agent2": { "rudder-setup": "agent", "system": "centos6", "inventory-os": "centos" },
   "agent3": { "rudder-setup": "agent", "system": "centos7", "inventory-os": "centos" },
@@ -15,7 +15,12 @@
   "agent12": { "rudder-setup": "agent", "system": "sles15", "inventory-os": "suse" },
   "agent13": { "rudder-setup": "agent", "system": "ubuntu10_04", "inventory-os": "ubuntu" },
   "agent14": { "rudder-setup": "agent", "system": "ubuntu12_04", "inventory-os": "ubuntu" },
-  "agent15": { "rudder-setup": "agent", "system": "ubuntu14_04", "inventory-os": "ubuntu" },
-  "agent16": { "rudder-setup": "agent", "system": "ubuntu16_04", "inventory-os": "ubuntu" },
-  "agent17": { "rudder-setup": "agent", "system": "ubuntu18_04", "inventory-os": "ubuntu" }
+  "agent15": { "rudder-setup": "agent", "system": "ubuntu13_04", "inventory-os": "ubuntu" },
+  "agent16": { "rudder-setup": "agent", "system": "ubuntu14_04", "inventory-os": "ubuntu" },
+  "agent17": { "rudder-setup": "agent", "system": "ubuntu15_10", "inventory-os": "ubuntu" },
+  "agent18": { "rudder-setup": "agent", "system": "ubuntu16_04", "inventory-os": "ubuntu" },
+  "agent19": { "rudder-setup": "agent", "system": "ubuntu18_04", "inventory-os": "ubuntu" },
+  "agent20": { "rudder-setup": "agent", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
+  "agent21": { "rudder-setup": "agent", "system": "slackware14_1", "inventory-os": "slackware" },
+  "agent22": { "rudder-setup": "agent", "system": "slackware14_2", "inventory-os": "slackware" }
 }
