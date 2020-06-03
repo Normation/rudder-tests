@@ -427,13 +427,13 @@ class Host:
         return "https://" + adress.group(1) + "/rudder"
     return None
 
-  def wait_for_generation(self, uuid, date0):
+  def wait_for_generation(self, uuid, date0, timeout=60):
     """ If we are on a server, wait for uuid promises to be generated """
     if 'rudder-setup' not in self.info or self.info['rudder-setup'] != 'server':
       print("ERROR: called wait_for_generation on a non server")
       exit(1)
     file_path = "/var/rudder/share/" + uuid + "/rules/cfengine-community/rudder_promises_generated"
-    self.run("true; while true; do [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ] && break; sleep 1; done", quiet=False, live_output=True)
+    self.run("true; for i in \\$(seq 1 " + timeout + "); do [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ] && break; sleep 1; done", quiet=False, live_output=True)
 
 class Platform:
   """ A test platform
