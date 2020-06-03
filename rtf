@@ -433,7 +433,7 @@ class Host:
       print("ERROR: called wait_for_generation on a non server")
       exit(1)
     file_path = "/var/rudder/share/" + uuid + "/rules/cfengine-community/rudder_promises_generated"
-    self.run("true; for i in \\$(seq 1 " + timeout + "); do [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ] && break; sleep 1; done", quiet=False, live_output=True)
+    self.run("true; for i in \\$(seq 1 " + str(timeout) + "); do [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ] && break; sleep 1; done", quiet=False, live_output=True)
 
 class Platform:
   """ A test platform
