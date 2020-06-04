@@ -1,4 +1,4 @@
-let boot = ../../systems/debian/boot_command.dhall
+let boot = ./boot_command.dhall
 in {
     guest_os_type = "Debian_64",
     os_arch = "amd64",
