@@ -557,22 +557,22 @@ class Platform:
             server.run("rudder server node-to-relay "+uuid, quiet=False, live_output=True, fail_exit=fail_exit)
 
         # wait for new generation
-        uuids.reverse()
-        if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
-          exit(1)
-        if len(uuids) > 1:
-          # wait for generation on the first relay to make sure it gets the agent acceptation rules
-          uuids.pop()
+        if setup == "relay" or setup == "agent":
+          uuids.reverse()
           if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
             exit(1)
-
-        # update promises on the whole chain
-        relays.append(server)
-        relays.reverse()
-        for h in relays:
-          h.run("rudder agent run -u", quiet=False, live_output=True, fail_exit=fail_exit)
-        host.run("rudder agent run -ui", quiet=False, live_output=True, fail_exit=fail_exit)
-        # TODO agent runs should fail on error if fail_exit
+          if len(uuids) > 1:
+            # wait for generation on the first relay to make sure it gets the agent acceptation rules
+            uuids.pop()
+            if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
+              exit(1)
+  
+          # update promises on the whole chain
+          relays.append(server)
+          relays.reverse()
+          for h in relays:
+            h.run("rudder agent run -u", quiet=False, live_output=True, fail_exit=fail_exit)
+          host.run("rudder agent run -ui", quiet=False, live_output=True, fail_exit=fail_exit)
 
   def reset_platform(self):
     """ Update or replace the Vagrantfile configuration for the given platform """
