@@ -1,21 +1,3 @@
-require 'spec_helper'
-
-group = $params['GROUP']
-name = $params['NAME']
-username = $params['USERNAME']
-directive_id = $params['DIRECTIVE_ID']
-
-directiveFile = "/tmp/directive.json"
-ruleFile = "/tmp/rule.json"
-directiveName = "#{name}"
-
-describe "Add a user directive and a rule"  do
-
-  # Add a User directive
-  describe command($rudderCli + " directive create --json=" + directiveFile + " userManagement " + "\"" + directiveName + " Directive\"") do
-    before(:all) {
-      File.open(directiveFile, 'w') { |file|
-        file << <<EOF
 {
     "displayName": "#{name}",
     "enabled": true,
@@ -133,62 +115,7 @@ describe "Add a user directive and a rule"  do
                 }
             ]
         }
-    }, 
-    "shortDescription": "", 
+    },
+    "shortDescription": "",
     "techniqueName": "userManagement"
 }
-
-EOF
-      }
-    }
-    after(:all) {
-      File.delete(directiveFile)
-    }
-    its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
-    its(:exit_status) { should eq 0 }
-    it {
-      # register output uuid for next command
-      $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
-    }
-  end
-
-  # create a rule
-  describe command($rudderCli + " rule create --json=" + ruleFile + " \"#{name} Rule\"") do
-    before(:all) {
-      File.open(ruleFile, 'w') { |file|
-        file << <<EOF
-{
-  "directives": [
-    "#{directive_id}"
-  ],
-  "displayName": "#{name} Rule",
-  "longDescription": "Test User Rule Description",
-  "shortDescription": "Test User Rule short desc",
-  "targets": [
-    {
-      "exclude": {
-        "or": []
-      },
-      "include": {
-        "or": [
-          "#{group}"
-        ]
-      }
-    }
-  ]
-}
-EOF
-      }
-    }
-    after(:all) {
-      File.delete(ruleFile)
-    }
-    its(:stdout) { should match /^"[0-9a-f\-]+"$/ }
-    its(:exit_status) { should eq 0 }
-    it {
-      # register output uuid for next command
-      $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
-    }
-  end
-
-end

@@ -15,31 +15,17 @@ At init time, the module is not loaded nor disabled
 
 """
 import os
-from .lib import ScenarioInterface
+from lib.scenario import ScenarioInterface
+from lib.rudder import Report
 
-class Report():
-    def __init__(self, technique="*", status="*", ruleId="*", directiveId="*", versionId="*", component="*", key="*", timeStamp="*", nodeId="*", message="*"):
-      self.technique = technique
-      self.status = status
-      self.ruleId = ruleId
-      self.directiveId = directiveId
-      self.versionId = versionId
-      self.component = component
-      self.key = key
-      self.timeStamp = timeStamp
-      self.nodeId = nodeId
-      self.message = message
-
-    def __repr__(self):
-        return "@@%s@@%s@@%s@@%s@@%s@@%s@@%s@@%s##%s@#%s"%(self.technique, self.status, self.ruleId, self.directiveId, self.versionId, self.component, self.key, self.timeStamp, self.nodeId, self.message)
-
-class Scenario(ScenarioInterface):
-  def __init__(self, name, datastate):
+class b078d18e_7a99_4bd5_8386_43eaf4f3669f(ScenarioInterface):
+  def __init__(self, name, datastate, scenario_input={}):
     schema = {
       "servers": { "schema": { "$ref": "#rudder_server"} , "min": 1, "max": 1},
     }
     super().__init__(name, datastate, schema)
     self.username = "user_test"
+    self.input = scenario_input
 
   def execute(self):
     self.start()
@@ -106,5 +92,5 @@ class Scenario(ScenarioInterface):
 
     # Remove directive from test rule
     self.run('localhost', 'remove_directive_from_rule', DIRECTIVE_ID="8971d9c9-615a-491a-851f-d124cc09f188", RULE_ID=ruleId)
-    self.run('localhost', 'rule_delete', RULE_ID=ruleId)
+    self.run('localhost', 'rule_delete', UUID=ruleId)
     self.finish()

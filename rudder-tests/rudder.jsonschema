@@ -47,9 +47,7 @@
       { "properties":
         {
           "role":   {"const": "agent"},
-          "server": {"type": "string",
-                     "format": "ipv4"
-                    }
+          "server": {"type": "string"}
         },
         "required": ["role", "server"]
       },

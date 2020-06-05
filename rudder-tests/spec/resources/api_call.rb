@@ -36,7 +36,7 @@ module Serverspec
         end
 
         # print the curl equivalent for debugging purposes
-        #puts "curl -k --header \"X-API-Token: #{token}\" --header \"Content-Type: application/json\" --request #{method.upcase} \"#{url}\" -d \'#{body.to_json}\'"
+        puts "curl -k --header \"X-API-Token: #{token}\" --header \"Content-Type: application/json\" --request #{method.upcase} \"#{url}\" -d \'#{body.to_json}\'"
 
         @method = method.upcase
         @url = url

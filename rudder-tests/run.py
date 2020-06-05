@@ -13,26 +13,26 @@ import importlib
 
 ###################
 
-def run_scenario(name, datastate, json_file=None):
+# Datastate and Scneario_input are json file path
+def run_scenario(name, datastate, scenario_input=None):
   try:
     # load and run
     parameters = {}
-    module = importlib.import_module("scenario." + name)
+    module = importlib.import_module("scenarios." + name)
 
-    scenario_to_run = getattr(module, "Scenario")
-    if json_file is not None:
-      with open(json_file) as f:
+    scenario_to_run = getattr(module, name)
+    if scenario_input is not None:
+      with open(scenario_input) as f:
         data = json.load(f)
     else:
       data = None
-      import os
     # Remove result.xml if any
     try:
       os.remove("result.xml")
     except OSError:
       pass
     # Sanity check the scenario on the platform
-    s = scenario_to_run(name, datastate)
+    s = scenario_to_run(name, datastate, scenario_input=data)
     s.execute()
     if s.errors:
       print("Test scenario '"+ name +"' failed on platform '" + name + "'")
@@ -52,4 +52,6 @@ except Exception as e:
     print("The data input seems malformed")
     print(e)
     exit(1)
-scenario = run_scenario("b078d18e-7a99-4bd5-8386-43eaf4f3669f", jsonData)
+#scenario = run_scenario("test_user", jsonData, "input.json")
+scenario = run_scenario("inventory", jsonData)
+#scenario = run_scenario("b078d18e_7a99_4bd5_8386_43eaf4f3669f", jsonData)

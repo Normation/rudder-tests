@@ -1,27 +1,12 @@
-require 'spec_helper'
+require "spec_helper"
 
-name = $params['DELETE']
+$UUID = $params["UUID"]
 
-describe "Delete node"  do
+describe "Remove a directive" do
 
-  # find directive uuid
-  describe command($rudderCli + " directive list | jq '.directives | map(select(.displayName==\"" + name + "\")) | .[0].id'") do
-    its(:exit_status) { should eq 0 }
-    it {
-      # register output uuid for next command
-      $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
-    }
+  describe api_call("DELETE", $rudderUrl + "/api/latest/directives/" + $UUID, $rudderToken, "") do
+    its(:content_as_json) {should include("result" => "success")}
+    its(:return_code) { should eq 200 }
+    its(:data) {should include("directives")}
   end
-
-  # delete uuid
-  describe command($rudderCli + " directive delete ") do
-    # append uuid to command here because $uuid is not available within describe context
-    it { subject.name << $uuid }
-    its(:stdout) { should match /"id": "#{$uuid}"/ }
-    its(:stdout) { should match /"displayName": "#{name}"/ }
-    its(:exit_status) { 
-      should eq 0
-    }
-  end
-
 end

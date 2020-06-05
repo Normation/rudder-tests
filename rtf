@@ -998,8 +998,13 @@ The test content has been generated in %s, it contains:
         host_infos = {}
         hostname = self.name + "_" + host
 
-        # Basic infos
-        host_infos = self.hosts[host].info
+        # Role and role based infos
+        if 'rudder-setup' in self.hosts[host].info:
+            host_infos['role'] = self.hosts[host].info['rudder-setup']
+            if host_infos['role'] == "server":
+                host_infos['webapp_url'] = self.hosts[host].get_url()
+        # Basic platform infos
+        host_infos.update(self.hosts[host].info)
 
         # Vagrant ssh infos
         (code, output) = shell("vagrant ssh-config " + hostname, fail_exit=False, quiet=True)
@@ -1020,7 +1025,7 @@ The test content has been generated in %s, it contains:
 
             m = port_re.match(line)
             if m:
-              host_infos["ssh_port"] = str(m.group(1))
+              host_infos["ssh_port"] = int(m.group(1))
 
             m = creds_re.match(line)
             if m:
