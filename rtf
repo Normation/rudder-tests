@@ -433,7 +433,11 @@ class Host:
       print("ERROR: called wait_for_generation on a non server")
       exit(1)
     file_path = "/var/rudder/share/" + uuid + "/rules/cfengine-community/rudder_promises_generated"
-    self.run("true; for i in \\$(seq 1 " + str(timeout) + "); do [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ] && break; sleep 1; done", quiet=False, live_output=True)
+    for i in range(1, timeout):
+      (code, data) = self.run_with_ret_code("true; [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ]", quiet=False, live_output=True, fail_exit=False)
+      if code == 0:
+        return True
+    return False
 
 class Platform:
   """ A test platform
@@ -477,7 +481,7 @@ class Platform:
       else:
         self.override['plugins'] = "rudder-plugin-scale-out-relay"
 
-  def setup(self, client_path):
+  def setup(self, client_path, fail_exit=False):
     """ Startup the full platform """
     self.reset_platform()
     # guess the server if there is one
@@ -503,7 +507,7 @@ class Platform:
       if server is not None and setup != "server":
         # accept agents
         if setup == "relay" or setup == "agent":
-          uuid = host.run("cat /opt/rudder/etc/uuid.hive")
+          uuid = host.run("cat /opt/rudder/etc/uuid.hive", fail_exit=fail_exit)
           uuids = [uuid]
           # get relay chain
           relays = []
@@ -511,46 +515,48 @@ class Platform:
           while 'server' in cur.info and self.hosts[cur.info['server']] != server:
             next = self.hosts[cur.info['server']]
             relays.append(next)
-            uuids.append(next.run("cat /opt/rudder/etc/uuid.hive"))
+            uuids.append(next.run("cat /opt/rudder/etc/uuid.hive", fail_exit=fail_exit))
             cur = next
 
           # run agent on the server pre 6.0 and on the whole relay chain
           if server.get_version() < 6.0:
             for h in relays:
-              h.run("rudder agent run", quiet=False, live_output=True)
-            server.run("rudder agent run", quiet=False, live_output=True)
+              h.run("rudder agent run", quiet=False, live_output=True, fail_exit=fail_exit)
+            server.run("rudder agent run", quiet=False, live_output=True, fail_exit=fail_exit)
           # we need the date on the server since it is where we compare at the end
-          date0 = server.run("date +%s%3N")
+          date0 = server.run("date +%s%3N", fail_exit=fail_exit)
           # accept
           curl_cmd = 'curl --insecure --silent --header \\"X-API-Token: \\$(cat /var/rudder/run/api-token)\\"'
           status_cmd = curl_cmd + ' https://localhost/rudder//api/latest/nodes/' + uuid + " | grep -q success"
           accept_cmd = curl_cmd + ' --request POST https://localhost/rudder//api/latest/nodes/pending/' + uuid + ' --data \\"status=accepted\\"'
-          server.run("true; while ! " + status_cmd + "; do sleep 1; done; " + accept_cmd, quiet=False, live_output=True)
+          server.run("true; while ! " + status_cmd + "; do sleep 1; done; " + accept_cmd, quiet=False, live_output=True, fail_exit=fail_exit)
 
         # register relays
         if setup == "relay":
-          date0 = server.run("date +%s%3N") # just in case generation happened before promotion
+          date0 = server.run("date +%s%3N", fail_exit=fail_exit) # just in case generation happened before promotion
           if server.get_version() < 6.1:
-            server.run("/opt/rudder/bin/rudder-node-to-relay "+uuid, quiet=False, live_output=True)
+            server.run("/opt/rudder/bin/rudder-node-to-relay "+uuid, quiet=False, live_output=True, fail_exit=fail_exit)
           else:
-            server.run("rudder server node-to-relay "+uuid, quiet=False, live_output=True)
+            server.run("rudder server node-to-relay "+uuid, quiet=False, live_output=True, fail_exit=fail_exit)
           # TODO <6.0 only after https://github.com/Normation/rudder-plugins/pull/307
-          server.run("curl --insecure https://localhost/rudder/api/deploy/reload", quiet=False, live_output=True)
+          server.run("curl --insecure https://localhost/rudder/api/deploy/reload", quiet=False, live_output=True, fail_exit=fail_exit)
 
         # wait for new generation
         uuids.reverse()
-        server.wait_for_generation("/share/".join(uuids), date0)
+        if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
+          exit(1)
         if len(uuids) > 1:
           # wait for generation on the first relay to make sure it gets the agent acceptation rules
           uuids.pop()
-          server.wait_for_generation("/share/".join(uuids), date0)
+          if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
+            exit(1)
 
         # update promises on the whole chain
         relays.append(server)
         relays.reverse()
         for h in relays:
-          h.run("rudder agent run -u", quiet=False, live_output=True)
-        host.run("rudder agent run -ui", quiet=False, live_output=True)
+          h.run("rudder agent run -u", quiet=False, live_output=True, fail_exit=fail_exit)
+        host.run("rudder agent run -ui", quiet=False, live_output=True, fail_exit=fail_exit)
 
   def reset_platform(self):
     """ Update or replace the Vagrantfile configuration for the given platform """

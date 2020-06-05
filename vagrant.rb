@@ -274,6 +274,7 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
     cfg.vm.synced_folder "/var/rudder/inventories", "/var/rudder/inventories", :create => true, :owner => "root", :group => "root"
     cfg.vm.synced_folder "/var/rudder/cfengine-community/inputs", "/var/rudder/cfengine-community/inputs", :create => true, :owner => "root", :group => "root"
   end
+  cfg.vm.box_version = machine['box_version'] if machine.key?('box_version')
 
   # common conf
   cfg.vm.network :private_network, ip: ip.to_s()

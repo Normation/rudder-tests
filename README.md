@@ -19,7 +19,7 @@ Use cases
 ---------
 
 
-Every parameter avec the platform name in "./rtf platform setup" is an additional parameter to the platform, ie it a key=value that is identical to the ones available in the platform.json file.
+Every parameter after the platform name in "./rtf platform setup" is an additional parameter to the platform, ie it a key=value that is identical to the ones available in the platform.json file.
 Examples of such parameters:
 - rudder-version=ci/6.0 (this one can be abbreviated to "6.0")
 - live=true : do not use buffers for output (this make the output more reactive, but produces more fake lines because of progress bars)
