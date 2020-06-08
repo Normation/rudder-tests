@@ -6,7 +6,7 @@ Rudder test framework
 Usage:
     rtf platform list
     rtf platform status <platform>
-    rtf platform setup <platform> [<key>=<value> ...] [<version>] [plugins=<plugins>]
+    rtf platform setup <platform> [--fail-early] [<key>=<value> ...] [<version>] [plugins=<plugins>]
     rtf platform destroy <platform>
     rtf platform share <platform>
     rtf platform export <platform> [--ova]
@@ -40,6 +40,7 @@ Options:
     --start=<test number>  Run and start the scenario from a given test.
     --cfengine-version=... Define the version of cfengine used to execute the ncf_tests, like 3.10 3.12 rudder-4.3 rudder-latest or ci/rudder-3.2.1
     --destroy-on-error     Destroy the platform if an error is encountered in the run process (scenarii only)
+    --fail-early           Stop platform setup on first error
 
 Commands
     All *platform* command are related to platform management. A platform is described is the platforms directory and
@@ -274,9 +275,10 @@ class Host:
           idle = random.randint(5, 10)
           print("Lock not available, waiting %s seconds"%idle)
           time.sleep(idle)
-    os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
+    ret = os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
     fcntl.flock(f, fcntl.LOCK_UN)
     f.close()
+    return ret
 
   def stop(self):
     """ Destroy this host """
@@ -427,17 +429,23 @@ class Host:
         return "https://" + adress.group(1) + "/rudder"
     return None
 
+  def wait_for_command(self, command, timeout=60):
+    for i in range(1, timeout):
+      (code, data) = self.run_with_ret_code(command, live_output=True, fail_exit=False)
+      if code == 0:
+        print("Done")
+        return True
+    print("Timeout")
+    return False
+
   def wait_for_generation(self, uuid, date0, timeout=60):
     """ If we are on a server, wait for uuid promises to be generated """
     if 'rudder-setup' not in self.info or self.info['rudder-setup'] != 'server':
       print("ERROR: called wait_for_generation on a non server")
       exit(1)
     file_path = "/var/rudder/share/" + uuid + "/rules/cfengine-community/rudder_promises_generated"
-    for i in range(1, timeout):
-      (code, data) = self.run_with_ret_code("true; [ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ]", quiet=False, live_output=True, fail_exit=False)
-      if code == 0:
-        return True
-    return False
+    print("Waiting for " + uuid + " generation")
+    return self.wait_for_command("[ -f " + file_path + ' ] && [ \\"\\$(cat ' + file_path + ')\\" -gt ' + date0 + " ]")
 
 class Platform:
   """ A test platform
@@ -502,7 +510,10 @@ class Platform:
     # do the startup procedure
     for hostname in sorted(self.hosts.keys(), key=key):
       host = self.hosts[hostname]
-      host.start()
+      ret = host.start()
+      if ret != 0 and fail_exit:
+        print("Startup failed with code " + str(ret))
+        exit(ret)
       setup = self.hosts[hostname].info['rudder-setup']
       if server is not None and setup != "server":
         # accept agents
@@ -529,17 +540,19 @@ class Platform:
           curl_cmd = 'curl --insecure --silent --header \\"X-API-Token: \\$(cat /var/rudder/run/api-token)\\"'
           status_cmd = curl_cmd + ' https://localhost/rudder//api/latest/nodes/' + uuid + " | grep -q success"
           accept_cmd = curl_cmd + ' --request POST https://localhost/rudder//api/latest/nodes/pending/' + uuid + ' --data \\"status=accepted\\"'
-          server.run("true; while ! " + status_cmd + "; do sleep 1; done; " + accept_cmd, quiet=False, live_output=True, fail_exit=fail_exit)
+          print("Waiting for acceptation of " + uuid)
+          if not server.wait_for_command(status_cmd)  and fail_exit:
+            exit(1)
+          server.run(accept_cmd, quiet=False, live_output=True, fail_exit=fail_exit)
 
         # register relays
         if setup == "relay":
           date0 = server.run("date +%s%3N", fail_exit=fail_exit) # just in case generation happened before promotion
           if server.get_version() < 6.1:
             server.run("/opt/rudder/bin/rudder-node-to-relay "+uuid, quiet=False, live_output=True, fail_exit=fail_exit)
+            server.run("curl --insecure https://localhost/rudder/api/deploy/reload", quiet=False, live_output=True, fail_exit=fail_exit)
           else:
             server.run("rudder server node-to-relay "+uuid, quiet=False, live_output=True, fail_exit=fail_exit)
-          # TODO <6.0 only after https://github.com/Normation/rudder-plugins/pull/307
-          server.run("curl --insecure https://localhost/rudder/api/deploy/reload", quiet=False, live_output=True, fail_exit=fail_exit)
 
         # wait for new generation
         uuids.reverse()
@@ -557,6 +570,7 @@ class Platform:
         for h in relays:
           h.run("rudder agent run -u", quiet=False, live_output=True, fail_exit=fail_exit)
         host.run("rudder agent run -ui", quiet=False, live_output=True, fail_exit=fail_exit)
+        # TODO agent runs should fail on error if fail_exit
 
   def reset_platform(self):
     """ Update or replace the Vagrantfile configuration for the given platform """
@@ -1279,8 +1293,10 @@ if __name__ == "__main__":
             override[key] = value
           else:
             override['rudder-version'] = kv
+        if args['--fail-early']:
+          override['extra_line'] = "set -e"
         platform = Platform(args['<platform>'], override)
-        platform.setup(client_path)
+        platform.setup(client_path, args['--fail-early'])
       elif args['shutdown']:
         platform = Platform(args['<platform>'])
         platform.shutdown()

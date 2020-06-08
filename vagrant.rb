@@ -426,6 +426,10 @@ def provisioning_command(machine, host_name, net, machines)
       command += "c:/vagrant/rudder-plugins/rudder-agent-dsc.exe /S\n"
     end
   else
+    command = "set -x\n"
+    unless machine['extra_line'].nil?
+      command += machine['extra_line'] + "\n"
+    end
     command += "echo 'Starting VM setup'\n"
     if machine['provider'] == "aws" then
       command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
