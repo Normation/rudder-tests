@@ -1,20 +1,31 @@
 #!/usr/bin/lua
 
-json = require 'common/json'
+json = require 'json'
 require 'common/strict'
 
 system = arg[1]
 publish = arg[2]
 
-
 -- Load systm specific data
 dofile("systems/" .. system .. ".lua")
+os_name = distro .. "-" .. os_version
+os_full_name = os_name .. "-" .. os_arch
+
+-- exinting box use -64 or -32 instead of amd64 and i386
+if os_arch == "amd64" then
+  box_name = os_name .. "-64"
+elseif os_arch == "i386" then
+  box_name = os_name .. "-32"
+else 
+  box_name = os_full_name
+end
 
 -- initialization scripts
 local common_scripts = {
+    "scripts/vagrant.sh",
     os_start,
     "scripts/start.sh",
-    "scripts/vagrant.sh",
+    os_script,
     "scripts/guestAdd.sh",
     "scripts/grub.sh",
     os_stop,
@@ -53,13 +64,13 @@ local vbox = {
     iso_checksum_type = "sha256",
     iso_checksum = iso_checksum,
     guest_os_type = guest_os_type,
-    vm_name = "packer-" .. os_name .. "-" .. os_arch,
+    vm_name = "packer-" .. os_full_name,
     ssh_username = "vagrant",
     ssh_password = "vagrant",
     ssh_port = "22",
     ssh_timeout = "2000s",
     vboxmanage_post = {
-      { "modifymedium", "disk", "--compact", "output-virtualbox-iso/packer-" .. os_name .. "-" .. os_arch .. ".vdi" }
+      { "modifymedium", "disk", "--compact", "output-virtualbox-iso/packer-" .. os_full_name .. ".vdi" }
     }
 }
 
@@ -67,7 +78,7 @@ local vbox = {
 -- vagrant cloud publish
 local vagrant_cloud = {
     type = "vagrant-cloud",
-    box_tag = "Normation/${System.os_name}-${System.os_arch}",
+    box_tag = "Normation/" .. box_name,
     access_token = "{{user `cloud_token`}}",
     version = "2.0"
 }
@@ -75,7 +86,7 @@ local vagrant_cloud = {
 -- Vagrant box creation
 local vagrant = {
     type = "vagrant",
-    output = "builds/${System.os_name}-${System.os_arch}.box"
+    output = "builds/" .. os_full_name .. ".box"
 }
 
 -- List of processors
@@ -85,7 +96,7 @@ local post_processors_ = { vagrant, vagrant_cloud }
 -- Generate final json
 local conf = {
     provisioners = provisioners_,
-    builders = vbox,
+    builders = { vbox },
     ["post-processors"] = post_processors_,
 }
 
