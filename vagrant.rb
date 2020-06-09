@@ -440,9 +440,12 @@ def provisioning_command(machine, host_name, net, machines)
     command += "/vagrant/scripts/cleanbox.sh /vagrant\n"
     command += "/vagrant/scripts/network.sh #{net_prefix} #{first_ip} \"#{host_list}\"\n"
     unless machine.key?('provision') then
+      # hide passwords from set -x
+      command += "set +x\nexport DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\"\nexport DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\"\nset -x\n"
+
       network = net.to_s + "/" + net.prefix.to_s
       environment = "#{proxy} #{dev_var}"
-      environment += " DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\" DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\" PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
+      environment += " PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
       environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} ADMIN_PASSWORD=admin REPO_PREFIX=rtf/"
 
       if setup == "ncf" then

@@ -355,7 +355,7 @@ class Host:
       q="-q"
     else:
       q=""
-    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q, fail_exit=fail_exit, live_output=live_output)
+    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q, fail_exit=fail_exit, live_output=live_output, quiet=quiet)
     if not live_output:
       token = re.sub('==>.*\n', '', value)
       return token.rstrip()
@@ -366,7 +366,7 @@ class Host:
       q="-q"
     else:
       q=""
-    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q, fail_exit=fail_exit, live_output=live_output)
+    (code, value) = shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q, fail_exit=fail_exit, live_output=live_output, quiet=quiet)
     if not live_output:
       token = re.sub('==>.*\n', '', value)
       return (code, token.rstrip())
@@ -433,7 +433,7 @@ class Host:
     print("Waiting " + str(timeout) + "s for command to return ok")
     print(command)
     for i in range(1, timeout):
-      (code, data) = self.run_with_ret_code(command, fail_exit=False)
+      (code, data) = self.run_with_ret_code(command, fail_exit=False, quiet=True, live_output=True)
       if code == 0:
         print("Done")
         return True
