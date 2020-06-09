@@ -5,7 +5,7 @@ Small project to generate Packer files to maintain our vagrant cloud boxes.
 
 ## Dependencies
 
-* `dhall-to-json` binary, from https://github.com/dhall-lang/dhall-haskell/releases (take only dhall-to-json binary)
+* lua (>=5.2), lua-json
 * packer: https://packer.io/downloads.html
 * virtualbox
 
