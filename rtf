@@ -540,12 +540,12 @@ class Platform:
           date0 = server.run("date +%s%3N", fail_exit=fail_exit)
           # accept
           curl_cmd = 'curl --insecure --silent --header \\"X-API-Token: \\$(cat /var/rudder/run/api-token)\\"'
-          status_cmd = curl_cmd + ' https://localhost/rudder//api/latest/nodes/' + uuid + " | grep -q success"
-          accept_cmd = curl_cmd + ' --request POST https://localhost/rudder//api/latest/nodes/pending/' + uuid + ' --data \\"status=accepted\\"'
-          server.run(accept_cmd, quiet=False, live_output=True, fail_exit=fail_exit)
+          status_cmd = curl_cmd + ' https://localhost/rudder/api/latest/nodes/' + uuid + " | grep -q success"
+          accept_cmd = curl_cmd + ' --request POST https://localhost/rudder/api/latest/nodes/pending/' + uuid + ' --data \\"status=accepted\\"'
           print("Waiting for acceptation of " + uuid)
           if not server.wait_for_command(status_cmd)  and fail_exit:
             exit(1)
+          server.run(accept_cmd, quiet=False, live_output=True, fail_exit=fail_exit)
 
         # register relays
         if setup == "relay":
