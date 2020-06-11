@@ -22,10 +22,10 @@ end
 
 -- initialization scripts
 local common_scripts = {
-    "scripts/vagrant.sh",
     os_start,
     "scripts/start.sh",
     os_script,
+    "scripts/vagrant.sh",
     "scripts/guestAdd.sh",
     "scripts/grub.sh",
     os_stop,
@@ -78,7 +78,7 @@ local vbox = {
 -- vagrant cloud publish
 local vagrant_cloud = {
     type = "vagrant-cloud",
-    box_tag = "Normation/" .. box_name,
+    box_tag = "normation/" .. box_name,
     access_token = "{{user `cloud_token`}}",
     version = "2.0"
 }
@@ -90,7 +90,7 @@ local vagrant = {
 }
 
 -- List of processors
-local post_processors_ = { vagrant, vagrant_cloud }
+local post_processors_ = { { vagrant, vagrant_cloud } }
 
 
 -- Generate final json

@@ -6,10 +6,12 @@ PUBLISH = false
 	dhall-to-json --file $(DESTDIR)/build/agent.dhall > $(DESTDIR)/result.json
 
 %:
+	@date
 	mkdir -p $(DESTDIR)
 	lua packer.lua $@ $(PUBLISH) > $(DESTDIR)/result.json
 	packer validate -var cloud_token=$(CLOUD_TOKEN) $(DESTDIR)/result.json
 	packer build -var cloud_token=$(CLOUD_TOKEN) -on-error=abort target/result.json
+	@date
 
 clean:
 	rm -rf target output-virtualbox-iso
