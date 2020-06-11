@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Rudder test framework
@@ -430,7 +430,7 @@ class Host:
     return None
 
   def wait_for_command(self, command, timeout=60):
-    print("Waiting " + str(timeout) + "s for command to return ok")
+    print("Waiting " + str(timeout) + "s for command to return ok on " + self.hostid)
     print(command)
     for i in range(1, timeout):
       (code, data) = self.run_with_ret_code(command, fail_exit=False, quiet=True, live_output=True)
@@ -520,7 +520,11 @@ class Platform:
       if server is not None and setup != "server":
         # accept agents
         if setup == "relay" or setup == "agent":
-          uuid = host.run("cat /opt/rudder/etc/uuid.hive", fail_exit=fail_exit)
+          (code,uuid) = host.run_with_ret_code("cat /opt/rudder/etc/uuid.hive", fail_exit=fail_exit)
+          # Nothing else can be done if we don't have an installed agent
+          if code != 0:
+            print("Rudder agent installation seems to have failed, skipping acceptation")
+            continue
           uuids = [uuid]
           # get relay chain
           relays = []
