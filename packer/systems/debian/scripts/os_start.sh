@@ -3,6 +3,7 @@
 set -xe
 
 export DEBIAN_FRONTEND=noninteractive
+# debian 6 keys are now too old
 grep 6.0 /etc/debian_version && EXTRA_OPT="--allow-unauthenticated"
 
 # keep install up to date
@@ -17,11 +18,11 @@ apt-get -y ${EXTRA_OPT} install git || apt-get -y ${EXTRA_OPT} install git-core
 hash service
 
 # build tools for guest additions (install may work without it)
-apt-get install -y ${EXTRA_OPT} build-essential linux-headers-amd64 || true
+apt-get -y ${EXTRA_OPT} install build-essential linux-headers-amd64 || true
 
 # vim as default
 update-alternatives --set editor /usr/bin/vim.basic
 
 # agent dependencies
-apt-get install -y uuid-runtime dmidecode cron net-tools diffutils libacl1
+apt-get -y ${EXTRA_OPT} install uuid-runtime dmidecode cron net-tools diffutils libacl1
 
