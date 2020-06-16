@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xe 
+set -xe
 
 # box is clean
 touch /root/clean
