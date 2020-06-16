@@ -53,5 +53,7 @@ except Exception as e:
     print(e)
     exit(1)
 #scenario = run_scenario("test_user", jsonData, "input.json")
-scenario = run_scenario("inventory", jsonData)
+#scenario = run_scenario("inventory", jsonData)
 #scenario = run_scenario("b078d18e_7a99_4bd5_8386_43eaf4f3669f", jsonData)
+scenario = run_scenario("cis", jsonData, "input.json")
+

@@ -150,12 +150,25 @@ class ScenarioInterface:
       return ("", "")
 
   def ssh_on(self, host, command):
-      infos = self.datastate[host]
-      default_ssh_options = ["StrictHostKeyChecking=no", "UserKnownHostsFile=/dev/null"]
-      options = "-o \"" + "\" -o \"".join(default_ssh_options) + "\""
-      command = "sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'"
-      ssh_cmd = "ssh -i %s %s@%s -p %s %s \"%s\""%(infos["ssh_cred"], infos["ssh_user"], infos["ip"], infos["ssh_port"], options, command)
+      if host == "localhost":
+          ssh_cmd = command
+      else:
+          infos = self.datastate[host]
+          default_ssh_options = ["StrictHostKeyChecking=no", "UserKnownHostsFile=/dev/null"]
+          options = "-o \"" + "\" -o \"".join(default_ssh_options) + "\""
+          command = "sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'"
+          ssh_cmd = "ssh -i %s %s@%s -p %s %s \"%s\""%(infos["ssh_cred"], infos["ssh_user"], infos["ip"], infos["ssh_port"], options, command)
       return shell(ssh_cmd)
+
+  def push_on(self, host, src, dst):
+      if host == "localhost":
+          command = "cp %s %s"%(src, dst)
+      else:
+          infos = self.datastate[host]
+          default_ssh_options = ["StrictHostKeyChecking=no", "UserKnownHostsFile=/dev/null"]
+          options = "-o \"" + "\" -o \"".join(default_ssh_options) + "\""
+          command = "scp -i %s -P%s %s  \"%s\" %s@%s:%s"%(infos["ssh_cred"], infos["ssh_port"], options, src, infos["ssh_user"], infos["ip"], dst)
+      return shell(command)
 
   def start(self):
     self.start = datetime.now().isoformat()

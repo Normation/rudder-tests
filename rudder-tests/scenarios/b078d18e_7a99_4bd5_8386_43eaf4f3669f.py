@@ -63,7 +63,7 @@ class b078d18e_7a99_4bd5_8386_43eaf4f3669f(ScenarioInterface):
     # LOAD module
     # $ is espaced since the command is run through a ssh wrapper
     self.run(server, 'run_command', COMMAND="rudder agent update")
-    self.run(server, 'run_command', COMMAND="find /lib/modules/\$(uname -r)/kernel/fs/ | grep freevxfs.ko | xargs insmod")
+    self.run(server, 'run_command', COMMAND="find /lib/modules/$(uname -r)/kernel/fs/ | grep freevxfs.ko | xargs insmod")
 
     # RUN in audit (2 non-compliant)
     expected_reports["kernel_not_loaded_report"].status = "audit_noncompliant"
