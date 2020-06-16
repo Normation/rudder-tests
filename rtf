@@ -11,8 +11,9 @@ Usage:
     rtf platform share <platform>
     rtf platform export <platform> [--ova]
     rtf platform shutdown <platform>
-    rtf platform snapshot <platform>
-    rtf platform rollback <platform>
+    rtf platform snapshot <platform> [<snapshot_name>]
+    rtf platform rollback <platform> [<snapshot_name>]
+    rtf platform delete-snap <platform> [<snapshot_name>]
     rtf platform update-rudder <platform> [<version>]
     rtf platform update-os <platform> <version>
     rtf platform dump <platform>
@@ -345,13 +346,17 @@ class Host:
     """ Halt this host """
     os.system("vagrant halt " + self.hostid)
 
-  def snapshot(self):
+  def snapshot(self, name):
     """ Snapshot this host """
-    os.system("vagrant snapshot push " + self.hostid)
+    os.system("vagrant snapshot save " + self.hostid + " " + name)
 
-  def rollback(self):
+  def rollback(self, name):
     """ Go to last snapshot on this host """
-    os.system("vagrant snapshot pop " + self.hostid)
+    os.system("vagrant snapshot restore " + self.hostid + " " + name)
+
+  def snapshot_delete(self, name):
+    """ Remove last snapshot on this host """
+    os.system("vagrant snapshot pop " + self.hostid + " " + name)
 
   def run(self, command, fail_exit=True, live_output=False, quiet=True):
     """ Run a command as root on this host """
@@ -739,15 +744,23 @@ class Platform:
     for host in self.hosts.values():
       host.halt()
 
-  def snapshot(self):
+  def snapshot(self, name):
     """ Snapshot the full platform """
-    for host in self.hosts.values():
-      host.snapshot()
+    for hostname in self.sorted_hosts():
+      self.hosts[hostname].snapshot(name or "rtf_snap")
 
   def rollback(self):
     """ Rollback from last snapshot the full platform """
-    for host in self.hosts.values():
-      host.rollback()
+    # rollback must be done in reverse to avoid having snapshot inventories going to a rollbacked server
+    hostlist = self.sorted_hosts()
+    hostlist.reverse()
+    for hostname in hostlist:
+      self.hosts[hostname].rollback(name or "rtf_snap")
+
+  def snapshot_delete(self):
+    """ Rollback from last snapshot the full platform """
+    for hostname in self.sorted_hosts():
+      self.hosts[hostname].snapshot_delete(name or "rtf_snap")
 
   def teardown(self):
     """ Stop and destroy the full platform """
@@ -1321,10 +1334,13 @@ if __name__ == "__main__":
         platform.shutdown()
       elif args['snapshot']:
         platform = Platform(args['<platform>'])
-        platform.snapshot()
+        platform.snapshot(args['<snapshot_name>'])
       elif args['rollback']:
         platform = Platform(args['<platform>'])
-        platform.rollback()
+        platform.rollback(args['<snapshot_name>'])
+      elif args['delete-snap']:
+        platform = Platform(args['<platform>'])
+        platform.snapshot_delete(args['<snapshot_name>'])
       elif args['destroy']:
         platform = Platform(args['<platform>'])
         platform.teardown()
