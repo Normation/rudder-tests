@@ -465,7 +465,12 @@ def provisioning_command(machine, host_name, net, machines)
           # this avoid progress bars messing with the output
           filter = "| head -n 1G"
         end
-        command += "#{environment} /usr/local/bin/rudder-setup setup-#{setup} \"#{machine['rudder-version']}\" #{arg3} #{filter}\n"
+        if machine['upgrade'].nil? then
+          action="setup"
+        else
+          action="upgrade"
+        end
+        command += "#{environment} /usr/local/bin/rudder-setup #{action}-#{setup} \"#{machine['rudder-version']}\" #{arg3} #{filter}\n"
       end
       if dev then
         command += "/vagrant/scripts/dev.sh\n"

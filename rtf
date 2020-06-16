@@ -13,7 +13,7 @@ Usage:
     rtf platform shutdown <platform>
     rtf platform snapshot <platform>
     rtf platform rollback <platform>
-    rtf platform update-rudder <platform> <version>
+    rtf platform update-rudder <platform> [<version>]
     rtf platform update-os <platform> <version>
     rtf platform dump <platform>
     rtf host list <platform>
@@ -284,6 +284,10 @@ class Host:
     """ Destroy this host """
     os.system("vagrant destroy -f " + self.hostid)
 
+  def reprovision(self):
+    """ Just run provisioning script this host """
+    os.system("vagrant provision " + self.hostid)
+
   def export(self, directory):
     """ Export this VM using Virtualbox commads """
     fullname = os.path.basename(os.getcwd()).replace('.', '') + '_' + self.hostid
@@ -491,6 +495,17 @@ class Platform:
       else:
         self.override['plugins'] = "rudder-plugin-scale-out-relay"
 
+  def sorted_hosts(self):
+    # use same order as vagrant.rb
+    def key(name):
+      setup = self.hosts[name].info['rudder-setup']
+      prio = { 'server': '0', 'relay': '1', 'agent': '2' }
+      if setup in prio:
+        return prio[setup] + name
+      else:
+        return '9' + name
+    return sorted(self.hosts.keys(), key=key)
+
   def setup(self, client_path, fail_exit=False):
     """ Startup the full platform """
     self.reset_platform()
@@ -500,23 +515,14 @@ class Platform:
       if 'server' in host.info['rudder-setup']:
         server = host
           
-    # use same order as vagrant.rb
-    def key(name):
-      setup = self.hosts[name].info['rudder-setup']
-      prio = { 'server': '0', 'relay': '1', 'agent': '2' }
-      if setup in prio:
-        return prio[setup] + name
-      else:
-        return '9' + name
-
     # do the startup procedure
-    for hostname in sorted(self.hosts.keys(), key=key):
+    for hostname in self.sorted_hosts():
       host = self.hosts[hostname]
       ret = host.start()
       if ret != 0 and fail_exit:
         print("Startup failed with code " + str(ret))
         exit(ret)
-      setup = self.hosts[hostname].info['rudder-setup']
+      setup = host.info['rudder-setup']
       if server is not None and setup != "server":
         # accept agents
         if setup == "relay" or setup == "agent":
@@ -739,7 +745,7 @@ class Platform:
       host.snapshot()
 
   def rollback(self):
-    """ Snapshot the full platform """
+    """ Rollback from last snapshot the full platform """
     for host in self.hosts.values():
       host.rollback()
 
@@ -815,8 +821,10 @@ class Platform:
 
   def update_rudder(self, version):
     """ Update rudder version on all hosts """
-    for host in self.hosts.values():
-      print(host.run("/usr/local/bin/rudder-setup upgrade-" + host.info['rudder-setup'] + " " + version))
+    self.reset_platform()
+    for hostname in self.sorted_hosts():
+      host = self.hosts[hostname]
+      host.reprovision()
 
   def status(self):
     """ Show platform status """
@@ -1330,7 +1338,10 @@ if __name__ == "__main__":
         else:
           platform.export()
       elif args['update-rudder']:
-        platform = Platform(args['<platform>'])
+        override = {'upgrade': 'true'}
+        if args['<version>'] is not None:
+          override['rudder-version'] = args['<version>']
+        platform = Platform(args['<platform>'], override)
         platform.update_rudder(args['<version>'])
       elif args['update-os']:
         pass
