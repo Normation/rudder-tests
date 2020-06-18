@@ -14,7 +14,7 @@ Usage:
     rtf platform snapshot <platform> [<snapshot_name>]
     rtf platform rollback <platform> [<snapshot_name>]
     rtf platform delete-snap <platform> [<snapshot_name>]
-    rtf platform update-rudder <platform> [<version>]
+    rtf platform update-rudder <platform> [--fail-early] [<version>]
     rtf platform update-os <platform> <version>
     rtf platform dump <platform>
     rtf host list <platform>
@@ -287,7 +287,7 @@ class Host:
 
   def reprovision(self):
     """ Just run provisioning script this host """
-    os.system("vagrant provision " + self.hostid)
+    return os.system("vagrant provision " + self.hostid)
 
   def export(self, directory):
     """ Export this VM using Virtualbox commads """
@@ -832,12 +832,15 @@ class Platform:
       process.sendintr()
       process.wait()
 
-  def update_rudder(self, version):
+  def update_rudder(self, version, fail_exit):
     """ Update rudder version on all hosts """
     self.reset_platform()
     for hostname in self.sorted_hosts():
       host = self.hosts[hostname]
-      host.reprovision()
+      code = host.reprovision()
+      if fail_exit and code != 0:
+        print("Upgrade error")
+        exit(code)
 
   def status(self):
     """ Show platform status """
@@ -1357,8 +1360,10 @@ if __name__ == "__main__":
         override = {'upgrade': 'true'}
         if args['<version>'] is not None:
           override['rudder-version'] = args['<version>']
+        if args['--fail-early']:
+          override['extra_line'] = "set -e"
         platform = Platform(args['<platform>'], override)
-        platform.update_rudder(args['<version>'])
+        platform.update_rudder(args['<version>'], args['--fail-early'])
       elif args['update-os']:
         pass
       elif args['dump']:
