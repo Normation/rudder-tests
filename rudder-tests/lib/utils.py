@@ -60,3 +60,17 @@ def shell(command, fail_exit=True, keep_output=True, live_output=False):
     print("*** COMMAND ERROR " + str(retcode))
     exit(1)
   return (retcode, output)
+
+"""
+  Convert a datastate host to a basic usable ssh-conf file
+"""
+def datastate_to_ssh(hostname, host, dst):
+  if hostname != "localhost":
+    with open(dst, "w") as f:
+      f.write("""Host {0}
+  HostName {1}
+  User {2}
+  Port {3}
+  IdentityFile {4}
+""".format(hostname, host["ip"], host["ssh_user"], host["ssh_port"], host["ssh_cred"]))
+

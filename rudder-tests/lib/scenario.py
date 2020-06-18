@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 import tempfile
 import re
-import copy
 import os
 import json
 import requests
 import traceback
+import pytest
+from lib.reports import XMLReport
 from jsonschema import validate, draft7_format_checker, Draft7Validator, RefResolver
 from subprocess import Popen, check_output, PIPE, CalledProcessError
-from lxml import etree
 from time import sleep
 from datetime import datetime
 from pprint import pprint
-from .utils import colors, enum, shell
+from .utils import colors, enum, shell, datastate_to_ssh
 
 # Error handling mode in scenario
 Err = enum('CONTINUE', 'BREAK', 'FINALLY', 'IGNORE')
@@ -35,35 +35,6 @@ class ScenarioInterface:
 
   def __set_token(self):
     self.token = self.ssh_on(self.nodes("server")[0], "cat /var/rudder/run/api-token")[1]
-
-  """
-    Each serverspec call (== each call to a test) will produce a report xml file.
-    We need to merge them at runtime, and hierachize the report per scenario
-  """
-  def __merge_reports(self):
-    # Hope the report exists
-    single_report_file = self.workspace + "/serverspec-result.xml"
-    try:
-      single_tree = etree.parse(single_report_file)
-
-      try:
-        global_report_file = "result.xml"
-        global_tree = etree.parse(global_report_file)
-      except:
-        global_tree = etree.ElementTree(etree.Element("testsuites", name=self.name))
-
-      for element in single_tree.getroot().findall("testsuite"):
-        global_tree.getroot().append(element)
-
-      with open(global_report_file, 'wb+') as f:
-        f.write(etree.tostring(global_tree))
-    except:
-      try:
-        with open(single_report_file, 'r') as fin:
-          print(fin.read())
-      except Exception as e:
-          print(e)
-
 
   # Validate that the given datastate is compatible with the scenario specific
   # required platform
@@ -174,12 +145,14 @@ class ScenarioInterface:
     self.start = datetime.now().isoformat()
     os.makedirs("/tmp/rtf_scenario", exist_ok=True)
     self.workspace = tempfile.mkdtemp(dir="/tmp/rtf_scenario")
+    self.report = XMLReport(self.workspace + "/result.xml", self.workspace)
     print(colors.YELLOW + "[" + self.start + "] Begining of scenario " + self.name + colors.RESET)
 
   def finish(self):
     """ Finish a scenario """
     self.end = datetime.now().isoformat()
     import shutil
+    shutil.copyfile(self.report.path, "./result.xml")
     shutil.rmtree(self.workspace, ignore_errors=True)
     print(colors.YELLOW + "[" + self.end + "] End of scenario" + colors.RESET)
 
@@ -237,12 +210,45 @@ class ScenarioInterface:
     command = env + self.rspec + " " + testfile + " 2>/dev/null"
 
     # run it
-    now = datetime.now().isoformat()
     print("+%s"%command)
     process = Popen(command, shell=True)
     retcode = process.wait()
 
-    self.__merge_reports()
+    self.report.merge_reports(self.name)
+
+    if retcode != 0:
+      if error_mode != Err.IGNORE:
+        self.errors = True
+        if error_mode == Err.BREAK:
+          self.stop = True
+      return retcode
+    else:
+      return 0
+
+  """
+    All args are passed in a serialized json named test_data
+  """
+  def run_testinfra(self, target, test, error_mode=Err.CONTINUE, **kwargs):
+    print(colors.BLUE + "Running test %s on %s"%(test, target) + colors.RESET)
+    # prepare command
+    input_data = {}
+    for k,v in kwargs.items():
+      input_data[k.lower()] = v
+    testfile = "testinfra/tests/" + test + ".py"
+    ssh_config_file =  self.workspace + "/ssh_config"
+    datastate_to_ssh(target, self.datastate[target], ssh_config_file)
+    try:
+      webapp_url = self.datastate[self.nodes("server")[0]]["webapp_url"]
+    except:
+      webapp_url = ""
+
+    pytest_cmd = ['-s', '-v', '--test_data', json.dumps(input_data), '--token', self.token, '--webapp_url', webapp_url, testfile, "--junitxml=" + self.report.path]
+    if target != "localhost":
+        pytest_cmd = ["--ssh-config=" + ssh_config_file,  "--hosts=" + target] + pytest_cmd
+
+    print("+%s"%pytest_cmd)
+    retcode = pytest.main(pytest_cmd)
+    self.report.merge_reports(self.name)
 
     if retcode != 0:
       if error_mode != Err.IGNORE:
