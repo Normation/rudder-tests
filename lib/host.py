@@ -1,49 +1,18 @@
-from subprocess import Popen, PIPE
-import json
 import random
 import time
 import os
 import shutil
 import copy
 import re
-import sys
-import importlib
-import signal
 import socket
 import pexpect
 import requests
-import docopt
-import scenario.lib
 import fcntl
-from pprint import pprint
-# Hack to import rudder lib, remove, some day ...
-sys.path.insert(0, "./rudder-api-client/lib.python")
-from rudder import RudderEndPoint, RudderError
-
-# Run a command in a shell like a script would do
-# And inform the user of its execution
-def shell(command, fail_exit=True, keep_output=True, live_output=False, quiet=False):
-  if not quiet:
-     print("+" + command)
-  if keep_output:
-    if live_output:
-      process = Popen(command, shell=True, universal_newlines=True)
-    else:
-      process = Popen(command, stdout=PIPE, shell=True, universal_newlines=True)
-    output, error = process.communicate()
-    retcode = process.poll()
-  else: # keep tty management and thus colors
-    process = Popen(command, shell=True)
-    retcode = process.wait()
-    output = None
-  if fail_exit and retcode != 0:
-    print(command)
-    print("*** COMMAND ERROR " + str(retcode))
-    exit(1)
-  return (retcode, output)
+from .utils import shell
 
 use_proxy = ''
 def have_proxy():
+  """ Return proxy configuration if any """
   global use_proxy
   nrm_proxy = "http://filer.interne.normation.com:3128"
   proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
@@ -60,48 +29,6 @@ def have_proxy():
         use_proxy = proxy_line
   return use_proxy
 
-def init_vagrantfile():
-  """ Initialize an empty Vagrantfile """
-  if os.path.isfile("Vagrantfile"):
-    return
-  with open("Vagrantfile", "w") as vagrant:
-    vagrant.write("""# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
-# Network to use for first platform
-$NETWORK="192.168.0.0/24"
-# Number of ip to skip per network (1 for vagrant 5 for aws)
-$SKIP_IP=1
-
-# name of your ssh keypair
-$AWS_KEYNAME='xxx'
-# Path of the private key file
-$AWS_KEYPATH="./xxx.pem"
-# Subnet id in the VPC (id, not name)
-$AWS_SUBNET='subnet-0760ec7afa0c7448e'
-# Security group id in the VPC (id not name)
-$AWS_SECURITY_GROUP='sg-062906d71ed329ae8'
-
-# Credential for private repository (used for licenses and plugins)
-$DOWNLOAD_USER="demo-normation"
-$DOWNLOAD_PASSWORD="xxx"
-
-require_relative 'vagrant.rb'
-
-Vagrant.configure("2") do |config|
-  config.vm.provider 'virtualbox' do |v|
-      v.linked_clone = true if Vagrant::VERSION =~ /^1.8/
-  end
-  if Vagrant.has_plugin?("vagrant-cachier")
-    config.cache.scope = :box
-  end
-
-### AUTOGEN TAG
-
-end
-""")
-
-
 class Host:
   """ Vagrant managed host """
   def __init__(self, platform, name, host_info):
@@ -112,7 +39,6 @@ class Host:
     self.hostid = pf + '_' + name
     self.provider = host_info["provider"]
     self.commands = {}
-    init_vagrantfile()
 
   def start(self):
     """ Setup and run this host """
@@ -134,11 +60,27 @@ class Host:
 
   def stop(self):
     """ Destroy this host """
-    os.system("vagrant destroy -f " + self.hostid)
+    return os.system("vagrant destroy -f " + self.hostid)
 
   def reprovision(self):
     """ Just run provisioning script this host """
     return os.system("vagrant provision " + self.hostid)
+
+  def halt(self):
+    """ Halt this host """
+    return os.system("vagrant halt " + self.hostid)
+
+  def snapshot(self, name):
+    """ Snapshot this host """
+    return os.system("vagrant snapshot save " + self.hostid + " " + name)
+
+  def rollback(self, name):
+    """ Go to last snapshot on this host """
+    return os.system("vagrant snapshot restore " + self.hostid + " " + name)
+
+  def snapshot_delete(self, name):
+    """ Remove last snapshot on this host """
+    return os.system("vagrant snapshot pop " + self.hostid + " " + name)
 
   def export(self, directory):
     """ Export this VM using Virtualbox commads """
@@ -191,23 +133,7 @@ class Host:
     if m:
       return float(m.group(1))
     else:
-      return 7.0 # not used currently but this is fragile
-
-  def halt(self):
-    """ Halt this host """
-    os.system("vagrant halt " + self.hostid)
-
-  def snapshot(self, name):
-    """ Snapshot this host """
-    os.system("vagrant snapshot save " + self.hostid + " " + name)
-
-  def rollback(self, name):
-    """ Go to last snapshot on this host """
-    os.system("vagrant snapshot restore " + self.hostid + " " + name)
-
-  def snapshot_delete(self, name):
-    """ Remove last snapshot on this host """
-    os.system("vagrant snapshot pop " + self.hostid + " " + name)
+      return 7.0 # not used currently but this is fragile (may be latest or nightly)
 
   def run(self, command, fail_exit=True, live_output=False, quiet=True):
     """ Run a command as root on this host """

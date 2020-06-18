@@ -1,7 +1,4 @@
-from subprocess import Popen, PIPE
 import json
-import random
-import time
 import os
 import shutil
 import copy
@@ -9,38 +6,52 @@ import re
 import sys
 import importlib
 import signal
-import socket
-import pexpect
-import requests
-import docopt
 import scenario.lib
-import fcntl
-from pprint import pprint
 # Hack to import rudder lib, remove, some day ...
 sys.path.insert(0, "./rudder-api-client/lib.python")
 from rudder import RudderEndPoint, RudderError
+from . import Host
 
-# Run a command in a shell like a script would do
-# And inform the user of its execution
-def shell(command, fail_exit=True, keep_output=True, live_output=False, quiet=False):
-  if not quiet:
-     print("+" + command)
-  if keep_output:
-    if live_output:
-      process = Popen(command, shell=True, universal_newlines=True)
-    else:
-      process = Popen(command, stdout=PIPE, shell=True, universal_newlines=True)
-    output, error = process.communicate()
-    retcode = process.poll()
-  else: # keep tty management and thus colors
-    process = Popen(command, shell=True)
-    retcode = process.wait()
-    output = None
-  if fail_exit and retcode != 0:
-    print(command)
-    print("*** COMMAND ERROR " + str(retcode))
-    exit(1)
-  return (retcode, output)
+def init_vagrantfile():
+  """ Initialize an empty Vagrantfile """
+  if os.path.isfile("Vagrantfile"):
+    return
+  with open("Vagrantfile", "w") as vagrant:
+    vagrant.write("""# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Network to use for first platform
+$NETWORK="192.168.0.0/24"
+# Number of ip to skip per network (1 for vagrant 5 for aws)
+$SKIP_IP=1
+
+# name of your ssh keypair
+$AWS_KEYNAME='xxx'
+# Path of the private key file
+$AWS_KEYPATH="./xxx.pem"
+# Subnet id in the VPC (id, not name)
+$AWS_SUBNET='subnet-0760ec7afa0c7448e'
+# Security group id in the VPC (id not name)
+$AWS_SECURITY_GROUP='sg-062906d71ed329ae8'
+
+# Credential for private repository (used for licenses and plugins)
+$DOWNLOAD_USER="demo-normation"
+$DOWNLOAD_PASSWORD="xxx"
+
+require_relative 'vagrant.rb'
+
+Vagrant.configure("2") do |config|
+  config.vm.provider 'virtualbox' do |v|
+      v.linked_clone = true if Vagrant::VERSION =~ /^1.8/
+  end
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+  end
+
+### AUTOGEN TAG
+
+end
+""")
 
 class Platform:
   """ A test platform
@@ -53,6 +64,7 @@ class Platform:
     self.provider = "virtualbox"
     self.override = override
     self.has_relay = False
+    init_vagrantfile()
     filename = "platforms/" + name + ".json"
     if not os.path.isfile(filename):
       print("Platform " + name + " does not exist")
