@@ -504,7 +504,7 @@ class Platform:
     # use same order as vagrant.rb
     def key(name):
       setup = self.hosts[name].info['rudder-setup']
-      prio = { 'server': '0', 'relay': '1', 'agent': '2' }
+      prio = { 'server': '0', 'dev-server' : '0', 'relay': '1', 'agent': '2' }
       if setup in prio:
         return prio[setup] + name
       else:
@@ -517,7 +517,7 @@ class Platform:
     # guess the server if there is one
     server = None
     for host in self.hosts.values():
-      if 'server' in host.info['rudder-setup']:
+      if 'server' in host.info['rudder-setup'] or 'dev-server' in host.info['rudder-setup']:
         server = host
           
     # do the startup procedure
