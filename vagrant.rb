@@ -265,7 +265,7 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
     cfg.vm.network :forwarded_port, guest: 80, host: port
     cfg.vm.network :forwarded_port, guest: 443, host: port+1
   end
-  if machine['rudder-setup'] == "dev-server" then
+  if machine['server-type'] == "dev" then
     cfg.vm.network :forwarded_port, guest: 389, host: 1389
     cfg.vm.network :forwarded_port, guest: 5432, host: 15432
 
@@ -395,19 +395,7 @@ end
 
 # Create the command used to provision the machine
 def provisioning_command(machine, host_name, net, machines)
-  dev = false
-  demo = false
   setup = machine['rudder-setup']
-  if setup =="demo-server"
-    setup = "server"
-    demo = true
-  end
-  if setup == "dev-server"
-    setup = "server"
-    dev = true
-    dev_var="DEV_MODE=true"
-  end
-
   host_list = machines.join(" ")
 
   # This works because even with cidr we will never cross the digit boundary
@@ -443,7 +431,10 @@ def provisioning_command(machine, host_name, net, machines)
       command += "set +x\nexport DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\"\nexport DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\"\nset -x\n"
 
       network = net.to_s + "/" + net.prefix.to_s
-      environment = "#{proxy} #{dev_var}"
+      environment = "#{proxy}"
+      if machine['server-type'] == "dev" then
+        environment += " DEV_MODE=true"
+      end
       environment += " PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
       environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} ADMIN_PASSWORD=admin REPO_PREFIX=rtf/"
 
@@ -472,11 +463,12 @@ def provisioning_command(machine, host_name, net, machines)
         end
         command += "#{environment} /usr/local/bin/rudder-setup #{action}-#{setup} \"#{machine['rudder-version']}\" #{arg3} #{filter}\n"
       end
-      if dev then
-        command += "/vagrant/scripts/dev.sh\n"
-      end
-      if demo then
-        command += "/vagrant/scripts/demo-server-setup.sh\n"
+      if setup == "server" then
+        if machine['server-type'] == "dev" then
+          command += "/vagrant/scripts/dev.sh\n"
+        elsif machine['server-type'] == "demo" then
+          command += "/vagrant/scripts/demo-server-setup.sh\n"
+        end
       end
     end
   end
