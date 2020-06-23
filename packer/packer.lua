@@ -5,6 +5,7 @@ require 'common/strict'
 
 system = arg[1]
 publish = arg[2]
+token = arg[3]
 
 -- Load systm specific data
 dofile("systems/" .. system .. ".lua")
@@ -18,6 +19,30 @@ elseif os_arch == "i386" then
   box_name = os_name .. "-32"
 else 
   box_name = os_full_name
+end
+
+-- get next available version on vagrant cloud
+function next_version(box,token)
+  local handle = io.popen('curl -s --header "Content-Type: application/json" --header "Authorization: Bearer ' .. token .. '" https://app.vagrantup.com/api/v1/box/normation/' .. box)
+  local data = handle:read()
+  local box_data = json.decode(data)
+  if box_data.name == nil then
+    print("Missing box in vagrant cloud: " .. box)
+    os.exit(1)
+  end
+  local version = box_data.current_version.version
+  if version == nil then
+    return "2.0"
+  end
+  local s1,s2 = version:find("%d+")
+  local major = tonumber(version:sub(s1,s2))
+  local s1,s2 = version:find("%d+", s2+1)
+  local minor = tonumber(version:sub(s1,s2))
+  if major < 2 then
+    return "2.0"
+  end
+  minor = minor + 1
+  return major .. "." .. minor
 end
 
 -- initialization scripts
@@ -76,12 +101,14 @@ local vbox = {
 
 
 -- vagrant cloud publish
-local vagrant_cloud = {
+function vagrant_cloud(box, token)
+  return {
     type = "vagrant-cloud",
-    box_tag = "normation/" .. box_name,
-    access_token = "{{user `cloud_token`}}",
-    version = "2.0"
-}
+    box_tag = "normation/" .. box,
+    access_token = token,
+    version = next_version(box,token)
+  }
+end 
 
 -- Vagrant box creation
 local vagrant = {
@@ -90,8 +117,11 @@ local vagrant = {
 }
 
 -- List of processors
-local post_processors_ = { { vagrant, vagrant_cloud } }
-
+if (publish == "true") then
+  post_processors_ = { { vagrant, vagrant_cloud(box_name,token) } }
+else
+  post_processors_ = { { vagrant } }
+end
 
 -- Generate final json
 local conf = {

@@ -8,11 +8,13 @@ PUBLISH = false
 %:
 	@date
 	mkdir -p $(DESTDIR)
-	lua packer.lua $@ $(PUBLISH) > $(DESTDIR)/result.json
-	packer validate -var cloud_token=$(CLOUD_TOKEN) $(DESTDIR)/result.json
-	packer build -var cloud_token=$(CLOUD_TOKEN) -on-error=abort target/result.json
+	lua packer.lua $@ $(PUBLISH) $(CLOUD_TOKEN) > $(DESTDIR)/result.json
+	packer validate $(DESTDIR)/result.json
+	packer build -on-error=abort target/result.json
 	@date
 
 clean:
 	rm -rf target output-virtualbox-iso
 
+veryclean: clean
+	rm -rf builds
