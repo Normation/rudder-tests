@@ -11,6 +11,7 @@ import scenario.lib
 sys.path.insert(0, "./rudder-api-client/lib.python")
 from rudder import RudderEndPoint, RudderError
 from . import Host
+from .utils import shell
 
 def init_vagrantfile():
   """ Initialize an empty Vagrantfile """
