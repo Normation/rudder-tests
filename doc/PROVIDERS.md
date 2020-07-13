@@ -65,7 +65,7 @@ apt install awscli
 aws configure
 ```
 
-Configure VPC: 
+Configure VPC:
 - Create a VPC
 - Give it one subnet (note the id)
 - Give it one internet gateway
@@ -78,6 +78,12 @@ Create a key pair (note the name):
 
 Configure the parameters at the top of the Vagrantfile:
 ```
+# Do not set any network_prefix
+# Setup a NETWORK based on your defined aws subnet
+$NETWORK="192.168.0.0/24"
+# aws credentials
+$AWS_KEY='XXX'
+$AWS_SECRET='XXXX'
 # name of your ssh keypair
 $AWS_KEYNAME='rtf-XXX'
 # Path of the private key file
