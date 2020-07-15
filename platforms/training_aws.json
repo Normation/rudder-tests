@@ -1,0 +1,6 @@
+{
+  "default":{ "provider":"aws", "rudder-version": "6.0", "system": "ubuntu18", "inventory-os": "ubuntu", "forget_credentials": "true" },
+  "server": { "rudder-setup": "server" },
+  "agent1": { "rudder-setup": "agent"  },
+  "agent2": { "rudder-setup": "agent", "system": "windows2019" }
+}

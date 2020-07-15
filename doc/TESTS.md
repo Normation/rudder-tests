@@ -8,7 +8,7 @@ Tests are in spec/tests/
 Just copy an existing test, and it can be used.
 
 - Tests are serverspec files. They use a common code that can be found in spec/spec_helper.rb.
-- Test parameters are provided vira environment_variables. Environment variables named RUDDER_* are already parsed into a global array named $params
+- Test parameters are provided via environment_variables. Environment variables named RUDDER_* are already parsed into a global array named $params
 - Tests consist of examples that are executed in order and their result is checked using rspec syntax
 - Examples should be ressource types from serverspec: http://serverspec.org/resource_types.html
 - Access to rudder api is provided by a prepared command line in the variable $rcli (equivalent to calling ./rudder-cli in rudder-api-client)
@@ -64,13 +64,13 @@ A typical scenario:
 Writing a technique test
 ------------------------
 
-Technique tests use a special scenario to test a technique. The are localed in the technique folder,
+Technique tests use a special scenario to test a technique. The are placed in the technique folder,
 in a `tests` directory, containing:
 
 - `my_test.metadata`: The main file, in JSON, containing information about the test, for example the global compliance and the paths of other test files.
 - `my_test.json`: The directive parameters for the test.
 - `my_test.rb`: The serverspec file containing the actual test. It should check if the directive was correctly applied.
-- `my_test.cf`(optionnal): A CFEngine policy to enforce before starting the test, to prepare the environement.
+- `my_test.cf`(optional): A CFEngine policy to enforce before starting the test, to prepare the environment.
 
 This content can be generated from an existing directive, using:
 

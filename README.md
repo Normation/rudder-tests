@@ -18,7 +18,6 @@ Get the long help:
 Use cases
 ---------
 
-
 Every parameter after the platform name in "./rtf platform setup" is an additional parameter to the platform, ie it a key=value that is identical to the ones available in the platform.json file.
 Examples of such parameters:
 - rudder-version=ci/6.0 (this one can be abbreviated to "6.0")
@@ -26,7 +25,7 @@ Examples of such parameters:
 - plugins=all : install all available plugins (you can specify a space separated list of plugins instead)
 - plugins_version=nightly : by default release versions of plugins are installed (ci and ci/nightly are also available)
 - forget_credential=true : to avoid keeping your download credentials on the vm (useful if you are going to export the platform)
-- provider=aws : to instanciate the platform on aws
+- provider=aws : to instantiate the platform on aws see doc/PROVIDERS.md for more details
 
 Global parameters can be put directly in the Vagrantfile.
 Examples of such parameters:

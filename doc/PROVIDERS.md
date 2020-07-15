@@ -32,7 +32,7 @@ You need to install several vagrant plugins to use libvirt (vagrant plugin insta
 - vagrant-libvirt (Support of libvirt as provider)
 - vagrant-mutate (To transform virtualbox boxes to libvirt format)
 
-Unless the box is available on Atlas with libvirt provider, You will need to add boxes before lauching your tests:
+Unless the box is available on Atlas with libvirt provider, You will need to add boxes before launching your tests:
 ```
 vagrant box add <box-name>
 vagrant mutate <box-name> libvirt
@@ -81,9 +81,9 @@ Configure the parameters at the top of the Vagrantfile:
 # Do not set any network_prefix
 # Setup a NETWORK based on your defined aws subnet
 $NETWORK="192.168.0.0/24"
-# aws credentials
-$AWS_KEY='XXX'
-$AWS_SECRET='XXXX'
+# aws credentials (if you have not configured awscli)
+#$AWS_KEY='XXX'
+#$AWS_SECRET='XXXX'
 # name of your ssh keypair
 $AWS_KEYNAME='rtf-XXX'
 # Path of the private key file
@@ -96,3 +96,21 @@ $AWS_SECURITY_GROUP='sg-062906d71ed329ae8'
 
 You can now use rtf with aws as you usually do with virtualbox.
 
+Using windows box on AWS
+------------------------
+
+You need the following plugins to make it work:
+
+```
+vagrant plugin install winrm
+vagrant plugin install winrm-fs
+vagrant plugin install winrm-elevated
+vagrant plugin install vagrant-aws-winrm
+vagrant plugin install vagrant-winrm-syncedfolders
+```
+
+To access windows VM: get its instance id and it IP address from aws console.
+Then run this command using awscli: 
+```
+aws ec2 get-password-data --instance-id <instance_id> --priv-launch-key <aws_priv_key.pem>
+```

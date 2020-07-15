@@ -129,6 +129,8 @@ $vagrant_systems = {
   "windows2012" => "opentable/win-2012r2-standard-amd64-nocm",
   "windows2008r2" => "opentable/win-2008r2-standard-amd64-nocm",
   "windows2012r2" => "opentable/win-2012r2-standard-amd64-nocm",
+  "windows2016" => "TODO",
+  "windows2019" => "TODO",
 }
 
 # list of boxes that don't have vboxsf enabled
@@ -159,7 +161,9 @@ $aws = {
   "ubuntu16" => [ "ami-0e55e373", "ubuntu" ],
   "ubuntu18" => [ "ami-0701e7be9b2a77600", "ubuntu" ],
 
-  "windows2012" => [ "ami-802492fd", "ec2-user" ],
+  "windows2012" => [ "ami-802492fd", "Administrator" ],
+  "windows2016" => [ "ami-044b14bf9ccadeee9", "Administrator" ],
+  "windows2019" => [ "ami-08b8bf0a2fb1864a2", "Administrator" ],
 }
 
 require 'socket'
@@ -215,7 +219,12 @@ def platform(config, pf_id, pf_name, override={})
       # Synchronize at least scripts
       if $vboxsfbug.include?($vagrant_systems[machine['system']]) or machine['provider'] == "aws" then
         cfg.vm.synced_folder ".", "/vagrant", disabled: true
-        cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
+        if machine['system'] =~ /win/ then
+          # winrm type is defined by vagrant-winrm-syncedfolders plugin
+          cfg.vm.synced_folder "scripts", "C:/vagrant/scripts", type: "winrm"
+        else
+          cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
+        end
       end
       # the provisioning script is generated
       cfg.vm.provision :shell, :inline => provisioning_command(machine, host_name, network, machines)
@@ -318,6 +327,8 @@ def aws_machine(cfg, machines, host_name, machine, name, ip)
     aws.tags = {
       'Name': "#{name}"
     }
+    # Allow incoming winrm connections
+    aws.user_data = '<powershell>netsh advfirewall firewall add rule name="WinRM HTTP" dir=in localport=5985 protocol=TCP action=allow</powershell>'
   end
 
   cfg.vm.box = 'dummy' # aws plugin does not use regular boxes
@@ -326,10 +337,14 @@ def aws_machine(cfg, machines, host_name, machine, name, ip)
   cfg.ssh.username = $aws[machine['system']][1]
   cfg.ssh.private_key_path = $AWS_KEYPATH
 
-  # TODO handle windows
-  #cfg.vm.communicator = "winrm"
-  #cfg.winrm.username = "Administrator"
-  #cfg.winrm.password = "VagrantRocks"
+  if machine['system'] =~ /win/ then
+    # defaul communicator is ssh and works for linux
+    # use :winrm (and not "winrm") on windows
+    cfg.vm.communicator = :winrm
+    cfg.winrm.username = "Administrator"
+    # :aws is defined by vagrant-aws-winrm plugin
+    cfg.winrm.password = :aws
+  end
 end
 
 # Returns a proxy configuration if we are in Normation office
