@@ -210,7 +210,7 @@ def platform(config, pf_id, pf_name, override={})
 
     # Network information
     network, ip, port = network_info(machine, pf_id, host_id)
-  
+
     # Configure
     config.vm.define name do |cfg|
       unless $vagrant_systems.include? machine['system'] then
@@ -221,7 +221,7 @@ def platform(config, pf_id, pf_name, override={})
         cfg.vm.synced_folder ".", "/vagrant", disabled: true
         if machine['system'] =~ /win/ then
           # winrm type is defined by vagrant-winrm-syncedfolders plugin
-          cfg.vm.synced_folder "scripts", "C:/vagrant/scripts", type: "winrm"
+          cfg.vm.synced_folder "scripts", "C:/vagrant/", type: "winrm"
         else
           cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
         end
@@ -421,11 +421,11 @@ def provisioning_command(machine, host_name, net, machines)
   # provisioning script
   command = ""
   if machine['system'] =~ /win/ then
-    command += "c:/vagrant/scripts/network.cmd #{net_prefix} #{first_ip} #{host_list} \n"
+    command += "& \"c:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
     if setup != "empty" and setup != "ncf" then
       command += "mkdir \"c:/Program Files/Rudder\"\n"
-      command += "echo #{machine['server']} > \"c:/Program Files/Rudder/policy_server.dat\"\n"
-      command += "c:/vagrant/rudder-plugins/rudder-agent-dsc.exe /S\n"
+      command += "\"#{machine['server']}\" | Out-File -Encoding utf8 -FilePath \"c:/Program Files/Rudder/policy_server.dat\"\n"
+      #command += "c:/vagrant/rudder-plugins/rudder-agent-dsc.exe /S\n"
     end
   else
     command = "set -x\n"
