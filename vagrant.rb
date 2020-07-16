@@ -221,7 +221,7 @@ def platform(config, pf_id, pf_name, override={})
         cfg.vm.synced_folder ".", "/vagrant", disabled: true
         if machine['system'] =~ /win/ then
           # winrm type is defined by vagrant-winrm-syncedfolders plugin
-          cfg.vm.synced_folder "scripts", "C:/vagrant/", type: "winrm"
+          cfg.vm.synced_folder "scripts", "C:/vagrant/scripts", type: "winrm"
         else
           cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
         end
@@ -421,11 +421,11 @@ def provisioning_command(machine, host_name, net, machines)
   # provisioning script
   command = ""
   if machine['system'] =~ /win/ then
-    command += "& \"c:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
+    if machine['provider'] != "aws" then
+      command += "& \"C:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
+    end
     if setup != "empty" and setup != "ncf" then
-      command += "mkdir \"c:/Program Files/Rudder\"\n"
-      command += "\"#{machine['server']}\" | Out-File -Encoding utf8 -FilePath \"c:/Program Files/Rudder/policy_server.dat\"\n"
-      #command += "c:/vagrant/rudder-plugins/rudder-agent-dsc.exe /S\n"
+      command += "& \"C:/vagrant/scripts/rudder-setup.ps1\" -Version #{machine['rudder-version']} -PolicyServer \"#{machine['server']}\" -User \"#{$DOWNLOAD_USER}\" -Password \"#{$DOWNLOAD_PASSWORD}\"\n"
     end
   else
     command = "set -x\n"
