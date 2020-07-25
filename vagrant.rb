@@ -421,9 +421,14 @@ def provisioning_command(machine, host_name, net, machines)
   # provisioning script
   command = ""
   if machine['system'] =~ /win/ then
-    if machine['provider'] != "aws" then
-      command += "& \"C:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
+    if machine['provider'] == "aws" then
+      key = $AWS_KEYPATH
+      public_key = `ssh-keygen -y -f #{key}`
+      command += "& \"c:/vagrant/scripts/setup-ssh-windows.ps1\" \"#{public_key}\"\n"
+    else
+      command += "& \"c:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
     end
+
     if setup != "empty" and setup != "ncf" then
       command += "& \"C:/vagrant/scripts/rudder-setup.ps1\" -Version #{machine['rudder-version']} -PolicyServer \"#{machine['server']}\" -User \"#{$DOWNLOAD_USER}\" -Password \"#{$DOWNLOAD_PASSWORD}\"\n"
     end
