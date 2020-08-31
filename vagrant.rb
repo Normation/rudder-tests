@@ -129,8 +129,8 @@ $vagrant_systems = {
   "windows2012" => "opentable/win-2012r2-standard-amd64-nocm",
   "windows2008r2" => "opentable/win-2008r2-standard-amd64-nocm",
   "windows2012r2" => "opentable/win-2012r2-standard-amd64-nocm",
-  "windows2016" => "TODO",
-  "windows2019" => "TODO",
+  #"windows2016" => "TODO",
+  "windows2019" => "StefanScherer/windows_2019",
 }
 
 # list of boxes that don't have vboxsf enabled
@@ -248,7 +248,7 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   if machine['rudder-setup'] =~ /server/ then
     memory = 2048
   elsif machine['system'] =~ /win/ then
-    memory = 512
+    memory = 2048
   elsif machine['system'] =~ /solaris/ then
     memory = 1024
   else
@@ -287,6 +287,10 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   # common conf
   cfg.vm.network :private_network, ip: ip.to_s()
   cfg.vm.hostname = host_name
+  if machine['system'] =~ /win/ then
+    cfg.ssh.insert_key = false
+    cfg.ssh.username = 'Administrator'
+  end
 
   # Add new disk if specified
   cfg.trigger.after :up do |trigger|
@@ -420,16 +424,28 @@ def provisioning_command(machine, host_name, net, machines)
 
   # provisioning script
   command = ""
+  if machine['provider'] == "aws" then
+    key = $AWS_KEYPATH
+    public_key = `ssh-keygen -y -f #{key}`
+  else
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"
+  end
+
+  # TODO handle user specific key
   if machine['system'] =~ /win/ then
-    if machine['provider'] == "aws" then
-      key = $AWS_KEYPATH
-      public_key = `ssh-keygen -y -f #{key}`
-      command += "& \"c:/vagrant/scripts/setup-ssh-windows.ps1\" \"#{public_key}\"\n"
-    else
+    if machine['provider'] != "aws" then
+      command += "Write-Host \"Setting up network\"\n"
       command += "& \"c:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
     end
+    command += "Write-Host \"Setting up fr keyboard\"\n"
+    command += "Set-WinUserLanguageList -LanguageList fr-FR -Confirm:$false -Force\n"
+    command += "Write-Host \"Setting up extras\"\n"
+    command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/windows-extra.ps1\"\n"
+    command += "Write-Host \"Setting up ssh\"\n"
+    command += "c:/vagrant/scripts/setup-ssh-windows.ps1 '#{public_key}'\n"
 
     if setup != "empty" and setup != "ncf" then
+      command += "Write-Host \"Setting up rudder agent\"\n"
       command += "& \"C:/vagrant/scripts/rudder-setup.ps1\" -Version #{machine['rudder-version']} -PolicyServer \"#{machine['server']}\" -User \"#{$DOWNLOAD_USER}\" -Password \"#{$DOWNLOAD_PASSWORD}\"\n"
     end
   else
@@ -561,7 +577,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     # the provisioning script is generated
     cfg.vm.synced_folder ".", "/vagrant", disabled: true # disable default sync
     cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
-    cfg.vm.provision :shell, :inline => provisioning_command(machine, host_name, network, machines)
+    cfg.vm.provision :shell, :inline => provisioning_command(machine, host_name, network, machines), privileged: true
 
     vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   end

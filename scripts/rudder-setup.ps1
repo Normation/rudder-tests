@@ -69,7 +69,7 @@ if([string]::IsNullOrEmpty($User)) {
 
 # setup server
 if(-not [string]::IsNullOrEmpty($PolicyServer)) {
-  mkdir "c:/Program Files/Rudder"
+  New-Item -ItemType Directory -Force -Path "c:/Program Files/Rudder"
   $PolicyServer | Out-File -Encoding utf8 -FilePath "c:/Program Files/Rudder/policy_server.dat"
 }
 
