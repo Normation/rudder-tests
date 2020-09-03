@@ -1,2 +1,2 @@
 from .scenario import ScenarioInterface
-from .reports import XMLReport
+from .reports import XMLReport, JSONReport

@@ -21,5 +21,10 @@ class windows_ncf(ScenarioInterface):
     self.ssh_on("localhost", "git clone --branch " + branch + " git@github.com:Normation/rudder-agent-windows.git " + self.workspace + "/rudder-agent-windows")
     # push it on the agent
     self.push_on(agent, self.workspace + "/rudder-agent-windows/packaging/tests", "C:\Program Files\Rudder", True)
-    self.run_testinfra(agent, "windows_ncf")
+    test_path = "C:/Program Files/Rudder/tests/Command_Execution.Tests.ps1"
+    self.run_testinfra(agent, "windows_ncf", TEST_PATH=test_path)
+
+    test_path = "C:/Program Files/Rudder/tests/Condition_from_variable_match.Tests.ps1"
+    self.run_testinfra(agent, "windows_ncf", TEST_PATH=test_path)
+
     self.finish()

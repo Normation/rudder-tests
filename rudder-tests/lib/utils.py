@@ -72,5 +72,8 @@ def datastate_to_ssh(hostname, host, dst):
   User {2}
   Port {3}
   IdentityFile {4}
+  UserKnownHostsFile /dev/null
+  StrictHostKeyChecking no
+  PasswordAuthentication no
 """.format(hostname, host["ip"], host["ssh_user"], host["ssh_port"], host["ssh_cred"]))
 

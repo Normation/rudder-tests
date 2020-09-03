@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import subprocess
 import tempfile
 import re
 import os
@@ -6,7 +7,7 @@ import json
 import requests
 import traceback
 import pytest
-from lib.reports import XMLReport
+from lib.reports import XMLReport, JSONReport
 from jsonschema import validate, draft7_format_checker, Draft7Validator, RefResolver
 from subprocess import Popen, check_output, PIPE, CalledProcessError
 from time import sleep
@@ -34,7 +35,10 @@ class ScenarioInterface:
     self.__set_token()
 
   def __set_token(self):
-    self.token = self.ssh_on(self.nodes("server")[0], "cat /var/rudder/run/api-token")[1]
+    try:
+      self.token = self.ssh_on(self.nodes("server")[0], "cat /var/rudder/run/api-token")[1]
+    except:
+      self.token = ""
 
   # Validate that the given datastate is compatible with the scenario specific
   # required platform
@@ -131,21 +135,30 @@ class ScenarioInterface:
           ssh_cmd = "ssh -i %s %s@%s -p %s %s \"%s\""%(infos["ssh_cred"], infos["ssh_user"], infos["ip"], infos["ssh_port"], options, command)
       return shell(ssh_cmd)
 
-  def push_on(self, host, src, dst):
+  def push_on(self, host, src, dst, recursive=False):
       if host == "localhost":
-          command = "cp %s %s"%(src, dst)
+          if recursive:
+            command = "cp %s %s"%(src, dst)
+          else:
+            command = "cp -r %s %s"%(src, dst)
       else:
           infos = self.datastate[host]
           default_ssh_options = ["StrictHostKeyChecking=no", "UserKnownHostsFile=/dev/null"]
           options = "-o \"" + "\" -o \"".join(default_ssh_options) + "\""
-          command = "scp -i %s -P%s %s  \"%s\" %s@%s:%s"%(infos["ssh_cred"], infos["ssh_port"], options, src, infos["ssh_user"], infos["ip"], dst)
+          if recursive:
+            command = 'scp -r -i %s -P%s %s  "%s" "%s@%s:\\"%s\\""'%(infos["ssh_cred"], infos["ssh_port"], options, src, infos["ssh_user"], infos["ip"], dst)
+          else:
+            # The horrendous syntax is to be fully compatible with windows path, and path using spaces
+            # It should run something like:  scp abc "Administrator@34.240.38.95:\"C:/Program Files/Rudder\""
+            command = 'scp -i %s -P%s %s  "%s" "%s@%s:\\"%s\\""'%(infos["ssh_cred"], infos["ssh_port"], options, src, infos["ssh_user"], infos["ip"], dst)
       return shell(command)
 
   def start(self):
     self.start = datetime.now().isoformat()
     os.makedirs("/tmp/rtf_scenario", exist_ok=True)
     self.workspace = tempfile.mkdtemp(dir="/tmp/rtf_scenario")
-    self.report = XMLReport(self.workspace + "/result.xml", self.workspace)
+    self.report = JSONReport(self.workspace + "/result.xml", self.workspace)
+    #self.report = XMLReport(self.workspace + "/result.xml", self.workspace)
     print(colors.YELLOW + "[" + self.start + "] Begining of scenario " + self.name + colors.RESET)
 
   def finish(self):
@@ -229,11 +242,11 @@ class ScenarioInterface:
     All args are passed in a serialized json named test_data
   """
   def run_testinfra(self, target, test, error_mode=Err.CONTINUE, **kwargs):
-    print(colors.BLUE + "Running test %s on %s"%(test, target) + colors.RESET)
-    # prepare command
     input_data = {}
     for k,v in kwargs.items():
       input_data[k.lower()] = v
+    print(colors.BLUE + "Running test %s on %s with:\n%s"%(test, target, json.dumps(input_data)) + colors.RESET)
+    # prepare command
     testfile = "testinfra/tests/" + test + ".py"
     ssh_config_file =  self.workspace + "/ssh_config"
     datastate_to_ssh(target, self.datastate[target], ssh_config_file)
@@ -242,13 +255,15 @@ class ScenarioInterface:
     except:
       webapp_url = ""
 
-    pytest_cmd = ['-s', '-v', '--test_data', json.dumps(input_data), '--token', self.token, '--webapp_url', webapp_url, testfile, "--junitxml=" + self.report.path]
+    tmp_report_file = self.workspace + "/tmp_report.json"
+    pytest_cmd = ['--capture=no', '-s', '-v', '--test_data=%s'%json.dumps(input_data), '--token=%s'%self.token, '--webapp_url=%s'%webapp_url, testfile, "--json-report", "--json-report-file=" + tmp_report_file]
     if target != "localhost":
-        pytest_cmd = ["--ssh-config=" + ssh_config_file,  "--hosts=" + target] + pytest_cmd
+        pytest_cmd = ["--ssh-config=%s"%ssh_config_file,  "--hosts=%s"%target] + pytest_cmd
+    pytest_cmd = ['pytest'] + pytest_cmd
+    print("+%s"%" ".join(pytest_cmd))
 
-    print("+%s"%pytest_cmd)
-    retcode = pytest.main(pytest_cmd)
-    self.report.merge_reports(self.name)
+    retcode = subprocess.call(pytest_cmd)
+    self.report.merge_reports(self.name, new_report=tmp_report_file, input_data=input_data, datastate=self.datastate)
 
     if retcode != 0:
       if error_mode != Err.IGNORE:
