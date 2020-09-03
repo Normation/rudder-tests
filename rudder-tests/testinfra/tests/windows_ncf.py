@@ -10,6 +10,9 @@ def test_path(test_data):
 Main test
 """
 def test_ncf(host, token, webapp_url, test_path):
-  cmd = host.run("rudder agent tests -TestFile '%s'"%test_path)
+  if test_path != "all":
+    cmd = host.run("rudder agent tests -TestFile '%s'"%test_path)
+  else:
+    cmd = host.run("rudder agent tests")
   assert cmd.succeeded
 

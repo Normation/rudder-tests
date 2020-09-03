@@ -22,11 +22,12 @@ class ScenarioInterface:
   """ Holds a scenario data
   Most scenario related methods are global and not in this class to make scenario writing look like script writing
   """
-  def __init__(self, name, datastate, schema={}):
+  def __init__(self, name, datastate, schema={}, scenario_input={}):
     self.name = name
     self.stop = False
     self.errors = False
     self.datastate = datastate
+    self.scenario_input = scenario_input
     self.rspec = "ruby -S rspec --order defined --fail-fast"
     self.token = ""
     self.schema = schema
@@ -263,7 +264,7 @@ class ScenarioInterface:
     print("+%s"%" ".join(pytest_cmd))
 
     retcode = subprocess.call(pytest_cmd)
-    self.report.merge_reports(self.name, new_report=tmp_report_file, input_data=input_data, datastate=self.datastate)
+    self.report.merge_reports(self.name, new_report=tmp_report_file, input_data=input_data, datastate=self.datastate, scenario_input=self.scenario_input)
 
     if retcode != 0:
       if error_mode != Err.IGNORE:
