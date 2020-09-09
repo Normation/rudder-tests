@@ -39,4 +39,4 @@ Run a platform on AWS (see doc/PROVIDERS.md for details) :
 - use provider=aws in the platform description
 - that's all
 
-See doc/TESTS.md to ad new tests ans scenarios
+See doc/TESTS.md to add new tests ans scenarios

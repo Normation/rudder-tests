@@ -76,4 +76,27 @@ This content can be generated from an existing directive, using:
 
 `rtf test from-directive <platform> <directiveid> <test_name> <destination_path>`
 
+Running a test scenario
+-----------------------
+
+Prerequisites:
+You need ruby and serverspec installed on your system.
+
+rudder-test comes with a test scenario to test ncf: `ncf_tests`
+To run it, you need an environement set up with an empty system, with hostname `agent`
+`
+ncf.json:
+{
+  "default":{ "run-with": "vagrant", "rudder-version": "6.1", "system": "debian10" },
+  "agent": { "rudder-setup": "empty"}
+}
+`
+Then set it up with rtf
+`rtf platform setup ncf`
+
+And then run the scenario
+`./rtf scenario ncf_tests ncf 6.1`
+
+If there are any error, you may inspect logs on the VM in `/tmp/tmp.bunch_of_letter/test/acceptance/` (by default the VM is 
+destroyed after the scenario is run, so you'll need to remove the  platform.teardown() and change destroyOnError to False l294 in rtf) 
 
