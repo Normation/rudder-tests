@@ -58,7 +58,7 @@ class JSONReport:
                    ]
     }
   """
-  def merge_reports(self, name, new_report=None, input_data={}, datastate={}):
+  def merge_reports(self, name, new_report=None, input_data={}, datastate={}, scenario_input={}):
     if new_report is None:
       new_report=self.workspace + "/serverspec-result.xml"
     try:
@@ -66,6 +66,7 @@ class JSONReport:
         main_data = json.load(main_json)
     except:
         main_data = { "datastate": datastate,
+                      "scenario_input": scenario_input,
                       "summary": { "passed": 0, "total": 0, "collected": 0 },
                       "scenarios": [
                         { "name": name,
