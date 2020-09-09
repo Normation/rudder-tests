@@ -177,7 +177,8 @@ $SKIP_IP ||= 1
 def platform(config, pf_id, pf_name, override={})
   conffile = "platforms/"+pf_name+".json"
   unless File.file?(conffile)
-    puts "File " + conffile + " doesn't exist"
+    puts "File " + conffile + " doesn't exist, skipping it"
+    return
   end
   file = open(conffile)
   json = file.read
