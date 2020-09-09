@@ -5,6 +5,8 @@ import copy
 import re
 import sys
 import importlib
+import netifaces
+import ipaddress
 import signal
 import scenario.lib
 # Hack to import rudder lib, remove, some day ...
@@ -116,7 +118,7 @@ class Platform:
     for host in self.hosts.values():
       if 'server' in host.info['rudder-setup']:
         server = host
-          
+
     # do the startup procedure
     for hostname in self.sorted_hosts():
       host = self.hosts[hostname]
@@ -178,13 +180,46 @@ class Platform:
             uuids.pop()
             if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
               exit(1)
-  
+
           # update promises on the whole chain
           relays.append(server)
           relays.reverse()
           for h in relays:
             h.run("rudder agent run -u", quiet=False, live_output=True, fail_exit=fail_exit)
           host.run("rudder agent run -ui", quiet=False, live_output=True, fail_exit=fail_exit)
+
+  def pf_id_to_network(self, pf_id):
+    # Since the mask is always 255.255.255.0 this is reasonable
+    base_subnet = "192.168.0.0/24"
+    with open("Vagrantfile", "r+") as fd:
+      for line in fd:
+        m = re.match("^\$NETWORK\s*=\s*[\'\"](.*)[\'\"]", line)
+        if bool(m):
+          print("Taking base network %s"%m.group(1))
+          base_subnet = m.group(1)
+    subnet = ipaddress.ip_network(base_subnet)
+    return (str(subnet.network_address + 2**(32-subnet.prefixlen)*pf_id), str(subnet.netmask))
+
+  def is_network_in_use(self, subnet):
+    """
+      Expect a tuple containing 2 strings defining a subnet
+      ex: ("192.168.0.0", "24")
+      if an interfaces already uses such network
+    """
+    # Retrieve all ipv4 networks in use
+    interfaces = netifaces.interfaces()
+    target = ipaddress.IPv4Network(subnet, strict=False)
+    ips = []
+    for i in interfaces:
+      for nb in netifaces.ifaddresses(i).values():
+        for used_ip in nb:
+          if "netmask" in used_ip:
+            try:
+              if ipaddress.IPv4Network((used_ip["addr"], used_ip["netmask"]), strict=False).overlaps(target):
+                return True
+            except:
+              pass
+    return False
 
   def reset_platform(self):
     """ Update or replace the Vagrantfile configuration for the given platform """
@@ -217,6 +252,9 @@ class Platform:
         elif not updated and re.match(r'### AUTOGEN TAG', line):
           # Look for an available id between 1 and max_pf_id+1 (max_pf_id+1 is always available)
           next_id = [ x for x in range(1, max_pf_id+2) if not x in ids ][0]
+          # Verify that the generated subnet from the pf_id will not conflict with another one
+          while self.is_network_in_use(self.pf_id_to_network(next_id)):
+            next_id = next_id + 1
           if next_id >= 256:
             print(" New platform id will be "+next_id+" which will fail (invalid ip, ...) , please delete some platform before creating a new one")
             exit(6)
@@ -253,6 +291,7 @@ class Platform:
         outfile.write(host.ssh_config(keydir))
 
     # create vm dumps
+
     for host in self.hosts.values():
       host.export(dirname)
 
