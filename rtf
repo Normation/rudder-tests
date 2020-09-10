@@ -148,6 +148,7 @@ Commands
 
 from subprocess import Popen, PIPE
 import os
+import sys
 import re
 import importlib
 import docopt
@@ -203,121 +204,129 @@ def find_tests(techniques, filter, last_version):
 ##########################
 
 if __name__ == "__main__":
-  args = docopt.docopt(__doc__)
-  script_dir = os.path.dirname(os.path.realpath(__file__))
-  os.chdir(script_dir)
-  # Hack nedded because there is no api client package yet
-  client_path = script_dir + "/rudder-api-client"
-  if not os.path.exists(client_path):
-    print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
-    print("If you want to use rudder-api-client from a local repository please type this command:")
-    print("ln -s ~/<path_to>/rudder-api-client")
-    exit(1)
+  try:
+    args = docopt.docopt(__doc__)
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(script_dir)
+    # Hack nedded because there is no api client package yet
+    client_path = script_dir + "/rudder-api-client"
+    if not os.path.exists(client_path):
+      print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
+      print("If you want to use rudder-api-client from a local repository please type this command:")
+      print("ln -s ~/<path_to>/rudder-api-client")
+      exit(1)
 
-  if args['platform']:
-    if args['list']:
-      list_platforms()
-    else:
-      if args['status']:
-        platform = Platform(args['<platform>'])
-        platform.status()
-      elif args['setup']:
-        override = {}
-        for kv in args['<key>=<value>']:
-          if '=' in kv:
-            (key, value) = kv.split('=')
-            override[key] = value
+    if args['platform']:
+      if args['list']:
+        list_platforms()
+      else:
+        if args['status']:
+          platform = Platform(args['<platform>'])
+          platform.status()
+        elif args['setup']:
+          override = {}
+          for kv in args['<key>=<value>']:
+            if '=' in kv:
+              (key, value) = kv.split('=')
+              override[key] = value
+            else:
+              override['rudder-version'] = kv
+          if args['--fail-early']:
+            override['extra_line'] = "set -e"
+          platform = Platform(args['<platform>'], override)
+          platform.setup(client_path, args['--fail-early'])
+        elif args['shutdown']:
+          platform = Platform(args['<platform>'])
+          platform.shutdown()
+        elif args['snapshot']:
+          platform = Platform(args['<platform>'])
+          platform.snapshot(args['<snapshot_name>'])
+        elif args['rollback']:
+          platform = Platform(args['<platform>'])
+          platform.rollback(args['<snapshot_name>'])
+        elif args['delete-snap']:
+          platform = Platform(args['<platform>'])
+          platform.snapshot_delete(args['<snapshot_name>'])
+        elif args['destroy']:
+          platform = Platform(args['<platform>'])
+          platform.teardown()
+        elif args['share']:
+          platform = Platform(args['<platform>'])
+          platform.share()
+        elif args['export']:
+          platform = Platform(args['<platform>'])
+          if args['--ova']:
+            platform.export_ova()
           else:
-            override['rudder-version'] = kv
-        if args['--fail-early']:
-          override['extra_line'] = "set -e"
-        platform = Platform(args['<platform>'], override)
-        platform.setup(client_path, args['--fail-early'])
-      elif args['shutdown']:
+            platform.export()
+        elif args['update-rudder']:
+          override = {'upgrade': 'true'}
+          if args['<version>'] is not None:
+            override['rudder-version'] = args['<version>']
+          if args['--fail-early']:
+            override['extra_line'] = "set -e"
+          platform = Platform(args['<platform>'], override)
+          platform.update_rudder(args['<version>'], args['--fail-early'])
+        elif args['update-os']:
+          pass
+        elif args['dump']:
+          platform = Platform(args['<platform>'])
+          platform.dump_datastate()
+    elif args['host']:
+      pass
+    elif args['scenario']:
+      if args['list']:
+        list_scenarii()
+      elif args['doc']:
+        scenario_doc(args['<scenario>'])
+      elif args['env']:
         platform = Platform(args['<platform>'])
-        platform.shutdown()
-      elif args['snapshot']:
+        platform.print_environment(client_path)
+      elif args['run']:
+        filter = args['--filter']
+        if filter == []:
+          filter = None
         platform = Platform(args['<platform>'])
-        platform.snapshot(args['<snapshot_name>'])
-      elif args['rollback']:
-        platform = Platform(args['<platform>'])
-        platform.rollback(args['<snapshot_name>'])
-      elif args['delete-snap']:
-        platform = Platform(args['<platform>'])
-        platform.snapshot_delete(args['<snapshot_name>'])
-      elif args['destroy']:
-        platform = Platform(args['<platform>'])
+        platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'], args['--start'], destroyOnError=args['--destroy-on-error'], json_file=args['--json'])
+      elif args['ncf_tests']:
+        platform = Platform(args['<platform>'], {})
+        platform.setup(client_path)
+        if (args['--cfengine-version'] == None):
+          args['--cfengine-version'] = ''
+        platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>'], "cfengine_version=" + args['--cfengine-version']], args['--start'], destroyOnError=True)
         platform.teardown()
-      elif args['share']:
+      elif args['technique']:
         platform = Platform(args['<platform>'])
-        platform.share()
-      elif args['export']:
+        techniques = args['<directory>']
+        # Find the tests
+        tests = find_tests(techniques, args['--technique'], args['--last-version'])
+        if not tests:
+          print("There is no test in your techniques directory")
+          exit(1)
+        # push the techniques
+        platform.push_techniques(techniques)
+        # run the tests (all at once)
+        params = ["test=" + ",".join(tests), "root=" + techniques]
+        filter = args['--filter']
+        if filter == []:
+          filter = None
+        # add the reset scenario execution before a technique test, except if --start option is precised
+        start = args['--start']
+        if start == None:
+          args['--start'] = 0
+          platform.run_scenario('reset', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']), destroyOnError=args['--destroy-on-error'])
+        platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']), destroyOnError=args['--destroy-on-error'])
+    elif args['test']:
+      if args['from-rule']:
         platform = Platform(args['<platform>'])
-        if args['--ova']:
-          platform.export_ova()
-        else:
-          platform.export()
-      elif args['update-rudder']:
-        override = {'upgrade': 'true'}
-        if args['<version>'] is not None:
-          override['rudder-version'] = args['<version>']
-        if args['--fail-early']:
-          override['extra_line'] = "set -e"
-        platform = Platform(args['<platform>'], override)
-        platform.update_rudder(args['<version>'], args['--fail-early'])
-      elif args['update-os']:
-        pass
-      elif args['dump']:
+        platform.export_test(args['<uuid>'], args['<test_name>'], args['--create-scenario'])
+      elif args['from-directive']:
         platform = Platform(args['<platform>'])
-        platform.dump_datastate()
-  elif args['host']:
-    pass
-  elif args['scenario']:
-    if args['list']:
-      list_scenarii()
-    elif args['doc']:
-      scenario_doc(args['<scenario>'])
-    elif args['env']:
-      platform = Platform(args['<platform>'])
-      platform.print_environment(client_path)
-    elif args['run']:
-      filter = args['--filter']
-      if filter == []:
-        filter = None
-      platform = Platform(args['<platform>'])
-      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'], args['--start'], destroyOnError=args['--destroy-on-error'], json_file=args['--json'])
-    elif args['ncf_tests']:
-      platform = Platform(args['<platform>'], {})
-      platform.setup(client_path)
-      if (args['--cfengine-version'] == None):
-        args['--cfengine-version'] = ''
-      platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>'], "cfengine_version=" + args['--cfengine-version']], args['--start'], destroyOnError=True)
-      platform.teardown()
-    elif args['technique']:
-      platform = Platform(args['<platform>'])
-      techniques = args['<directory>']
-      # Find the tests
-      tests = find_tests(techniques, args['--technique'], args['--last-version'])
-      if not tests:
-        print("There is no test in your techniques directory")
-        exit(1)
-      # push the techniques
-      platform.push_techniques(techniques)
-      # run the tests (all at once)
-      params = ["test=" + ",".join(tests), "root=" + techniques]
-      filter = args['--filter']
-      if filter == []:
-        filter = None
-      # add the reset scenario execution before a technique test, except if --start option is precised
-      start = args['--start']
-      if start == None:
-        args['--start'] = 0
-        platform.run_scenario('reset', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']), destroyOnError=args['--destroy-on-error'])
-      platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']), destroyOnError=args['--destroy-on-error'])
-  elif args['test']:
-    if args['from-rule']:
-      platform = Platform(args['<platform>'])
-      platform.export_test(args['<uuid>'], args['<test_name>'], args['--create-scenario'])
-    elif args['from-directive']:
-      platform = Platform(args['<platform>'])
-      platform.export_technique_test(args['<uuid>'], args['<test_name>'], args['<path>'])
+        platform.export_technique_test(args['<uuid>'], args['<test_name>'], args['<path>'])
+  except SystemExit as e:
+    exit_code = 1
+    if isinstance(e.code, int):
+      if 0 < e.code < 256:
+        exit_code = e.code
+    sys.exit(exit_code)
+
