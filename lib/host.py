@@ -1,4 +1,5 @@
 import random
+import subprocess
 import time
 import os
 import shutil
@@ -53,7 +54,8 @@ class Host:
           idle = random.randint(5, 10)
           print("Lock not available, waiting %s seconds"%idle)
           time.sleep(idle)
-    ret = os.system(proxy + "vagrant up " + self.hostid + " --provider="+self.provider)
+    command = proxy + "vagrant up " + self.hostid + " --provider="+self.provider
+    ret = subprocess.call(command.split(" "))
     fcntl.flock(f, fcntl.LOCK_UN)
     f.close()
     return ret

@@ -116,7 +116,7 @@ class Platform:
     for host in self.hosts.values():
       if 'server' in host.info['rudder-setup']:
         server = host
-          
+
     # do the startup procedure
     for hostname in self.sorted_hosts():
       host = self.hosts[hostname]
