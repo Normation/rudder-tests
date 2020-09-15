@@ -66,6 +66,7 @@ class Platform:
     self.hosts = {}
     self.provider = "virtualbox"
     self.override = override
+    self.base_subnet = "192.168.0.0/24"
     self.has_relay = False
     init_vagrantfile()
     filename = "platforms/" + name + ".json"
@@ -90,6 +91,9 @@ class Platform:
       if 'rudder-setup' in host_info and 'relay' in host_info['rudder-setup']:
         self.has_relay = True
       self.hosts[hostname] = Host(name, hostname, host_info)
+
+    # Look for base subnet if any
+    self.get_base_subnet()
 
     # add the scale out plugin when we have a relay
     if self.has_relay:
@@ -188,16 +192,17 @@ class Platform:
             h.run("rudder agent run -u", quiet=False, live_output=True, fail_exit=fail_exit)
           host.run("rudder agent run -ui", quiet=False, live_output=True, fail_exit=fail_exit)
 
-  def pf_id_to_network(self, pf_id):
-    # Since the mask is always 255.255.255.0 this is reasonable
-    base_subnet = "192.168.0.0/24"
+  def get_base_subnet(self):
     with open("Vagrantfile", "r+") as fd:
       for line in fd:
         m = re.match("^\$NETWORK\s*=\s*[\'\"](.*)[\'\"]", line)
         if bool(m):
           print("Taking base network %s"%m.group(1))
-          base_subnet = m.group(1)
-    subnet = ipaddress.ip_network(base_subnet)
+          self.base_subnet = m.group(1)
+
+  def pf_id_to_network(self, pf_id):
+    # Since the mask is always 255.255.255.0 this is reasonable
+    subnet = ipaddress.ip_network(self.base_subnet)
     return (str(subnet.network_address + 2**(32-subnet.prefixlen)*pf_id), str(subnet.netmask))
 
   def is_network_in_use(self, subnet):
