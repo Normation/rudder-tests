@@ -67,7 +67,7 @@ class JSONReport:
     except:
         main_data = { "datastate": datastate,
                       "scenario_input": scenario_input,
-                      "summary": { "passed": 0, "total": 0, "collected": 0 },
+                      "summary": { "passed": 0, "failed": 0, "total": 0, "collected": 0 },
                       "scenarios": [
                         { "name": name,
                           "tests": []
@@ -86,7 +86,10 @@ class JSONReport:
 
     # Update the scenario summary
     main_data["summary"]["total"] += new_data["summary"]["total"]
-    main_data["summary"]["passed"] += new_data["summary"]["passed"]
+    if "passed" in new_data["summary"]:
+      main_data["summary"]["passed"] += new_data["summary"]["passed"]
+    if "failed" in new_data["summary"]:
+      main_data["summary"]["failed"] += new_data["summary"]["failed"]
     main_data["summary"]["collected"] += new_data["summary"]["collected"]
 
     with open(self.path, 'w+') as outfile:
