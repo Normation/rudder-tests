@@ -6,4 +6,6 @@ else
   cp -a /vagrant/dev/fake-rudder.war /opt/rudder/share/webapps/rudder.war
 fi
 
+sed -i 's/1024/128/g' /etc/default/rudder-jetty
+
 service rudder-jetty restart
