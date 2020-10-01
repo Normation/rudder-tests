@@ -257,7 +257,7 @@ class ScenarioInterface:
       webapp_url = ""
 
     tmp_report_file = self.workspace + "/tmp_report.json"
-    pytest_cmd = ['--capture=no', '-s', '-v', '--test_data=%s'%json.dumps(input_data), '--token=%s'%self.token, '--webapp_url=%s'%webapp_url, testfile, "--json-report", "--json-report-file=" + tmp_report_file]
+    pytest_cmd = ['--capture=no', '-v', '--test_data=%s'%json.dumps(input_data), '--token=%s'%self.token, '--webapp_url=%s'%webapp_url, testfile, "--json-report", "--json-report-file=" + tmp_report_file]
     if target != "localhost":
         pytest_cmd = ["--ssh-config=%s"%ssh_config_file,  "--hosts=%s"%target] + pytest_cmd
     pytest_cmd = ['pytest'] + pytest_cmd
