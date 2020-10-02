@@ -8,6 +8,26 @@ if [ "$1" != "" ]; then
   SCRIPTS_PREFIX=$1
 fi
 
+# add common usefull packages
+if type apt-get 2> /dev/null
+then
+  export DEBIAN_FRONTEND=noninteractive
+  PM_INSTALL="apt-get -y install"
+elif type yum 2> /dev/null
+then
+  # Fix Centos5 issue installing, which install both architecture, this has no effects on other distros
+  echo "multilib_policy=best" >> /etc/yum.conf
+  PM_INSTALL="yum -y install"
+elif type zypper 2> /dev/null
+then
+  PM_INSTALL="zypper --non-interactive install"
+elif [ -x /opt/csw/bin/pkgutil ] 2> /dev/null
+then
+  PM_INSTALL="/opt/csw/bin/pkgutil --install --parse --yes"
+else
+  PM_INSTALL="echo TODO install "
+fi
+
 postclean() {
   mkdir -p /usr/local/bin
   ### THINGS TO DO ON AN ALREADY CLEAN BOX
@@ -26,15 +46,17 @@ postclean() {
   cp $SCRIPTS_PREFIX/scripts/version-test.sh /usr/local/bin/
   chmod +x /usr/local/bin/ncf
   
-  id > /tmp/xxx
 }
 
-# Temporary (event clean box don't have that yet
+# Temporary (even clean box don't have that yet)
 # Move it to Dirty below when ready
 if [ -f /etc/yum.conf ] && [ $(getconf LONG_BIT) == 64 ]
 then
   echo "exclude=*.i386 *.i686" >> /etc/yum.conf
 fi
+
+# Temporary (even clean box don't have that yet)
+${PM_INSTALL} tmux
 
 # box is clean
 if [ -f /root/clean ]
@@ -234,32 +256,13 @@ then
 fi
 
 
-# add common usefull packages
-if type apt-get 2> /dev/null
-then
-  export DEBIAN_FRONTEND=noninteractive
-  PM_INSTALL="apt-get -y install"
-elif type yum 2> /dev/null
-then
-  # Fix Centos5 issue installing, which install both architecture, this has no effects on other distros
-  echo "multilib_policy=best" >> /etc/yum.conf
-  PM_INSTALL="yum -y install"
-elif type zypper 2> /dev/null
-then
-  PM_INSTALL="zypper --non-interactive install"
-elif [ -x /opt/csw/bin/pkgutil ] 2> /dev/null
-then
-  PM_INSTALL="/opt/csw/bin/pkgutil --install --parse --yes"
-else
-  PM_INSTALL="echo TODO install "
-fi
 # this can be very long, we should make it optional
 
 # package that should exist everywhere
 ${PM_INSTALL} zsh vim less curl binutils rsync
 ${PM_INSTALL} git || ${PM_INSTALL} git-core
 # install that may fail
-${PM_INSTALL} htop ldapscripts uuid-runtime tree
+${PM_INSTALL} htop ldapscripts uuid-runtime tree 2>/dev/null
 
 # In case the vagrant box is very minimal
 if [ "${DEBIAN_VERSION}" = "8" ]

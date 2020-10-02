@@ -508,6 +508,37 @@ def provisioning_command(machine, host_name, net, machines)
         end
       end
     end
+    if machine['shell'] == 'tmux' then
+      # provide shared root shell via tmux
+      command += <<-EOS
+{ set +x; } 2>/dev/null
+echo "set -g terminal-overrides 'xterm*:smcup@:rmcup@'" >> ~/.tmux.conf
+echo "set -g status off" >> ~/.tmux.conf
+mkdir -p ~/.tmux/tmp
+cat >> ~/.bashrc <<'EOF'
+export TMUX_TMPDIR=~/.tmux/tmp
+if [ "${TMUX}" = "" ]
+then
+  tmux has-session -t development 2>/dev/null
+  if [ $? != 0 ]
+  then
+    tmux new-session -s development
+  else
+    tmux attach -t development
+  fi
+  exit $?
+fi
+EOF
+EOS
+      # force user login to root
+      user = "vagrant"
+      if machine['provider'] == "aws" then
+        user = $aws[machine['system']][1]
+      end
+      command += <<-EOS
+echo "if tty -s; then sudo -i; exit $?; fi" >> ~#{user}/.bashrc
+EOS
+    end
   end
   return command
 end
