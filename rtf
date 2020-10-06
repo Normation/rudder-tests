@@ -17,6 +17,7 @@ Usage:
     rtf platform update-rudder <platform> [--fail-early] [<version>]
     rtf platform update-os <platform> <version>
     rtf platform dump <platform>
+    rtf platform dump_mail <platform>
     rtf host list <platform>
     rtf host update-rudder <host> <version>
     rtf host update-os <host> <version>
@@ -270,6 +271,10 @@ if __name__ == "__main__":
       elif args['dump']:
         platform = Platform(args['<platform>'])
         platform.dump_datastate()
+      elif args['dump_mail']:
+        platform = Platform(args['<platform>'])
+        platform.dump_training_mail()
+
   elif args['host']:
     pass
   elif args['scenario']:

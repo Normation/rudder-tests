@@ -703,6 +703,34 @@ The test content has been generated in %s, it contains:
         effective_hosts[hostname] = host_infos
       print(json.dumps(effective_hosts, sort_keys=True, indent=2))
 
+  def dump_training_mail(self):
+    header = "Hello,\nPlease find below the informations to access the machines that you will use in the Rudder training:\n"
+    footer = "\nBest Regards"
+    core = ""
+    for host in self.hosts:
+      hostname = self.name + "_" + host
+      core = core + " %s:"%host
+
+      (code, output) = shell("vagrant ssh-config " + hostname, fail_exit=False, quiet=True)
+      user_re = re.compile(r'User (\S+)')
+      hostname_re = re.compile(r'HostName (\S+)')
+
+      for line in [l.strip() for l in output.split('\n')]:
+
+          m = hostname_re.match(line)
+          if m:
+            core = core +  " " + '{: >15}'.format(str(m.group(1)))
+
+          m = user_re.match(line)
+          if m:
+            core = core + ", login = " + str(m.group(1))
+      core = core + "\n"
+
+    print(header + core + footer)
+
+
+
+
 
 ###################
 # Utility methods #
