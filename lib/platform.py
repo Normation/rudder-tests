@@ -704,29 +704,47 @@ The test content has been generated in %s, it contains:
       print(json.dumps(effective_hosts, sort_keys=True, indent=2))
 
   def dump_training_mail(self):
-    header = "Hello,\nPlease find below the informations to access the machines that you will use in the Rudder training:\n"
+    header = "Hello,\nPlease find below the informations to access via ssh the machines that you will use in the Rudder training:\n"
     footer = "\nBest Regards"
     core = ""
     for host in self.hosts:
       hostname = self.name + "_" + host
-      core = core + " %s:"%host
+      core += " %s:"%host
 
       (code, output) = shell("vagrant ssh-config " + hostname, fail_exit=False, quiet=True)
       user_re = re.compile(r'User (\S+)')
       hostname_re = re.compile(r'HostName (\S+)')
+      port_re = re.compile(r'Port (\S+)')
 
       for line in [l.strip() for l in output.split('\n')]:
 
           m = hostname_re.match(line)
           if m:
-            core = core +  " " + '{: >15}'.format(str(m.group(1)))
+            hostname = str(m.group(1))
+            info = self.hosts[host].info
+            if info['rudder-setup'] == 'server':
+              root = hostname
+              if 'password' in info:
+                password = info['password']
+              else:
+                password = "admin"
+
+          m = port_re.match(line)
+          if m:
+            port = str(m.group(1))
 
           m = user_re.match(line)
           if m:
-            core = core + ", login = " + str(m.group(1))
-      core = core + "\n"
+            login = str(m.group(1))
+      core += " " + '{: >15}'.format(hostname) + ":" + port + ", login = " + login
+      core += "\n"
 
-    print(header + core + footer)
+      web = "\nAccess to rudder web interface:\n"
+      web += " url: https://" + root + "/\n"
+      web += " login: admin\n"
+      web += " password: " + password + "\n"
+
+    print(header + core + web + footer)
 
 
 

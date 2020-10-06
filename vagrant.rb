@@ -455,58 +455,10 @@ def provisioning_command(machine, host_name, net, machines)
       command += machine['extra_line'] + "\n"
     end
     command += "echo 'Starting VM setup'\n"
-    if machine['provider'] == "aws" then
-      command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
-      proxy = ""
-    else
-      proxy = get_proxy()
-    end
     command += "/vagrant/scripts/cleanbox.sh /vagrant\n"
     command += "/vagrant/scripts/network.sh #{net_prefix} #{first_ip} \"#{host_list}\"\n"
     unless machine.key?('provision') then
-      # hide passwords from set -x
-      command += "set +x\nexport DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\"\nexport DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\"\nset -x\n"
-
-      network = net.to_s + "/" + net.prefix.to_s
-      environment = "#{proxy}"
-      if machine['server-type'] == "dev" then
-        environment += " DEV_MODE=true"
-      end
-      environment += " PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
-      environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} ADMIN_PASSWORD=admin REPO_PREFIX=rtf/"
-
-      if setup == "ncf" then
-        command += "#{environment} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"
-      elsif setup != "empty" then
-        arg3 = ""
-        if setup == "server" then
-          arg3 = "\"#{machine['plugins']}\""
-        else
-          arg3 = "\"#{machine['server']}\""
-        end
-
-        if machine['live'] == "true" then
-          # no wait between char display, but newlines may be inserted
-          filter = ""
-        else
-          # this forces vagrant to wait for the end of the line before displaying it
-          # this avoid progress bars messing with the output
-          filter = "| head -n 1G"
-        end
-        if machine['upgrade'].nil? then
-          action="setup"
-        else
-          action="upgrade"
-        end
-        command += "#{environment} /usr/local/bin/rudder-setup #{action}-#{setup} \"#{machine['rudder-version']}\" #{arg3} #{filter}\n"
-      end
-      if setup == "server" then
-        if machine['server-type'] == "dev" then
-          command += "/vagrant/scripts/dev.sh\n"
-        elsif machine['server-type'] == "demo" then
-          command += "/vagrant/scripts/demo-server-setup.sh\n"
-        end
-      end
+      command += setup_command(machine, net, host_name)
     end
     if machine['shell'] == 'tmux' then
       # provide shared root shell via tmux
@@ -538,6 +490,67 @@ EOS
       command += <<-EOS
 echo "if tty -s; then sudo -i; exit $?; fi" >> ~#{user}/.bashrc
 EOS
+    end
+  end
+  return command
+end
+
+def setup_command(machine, net, host_name)
+  setup = machine['rudder-setup']
+  command = ""
+  if machine['provider'] == "aws" then
+    command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
+    proxy = ""
+  else
+    proxy = get_proxy()
+  end
+
+  # hide passwords from set -x
+  command += "set +x\nexport DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\"\nexport DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\"\nset -x\n"
+
+  network = net.to_s + "/" + net.prefix.to_s
+  environment = "#{proxy}"
+  if machine['server-type'] == "dev" then
+    environment += " DEV_MODE=true"
+  end
+  if machine['password'].nil? then
+    admin_pass="admin"
+  else
+    admin_pass=machine['password']
+  end
+  environment += " PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
+  environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} ADMIN_PASSWORD=#{admin_pass} REPO_PREFIX=rtf/"
+
+  if setup == "ncf" then
+    command += "#{environment} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"
+  elsif setup != "empty" then
+    arg3 = ""
+    if setup == "server" then
+      arg3 = "\"#{machine['plugins']}\""
+    else
+      arg3 = "\"#{machine['server']}\""
+    end
+
+    if machine['live'] == "true" then
+      # no wait between char display, but newlines may be inserted
+      filter = ""
+    else
+      # this forces vagrant to wait for the end of the line before displaying it
+      # this avoid progress bars messing with the output
+      filter = "| head -n 1G"
+    end
+    if machine['upgrade'].nil? then
+      action="setup"
+    else
+      action="upgrade"
+    end
+    command += "#{environment} /usr/local/bin/rudder-setup #{action}-#{setup} \"#{machine['rudder-version']}\" #{arg3} #{filter}\n"
+  end
+  if setup == "server" then
+    if machine['server-type'] == "dev" then
+      command += "/vagrant/scripts/dev.sh\n"
+    elsif machine['server-type'] == "demo" then
+      command += "/vagrant/scripts/demo-server-setup.sh\n"
     end
   end
   return command
