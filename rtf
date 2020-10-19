@@ -296,8 +296,7 @@ if __name__ == "__main__":
       platform.setup(client_path)
       if (args['--cfengine-version'] == None):
         args['--cfengine-version'] = ''
-      platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>'], "cfengine_version=" + args['--cfengine-version']], args['--start'], destroyOnError=True)
-      platform.teardown()
+      platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>'], "cfengine_version=" + args['--cfengine-version']], args['--start'], destroyOnError=False)
     elif args['technique']:
       platform = Platform(args['<platform>'])
       techniques = args['<directory>']
