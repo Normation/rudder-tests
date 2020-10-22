@@ -2,5 +2,5 @@
   "default":{ "rudder-version": "6.1", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
   "server": { "rudder-setup": "server" },
   "relay":  { "rudder-setup": "relay" },
-  "agent1": { "rudder-setup": "agent", "server": "relay" }
+  "agent1": { "rudder-setup": "agent", "server": "relay", "ram": "512" }
 }

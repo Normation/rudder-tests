@@ -7,6 +7,6 @@
   "agent14": { "rudder-setup": "agent", "system": "ubuntu14_04" },
   "agent15_10": { "rudder-setup": "agent", "system": "ubuntu15_10" },
   "agent16": { "rudder-setup": "agent", "system": "ubuntu16_04" },
-  "agent18": { "rudder-setup": "agent", "system": "ubuntu18_04" },
-  "agent20": { "rudder-setup": "agent", "system": "ubuntu20_04" }
+  "agent18": { "rudder-setup": "agent", "system": "ubuntu18_04", "ram": "512" },
+  "agent20": { "rudder-setup": "agent", "system": "ubuntu20_04", "ram": "512" }
 }
