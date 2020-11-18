@@ -110,14 +110,14 @@ $vagrant_systems = {
   "ubuntu15_10" => "wzurowski/wily64",
   "ubuntu16_04" => "normation/ubuntu-16-04-64",
   "ubuntu18_04" => "normation/ubuntu-18-04-64",
-  "ubuntu20_04" => "ubuntu/focal64",
+  "ubuntu20_04" => "normation/ubuntu-20-04-64",
 
   "ubuntu10" => "bento/ubuntu-10.04",
   "ubuntu12" => "normation/ubuntu-12.04",
   "ubuntu14" => "normation/ubuntu-14.04",
   "ubuntu16" => "normation/ubuntu-16-04-64",
   "ubuntu18" => "normation/ubuntu-18-04-64",
-  "ubuntu20" => "ubuntu/focal64",
+  "ubuntu20" => "normation/ubuntu-20-04-64",
 
   "slackware14" => "ratfactor/slackware",
 
