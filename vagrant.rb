@@ -228,7 +228,7 @@ def platform(config, pf_id, pf_name, override={})
         end
       end
       # the provisioning script is generated
-      cfg.vm.provision :shell, :inline => provisioning_command(machine, host_name, network, machines)
+      cfg.vm.provision :shell, :inline => provisioning_command(machine, pf_name, host_name, network, machines)
 
       # provider specific code
       if machine['provider'] == "aws" then
@@ -414,8 +414,9 @@ def network_info(machine, pf_id, host_id)
 end
 
 # Create the command used to provision the machine
-def provisioning_command(machine, host_name, net, machines)
+def provisioning_command(machine, pf_name, host_name, net, machines)
   setup = machine['rudder-setup']
+  name = pf_name + "_" + host_name
   host_list = machines.join(" ")
 
   # This works because even with cidr we will never cross the digit boundary
@@ -451,6 +452,7 @@ def provisioning_command(machine, host_name, net, machines)
     end
   else
     command = "set -x\n"
+    command += "echo '#{name}' > /etc/rtf_name \n"
     unless machine['extra_line'].nil?
       command += machine['extra_line'] + "\n"
     end
@@ -622,7 +624,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     # the provisioning script is generated
     cfg.vm.synced_folder ".", "/vagrant", disabled: true # disable default sync
     cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
-    cfg.vm.provision :shell, :inline => provisioning_command(machine, host_name, network, machines), privileged: true
+    cfg.vm.provision :shell, :inline => provisioning_command(machine, pf_name, host_name, network, machines), privileged: true
 
     vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   end
