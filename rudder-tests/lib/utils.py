@@ -42,8 +42,9 @@ def enum(*sequential, **named):
   enums = dict(zip(sequential, range(len(sequential))), **named)
   return type('Enum', (), enums)
 
-def shell(command, fail_exit=True, keep_output=True, live_output=False):
-  print(colors.WHITE + "+" + command + colors.RESET)
+def shell(command, fail_exit=True, keep_output=True, live_output=False, print_command=True):
+  if print_command:
+      print(colors.WHITE + "+" + command + colors.RESET)
   if keep_output:
     if live_output:
       process = Popen(command, shell=True, universal_newlines=True)
