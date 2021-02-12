@@ -232,14 +232,17 @@ then
     then
       zypper ar -f "http://192.168.180.1/SLE-12-SP1-Server-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
       zypper ar -f "http://192.168.180.1/SLE-12-SP1-Server-DVD-x86_64-GM-DVD2/" "SLES_12_SP1_DVD2" > /dev/null
-      # preinstall mod_wsgi
-      zypper --non-interactive install apache2 | grep '^.$'
-      rpm -iv http://download.opensuse.org/repositories/Apache:/Modules/SLE_12_SP1/x86_64/apache2-mod_wsgi-4.5.2-58.1.x86_64.rpm
     fi
 
     if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -eq 2 ]
     then
       zypper ar -f "http://192.168.180.1/SLE-12-SP1-Server-DVD-x86_64-GM-DVD1/" "SLES_12_SP1_DVD1" > /dev/null
+    fi
+
+    if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -eq 4 ]
+    then
+      zypper ar -f "http://192.168.180.1/SLE-12-SP4-Server-DVD-x86_64-GM-DVD1/" "SLES_12_SP4_DVD1" > /dev/null
+      zypper ar -f "http://192.168.180.1/SLE-12-SP4-Server-DVD-x86_64-GM-DVD2/" "SLES_12_SP4_DVD2" > /dev/null
     fi
 
   else
@@ -253,6 +256,22 @@ then
     fi
   fi
 
+else
+  # check it is a SLES using os-release
+  if [ -f /etc/os-release ]
+  then
+    if  grep -q '^NAME="SLES"' /etc/os-release
+    then
+      SLES_FULL_VERSION=`grep "VERSION=" /etc/os-release|sed 's%VERSION\ *=\ *"\(.*\)"%\1%'`
+      SLES_VERSION=$(echo $SLES_FULL_VERSION | cut -d- -f1)
+
+      if [ ${SLES_VERSION} -eq 15 ]
+      then
+        zypper ar -f "http://192.168.180.1/SLE-15-Installer-DVD-x86_64-GM-DVD1/" "SLES_15_Installer" > /dev/null
+        zypper ar -f "http://192.168.180.1/SLE-15-Packages-x86_64-GM-DVD1/" "SLES_15_Packages" > /dev/null
+      fi
+    fi
+  fi
 fi
 
 
