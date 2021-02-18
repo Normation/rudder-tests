@@ -220,11 +220,13 @@ class Host:
   def wait_for_command(self, command, timeout=60):
     print("Waiting " + str(timeout) + "s for command to return ok on " + self.hostid)
     print(command)
-    for i in range(1, timeout):
+    start = datetime.now()
+    while (datetime.now() - start).total_seconds() < timeout:
       (code, data) = self.run_with_ret_code(command, fail_exit=False, quiet=True, live_output=True)
       if code == 0:
         print("Done")
         return True
+      time.sleep(1)
     print("Timeout")
     return False
 
