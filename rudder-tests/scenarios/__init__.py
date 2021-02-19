@@ -4,3 +4,4 @@ from .inventory import inventory
 from .plugin_basic import plugin_basic
 from .plugin_install import plugin_install
 from .windows_update import windows_update
+from .ncf import ncf

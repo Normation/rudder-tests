@@ -125,7 +125,7 @@ class ScenarioInterface:
     else:
       return ("", "")
 
-  def ssh_windows(self, host, command):
+  def ssh_windows(self, host, command, live_output=False):
     # Hackish way on windows, dump to file, push it ont the agent and then execute it
     # Retrieve the temp folder path
     infos = self.datastate[host]
@@ -140,9 +140,9 @@ class ScenarioInterface:
     with open(local_path, "w") as cmd_file:
         cmd_file.write(command)
     self.push_on(host, local_path, remote_path, print_command=False)
-    return shell("ssh -i %s %s@%s -p %s %s \"%s\""%(infos["ssh_cred"], infos["ssh_user"], infos["ip"], infos["ssh_port"], options, remote_path))
+    return shell("ssh -i %s %s@%s -p %s %s \"%s\""%(infos["ssh_cred"], infos["ssh_user"], infos["ip"], infos["ssh_port"], options, remote_path), live_output=live_output)
 
-  def ssh_unix(self, host, command):
+  def ssh_unix(self, host, command, live_output=False):
       if host == "localhost":
           ssh_cmd = command
       else:
@@ -151,14 +151,17 @@ class ScenarioInterface:
           options = "-o \"" + "\" -o \"".join(default_ssh_options) + "\""
           command = "sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'"
           ssh_cmd = "ssh -i %s %s@%s -p %s %s \"%s\""%(infos["ssh_cred"], infos["ssh_user"], infos["ip"], infos["ssh_port"], options, command)
-      return shell(ssh_cmd)
+      return shell(ssh_cmd, live_output=live_output)
 
-  def ssh_on(self, host, command):
+  def ssh_on(self, host, command, live_output=False):
+      if host == "localhost":
+          return self.ssh_unix(host, command)
+
       infos = self.datastate[host]
       if "windows" in infos['system']:
-          return self.ssh_windows(host, command)
+          return self.ssh_windows(host, command, live_output=live_output)
       else:
-          return self.ssh_unix(host, command)
+          return self.ssh_unix(host, command, live_output=live_output)
 
   def push_on(self, host, src, dst, recursive=False, print_command=True):
       if host == "localhost":
@@ -184,7 +187,7 @@ class ScenarioInterface:
     self.start = datetime.now().isoformat()
     os.makedirs(tmpdir, exist_ok=True)
     self.workspace = tempfile.mkdtemp(dir=tmpdir)
-    self.report = JSONReport(self.workspace + "/result.xml", self.workspace)
+    self.report = JSONReport(self.workspace + "/result.json", self.workspace)
     #self.report = XMLReport(self.workspace + "/result.xml", self.workspace)
     print(colors.YELLOW + "[" + self.start + "] Begining of scenario " + self.name + colors.RESET)
 
@@ -192,7 +195,7 @@ class ScenarioInterface:
     """ Finish a scenario """
     self.end = datetime.now().isoformat()
     import shutil
-    shutil.copyfile(self.report.path, "./result.xml")
+    shutil.copyfile(self.report.path, "./result.json")
     shutil.rmtree(self.workspace, ignore_errors=True)
     print(colors.YELLOW + "[" + self.end + "] End of scenario" + colors.RESET)
 
