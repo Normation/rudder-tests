@@ -9,6 +9,7 @@ import socket
 import pexpect
 import requests
 import fcntl
+from datetime import datetime
 from .utils import shell
 
 use_proxy = ''
