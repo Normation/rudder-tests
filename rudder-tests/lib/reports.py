@@ -60,7 +60,7 @@ class JSONReport:
   """
   def merge_reports(self, name, new_report=None, input_data={}, datastate={}, scenario_input={}):
     if new_report is None:
-      new_report=self.workspace + "/serverspec-result.xml"
+      new_report=self.workspace + "/serverspec-result.json"
     try:
       with open(self.path) as main_json:
         main_data = json.load(main_json)
