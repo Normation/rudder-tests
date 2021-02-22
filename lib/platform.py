@@ -197,7 +197,6 @@ class Platform:
       for line in fd:
         m = re.match("^\$NETWORK\s*=\s*[\'\"](.*)[\'\"]", line)
         if bool(m):
-          print("Taking base network %s"%m.group(1))
           self.base_subnet = m.group(1)
 
   def pf_id_to_network(self, pf_id):
