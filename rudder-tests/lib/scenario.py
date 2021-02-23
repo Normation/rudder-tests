@@ -182,8 +182,7 @@ class ScenarioInterface:
       return shell(command, print_command=print_command)
 
   def start(self):
-#    tmpdir = "/tmp/rtf_scenario"
-    tmpdir = "/home/fdallidet/Rudder/rudder-tests/rtf_scenario"
+    tmpdir = "/tmp/rtf_scenario"
     self.start = datetime.now().isoformat()
     os.makedirs(tmpdir, exist_ok=True)
     self.workspace = tempfile.mkdtemp(dir=tmpdir)
