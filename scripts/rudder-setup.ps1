@@ -10,11 +10,11 @@
 
 .PARAMETER Version
     Rudder version to install.
-    Supported values: 
+    Supported values:
         x.y-a.b             the version a.b of the agent build for rudder x.y
         x.y-a.b-nightly     the nightly version a.b of the agent build for rudder x.y
         ci/x.y-a.b          the version a.b of the agent build for rudder x.y from internal ci
-        ci/x.y-a.b-nightly  the nightly version a.b of the agent build for rudder x.y from internal ci        
+        ci/x.y-a.b-nightly  the nightly version a.b of the agent build for rudder x.y from internal ci
 .PARAMETER PolicyServer
     Policy-server to connect to.
 .PARAMETER User
@@ -50,7 +50,7 @@ function get_url($version0) {
   } else {
     throw "Error: version $version (from $version0) is invalid"
   }
-  "$urlBase/plugins/$major/dsc/$release/rudder-agent-dsc-$version$snapshot.exe" 
+  "$urlBase/plugins/$major/dsc/$release/rudder-agent-dsc-$version$snapshot.exe"
 }
 
 
@@ -70,7 +70,7 @@ if([string]::IsNullOrEmpty($User)) {
 # setup server
 if(-not [string]::IsNullOrEmpty($PolicyServer)) {
   New-Item -ItemType Directory -Force -Path "c:/Program Files/Rudder"
-  $PolicyServer | Out-File -Encoding utf8 -FilePath "c:/Program Files/Rudder/policy_server.dat"
+  $PolicyServer | Out-File -Encoding utf8 -FilePath "c:/Program Files/Rudder/etc/policy-server.conf"
 }
 
 # install

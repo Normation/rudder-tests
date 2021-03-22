@@ -222,7 +222,7 @@ def platform(config, pf_id, pf_name, override={})
         cfg.vm.synced_folder ".", "/vagrant", disabled: true
         if machine['system'] =~ /win/ then
           # winrm type is defined by vagrant-winrm-syncedfolders plugin
-          cfg.vm.synced_folder "scripts", "C:/vagrant/scripts", type: "winrm"
+          cfg.vm.synced_folder "scripts", "C:/vagrant/", type: "winrm"
         else
           cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
         end

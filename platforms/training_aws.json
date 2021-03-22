@@ -1,7 +1,7 @@
 {
-  "default":{ "provider":"aws", "rudder-version": "6.0", "system": "ubuntu18", "inventory-os": "ubuntu", "forget_credentials": "true", "shell": "tmux" },
-  "server": { "rudder-setup": "server" },
+  "default":{ "provider":"aws", "rudder-version": "6.2", "system": "ubuntu18", "inventory-os": "ubuntu", "forget_credentials": "true", "shell": "tmux" },
+  "server": { "rudder-setup": "server", "password": "wahjei6J"},
   "agent1": { "rudder-setup": "agent"  },
   "agent2": { "rudder-setup": "empty"  },
-  "agent3": { "rudder-setup": "agent", "system": "windows2019" }
+  "agent3": { "rudder-setup": "agent", "system": "windows2019", "rudder-version": "6.2-1.22" }
 }
