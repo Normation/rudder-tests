@@ -67,14 +67,8 @@ if([string]::IsNullOrEmpty($User)) {
   Invoke-WebRequest -OutFile $tmpFile -Credential $credential -Uri $url
 }
 
-# setup server
-if(-not [string]::IsNullOrEmpty($PolicyServer)) {
-  New-Item -ItemType Directory -Force -Path "c:/Program Files/Rudder"
-  $PolicyServer | Out-File -Encoding utf8 -FilePath "c:/Program Files/Rudder/etc/policy-server.conf"
-}
-
 # install
-& "$tmpFile" /S
+& "$tmpFile" /S /POLICYSERVER=$PolicyServer
 
 # Remove fails because of a permission denied !?
 #Remove-Item $tmpFile
