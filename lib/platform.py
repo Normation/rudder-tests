@@ -511,10 +511,6 @@ class Platform:
         if not re.match(r'jruby 1.7', rubyver):
           print("WARNING: this is not JRuby 1.7, compatibility unknown")
 
-      elif not re.match(r'ruby 2', rubyver):
-        print("ERROR: MRI Ruby needs to be version 2")
-        exit(3)
-
       # Test rspec command
       rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
       shell(rspec)
@@ -671,6 +667,7 @@ The test content has been generated in %s, it contains:
             host_infos['role'] = self.hosts[host].info['rudder-setup']
             if host_infos['role'] == "server":
                 host_infos['webapp_url'] = self.hosts[host].get_url()
+                host_infos['server'] = hostname
         # Basic platform infos
         host_infos.update(self.hosts[host].info)
 
@@ -698,6 +695,26 @@ The test content has been generated in %s, it contains:
             m = creds_re.match(line)
             if m:
               host_infos["ssh_cred"] = str(m.group(1))
+
+        # Vagrant winrm infos
+        if "windows" in host_infos['system']:
+            (winrm_code, winrm_output) = shell("vagrant winrm-config --host \"CustomHostname\" " + hostname, fail_exit=False, quiet=True)
+            winrm_port_re = re.compile(r'Port (\S+)')
+            winrm_user_re = re.compile(r'User (\S+)')
+            winrm_password_re = re.compile(r'Password (\S+)\s*')
+
+        for line in [l.strip() for l in winrm_output.split('\n')]:
+            m = winrm_user_re.match(line)
+            if m:
+              host_infos["winrm_user"] = str(m.group(1))
+
+            m = winrm_password_re.match(line)
+            if m:
+              host_infos["winrm_password"] = str(m.group(1))
+
+            m = winrm_port_re.match(line)
+            if m:
+              host_infos["winrm_port"] = int(m.group(1))
 
         effective_hosts[hostname] = host_infos
       print(json.dumps(effective_hosts, sort_keys=True, indent=2))
