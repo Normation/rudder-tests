@@ -703,18 +703,18 @@ The test content has been generated in %s, it contains:
             winrm_user_re = re.compile(r'User (\S+)')
             winrm_password_re = re.compile(r'Password (\S+)\s*')
 
-        for line in [l.strip() for l in winrm_output.split('\n')]:
-            m = winrm_user_re.match(line)
-            if m:
-              host_infos["winrm_user"] = str(m.group(1))
+            for line in [l.strip() for l in winrm_output.split('\n')]:
+                m = winrm_user_re.match(line)
+                if m:
+                  host_infos["winrm_user"] = str(m.group(1))
 
-            m = winrm_password_re.match(line)
-            if m:
-              host_infos["winrm_password"] = str(m.group(1))
+                m = winrm_password_re.match(line)
+                if m:
+                  host_infos["winrm_password"] = str(m.group(1))
 
-            m = winrm_port_re.match(line)
-            if m:
-              host_infos["winrm_port"] = int(m.group(1))
+                m = winrm_port_re.match(line)
+                if m:
+                  host_infos["winrm_port"] = int(m.group(1))
 
         effective_hosts[hostname] = host_infos
       print(json.dumps(effective_hosts, sort_keys=True, indent=2))
