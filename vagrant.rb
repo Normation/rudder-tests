@@ -134,7 +134,7 @@ $vagrant_systems = {
 }
 
 # list of boxes that don't have vboxsf enabled
-$vboxsfbug = [ 
+$vboxsfbug = [
   "geerlingguy/centos6",
   "bento/centos-6.7-i386",
 
@@ -163,7 +163,7 @@ $aws = {
 
   "windows2012" => [ "ami-802492fd", "Administrator" ],
   "windows2016" => [ "ami-044b14bf9ccadeee9", "Administrator" ],
-  "windows2019" => [ "ami-08b8bf0a2fb1864a2", "Administrator" ],
+  "windows2019" => [ "ami-0b0b2182e19d73648", "Administrator" ],
 }
 
 require 'socket'
@@ -435,10 +435,8 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
 
   # TODO handle user specific key
   if machine['system'] =~ /win/ then
-    if machine['provider'] != "aws" then
-      command += "Write-Host \"Setting up network\"\n"
-      command += "& \"c:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
-    end
+    command += "Write-Host \"Setting up network\"\n"
+    command += "& \"c:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
     command += "Write-Host \"Setting up fr keyboard\"\n"
     command += "Set-WinUserLanguageList -LanguageList fr-FR -Confirm:$false -Force\n"
     command += "Write-Host \"Setting up ssh\"\n"

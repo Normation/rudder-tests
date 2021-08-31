@@ -1,4 +1,4 @@
-@echo off
+@echo on
 set HOSTFILE=c:/Windows/System32/drivers/etc/hosts
 
 rem Initialise hosts file
