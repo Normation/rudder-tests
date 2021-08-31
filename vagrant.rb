@@ -441,10 +441,10 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
     end
     command += "Write-Host \"Setting up fr keyboard\"\n"
     command += "Set-WinUserLanguageList -LanguageList fr-FR -Confirm:$false -Force\n"
-    command += "Write-Host \"Setting up extras\"\n"
-    command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/windows-extra.ps1\"\n"
     command += "Write-Host \"Setting up ssh\"\n"
     command += "c:/vagrant/scripts/setup-ssh-windows.ps1 '#{public_key}'\n"
+    command += "Write-Host \"Setting up extras\"\n"
+    command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/windows-extra.ps1\"\n"
 
     if setup != "empty" and setup != "ncf" then
       command += "Write-Host \"Setting up rudder agent\"\n"

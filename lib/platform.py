@@ -134,7 +134,11 @@ class Platform:
       if server is not None and setup != "server":
         # accept agents
         if setup == "relay" or setup == "agent":
-          (code,uuid) = host.run_with_ret_code("cat /opt/rudder/etc/uuid.hive", fail_exit=fail_exit)
+          if 'windows' in host.info['system']:
+              # We need to sleep since the install continues in background
+              (code,uuid) = host.run_with_ret_code("Sleep 20; Get-Content 'C:/Program Files/Rudder/etc/uuid.hive'", fail_exit=fail_exit, quiet=False)
+          else:
+            (code,uuid) = host.run_with_ret_code("cat /opt/rudder/etc/uuid.hive", fail_exit=fail_exit, quiet=False)
           # Nothing else can be done if we don't have an installed agent
           if code != 0:
             print("Rudder agent installation seems to have failed, skipping acceptation")
@@ -175,7 +179,7 @@ class Platform:
             server.run("rudder server node-to-relay "+uuid, quiet=False, live_output=True, fail_exit=fail_exit)
 
         # wait for new generation
-        if setup == "relay" or setup == "agent":
+        if setup == "relay":
           uuids.reverse()
           if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
             exit(1)
