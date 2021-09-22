@@ -46,6 +46,7 @@ $debian7 = "normation/debian-7-64"
 $debian8 = "normation/debian-8-64"
 $debian9 = "normation/debian-9-64"
 $debian10 = "normation/debian-10-64"
+$debian11 = "debian/bullseye64"
 
 $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
@@ -76,6 +77,7 @@ $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 # end of deprecated
 
 $vagrant_systems = {
+  "packer" => "",
   "centos5" => "normation/centos-5-64",
   "centos6" => "geerlingguy/centos6",
   "centos6x32" => "bento/centos-6.7-i386",
@@ -101,6 +103,7 @@ $vagrant_systems = {
   "debian8" => "normation/debian-8-64",
   "debian9" => "normation/debian-9-64",
   "debian10" => "normation/debian-10-64",
+  "debian11" => "debian/bullseye64",
 
   "ubuntu10_04" => "bento/ubuntu-10.04",
   "ubuntu12_04" => "normation/ubuntu-12.04",
