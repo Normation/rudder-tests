@@ -92,9 +92,11 @@ $vagrant_systems = {
 
   "oracle6" => "kikitux/oracle6",
 
-  "sles11" => "normation/sles-11-03-64",
-  "sles12" => "normation/sles-12-03-64",
-  "sles15" => "normation/sles-15-64",
+  "sles11"    => "normation/sles-11-03-64",
+  "sles12_03" => "normation/sles-12-03-64",
+  "sles12_04" => "normation/sles-12-04-64",
+  "sles12"    => "normation/sles-12-04-64",
+  "sles15"    => "normation/sles-15-64",
 
   "debian6" => "normation/debian-6-64",
   "debian7" => "normation/debian-7-64",
