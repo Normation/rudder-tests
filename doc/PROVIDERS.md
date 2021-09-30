@@ -100,13 +100,8 @@ Using windows box on AWS
 ------------------------
 
 You need the following plugins to make it work:
-
 ```
-vagrant plugin install winrm
-vagrant plugin install winrm-fs
-vagrant plugin install winrm-elevated
-vagrant plugin install vagrant-aws-winrm
-vagrant plugin install vagrant-winrm-syncedfolders
+vgplugins=("winrm" "winrm-fs" "winrm-elevated" "vagrant-aws-winrm" "vagrant-winrm-syncedfolders"); for plugin in ${vgplugins[@]}; do vagrant plugin install ${plugin}; done
 ```
 
 To access windows VM: get its instance id and it IP address from aws console.
