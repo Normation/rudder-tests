@@ -253,6 +253,8 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   # RAM allocation
   if machine['rudder-setup'] =~ /server/ then
     memory = 2048
+  elsif machine['rudder-setup'] =~ /relay/ then
+    memory = 512
   elsif machine['system'] =~ /win/ then
     memory = 2048
   elsif machine['system'] =~ /solaris/ then
