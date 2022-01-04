@@ -29,23 +29,28 @@ else
 fi
 
 postclean() {
+  if openssl version | grep -q "OpenSSL 0"
+  then
+    http="http"
+  else
+    http="https"
+  fi
   mkdir -p /usr/local/bin
-  ### THINGS TO DO ON AN ALREADY CLEAN BOX
   if type curl >/dev/null 2>/dev/null
   then
-    curl -L -s -o /usr/local/bin/rudder-setup https://repository.rudder.io/tools/rudder-setup
-    curl -L -s -o /usr/local/bin/ncf-setup https://repository.rudder.io/tools/ncf-setup
+    curl -L -s -o /usr/local/bin/rudder-setup ${http}://repository.rudder.io/tools/rudder-setup
+    curl -L -s -o /usr/local/bin/ncf-setup ${http}://repository.rudder.io/tools/ncf-setup
   else
-    wget -q -O /usr/local/bin/rudder-setup https://repository.rudder.io/tools/rudder-setup
-    wget -q -O /usr/local/bin/ncf-setup https://repository.rudder.io/tools/ncf-setup
+    wget -q -O /usr/local/bin/rudder-setup ${http}://repository.rudder.io/tools/rudder-setup
+    wget -q -O /usr/local/bin/ncf-setup ${http}://repository.rudder.io/tools/ncf-setup
   fi
-  
+
   chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
   cp $SCRIPTS_PREFIX/scripts/ncf /usr/local/bin/
   cp $SCRIPTS_PREFIX/scripts/lib.sh /usr/local/bin/
   cp $SCRIPTS_PREFIX/scripts/version-test.sh /usr/local/bin/
   chmod +x /usr/local/bin/ncf
-  
+
 }
 
 # Temporary (even clean box don't have that yet)
@@ -125,17 +130,17 @@ fi
 # Setup Debian / Ubuntu packaging (debian/ubuntu)
 if type apt-get 2>/dev/null
 then
-  export DEBIAN_FRONTEND=noninteractive  
+  export DEBIAN_FRONTEND=noninteractive
 
   # pre answer interactive questions from oracle
   cat << EOF | debconf-set-selections
 sun-java6-bin   shared/accepted-sun-dlj-v1-1    boolean true
 sun-java6-jre   shared/accepted-sun-dlj-v1-1    boolean true
-oracle-java8-installer  shared/present-oracle-license-v1-1  note 
+oracle-java8-installer  shared/present-oracle-license-v1-1  note
 oracle-java8-installer  shared/accepted-oracle-license-v1-1 boolean true
-oracle-java8-installer  shared/error-oracle-license-v1-1  error 
-oracle-java8-installer  oracle-java8-installer/not_exist  error 
-oracle-java8-installer  oracle-java8-installer/local  string  
+oracle-java8-installer  shared/error-oracle-license-v1-1  error
+oracle-java8-installer  oracle-java8-installer/not_exist  error
+oracle-java8-installer  oracle-java8-installer/local  string
 EOF
 
   # Replace repos by archive for Debian Squeeze
@@ -146,7 +151,8 @@ EOF
     echo "deb http://archive.debian.org/debian/ squeeze main" > /etc/apt/sources.list
   fi
 
-  apt-get update
+  release_opt=$(apt-get --version | head -n1 | perl -ne '/apt ([0-9]+\.[0-9]+)\..*/; if($1 > 1.5) { print "--allow-releaseinfo-change" }')
+  apt-get update ${release_opt}
 
   # make sure lsb_release command is available
   apt-get install --force-yes -y lsb-release
@@ -208,7 +214,7 @@ then
       # do not preinstall java on sles12
       true
     else
-      echo "Installing JDK8" 
+      echo "Installing JDK8"
       wget -q -O /tmp/jdk.rpm https://repository.rudder.io/build-dependencies/java/jdk-8u101-linux-x86_64.rpm
       rpm -iv /tmp/jdk.rpm | grep '^.$' || true
     fi
@@ -281,7 +287,7 @@ fi
 ${PM_INSTALL} zsh vim less curl binutils rsync
 ${PM_INSTALL} git || ${PM_INSTALL} git-core
 # install that may fail
-${PM_INSTALL} htop ldapscripts uuid-runtime tree 2>/dev/null
+${PM_INSTALL} htop ldapscripts uuid-runtime tree gnupg 2>/dev/null
 
 # In case the vagrant box is very minimal
 if [ "${DEBIAN_VERSION}" = "8" ]
@@ -300,7 +306,7 @@ do
   fi
 done
 
-# Clean vagrant-cachier cached files for rudder packages 
+# Clean vagrant-cachier cached files for rudder packages
 if [ -d "/tmp/vagrant-cache" ]
 then
     find /tmp/vagrant-cache -name 'Rudder' -type d | xargs rm -rf

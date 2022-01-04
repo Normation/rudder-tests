@@ -134,7 +134,7 @@ $vagrant_systems = {
   "windows2012" => "opentable/win-2012r2-standard-amd64-nocm",
   "windows2008r2" => "opentable/win-2008r2-standard-amd64-nocm",
   "windows2012r2" => "opentable/win-2012r2-standard-amd64-nocm",
-  #"windows2016" => "TODO",
+  "windows2016" => "yogendrat/windows2016",
   "windows2019" => "StefanScherer/windows_2019",
 }
 
@@ -344,7 +344,7 @@ def aws_machine(cfg, machines, host_name, machine, name, ip)
   end
 
   cfg.vm.box = 'dummy' # aws plugin does not use regular boxes
-  
+
   # Specify username and private key path
   cfg.ssh.username = $aws[machine['system']][1]
   cfg.ssh.private_key_path = $AWS_KEYPATH
@@ -601,7 +601,7 @@ end
 # keep this function separate for compatibility with older Vagrantfiles
 # NET_PREFIX must be a an int between 40 and 150.
 def configure(config, os, pf_name, pf_id, host_name, host_id,
-              setup:'empty', version:nil, server:'', host_list:'', 
+              setup:'empty', version:nil, server:'', host_list:'',
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
               ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
               sync_file:nil, cpus:nil, disk_size:nil

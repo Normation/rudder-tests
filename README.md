@@ -3,10 +3,18 @@ rudder-tests
 
 Automatic tests repository
 
-See doc/INSTALL.md for test setup
+Installation
+------------
+
+See doc/INSTALL.md for setup
+
+
+Synopsis
+--------
+
 
 Run the desired test platform:
-- ./rtf platform setup debian 
+- ./rtf platform setup debian
 
 Run a test scenario:
 - ./rtf scenario run debian base
@@ -14,14 +22,6 @@ Run a test scenario:
 Get the long help:
 - ./rtf --help
 
-
-Dependencies
----------
-They are several python dependencies to use rtf:
-
-```
-python-netifaces
-```
 
 Use cases
 ---------
