@@ -526,7 +526,8 @@ def setup_command(machine, net, host_name)
     admin_pass=machine['password']
   end
   environment += " PLUGINS_VERSION=#{machine['plugins_version']} FORGET_CREDENTIALS=#{machine['forget_credentials']}"
-  environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']} ADMIN_PASSWORD=#{admin_pass} REPO_PREFIX=rtf/"
+  environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']}"
+  environment += " USE_HTTPS=#{machine['use_https']} ADMIN_PASSWORD=#{admin_pass} REPO_PREFIX=rtf/"
 
   if setup == "ncf" then
     command += "#{environment} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"

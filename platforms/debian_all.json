@@ -1,8 +1,8 @@
 {
   "default":{ "rudder-version": "6.1", "system": "debian10", "inventory-os": "debian" },
   "server": { "rudder-setup": "server" },
-  "agent6": { "rudder-setup": "agent", "system": "debian6" },
-  "agent7": { "rudder-setup": "agent", "system": "debian7" },
+  "agent6": { "rudder-setup": "agent", "system": "debian6", "use_https": "false" },
+  "agent7": { "rudder-setup": "agent", "system": "debian7", "use_https": "false" },
   "agent8": { "rudder-setup": "agent", "system": "debian8" },
   "agent9": { "rudder-setup": "agent", "system": "debian9" },
   "agent10": { "rudder-setup": "agent", "system": "debian10" }

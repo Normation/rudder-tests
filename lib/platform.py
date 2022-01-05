@@ -180,9 +180,9 @@ class Platform:
             server.run("rudder server node-to-relay "+uuid, quiet=False, live_output=True, fail_exit=fail_exit)
             (net, mask) = self.pf_id_to_network(self.pf_id)
             allowed_network_cmd = curl_cmd + ' --header "Content-Type: application/json" --request POST https://localhost/rudder/api/latest/settings/allowed_networks/' + uuid + ' --data \\\'{\\"allowed_networks\\": [\\"' +  net + '/' + mask + '\\"]}\\\''
+            server.run(allowed_network_cmd, quiet=False, live_output=True, fail_exit=fail_exit)
 
-        # wait for new generation
-        if setup == "relay":
+          # wait for new generation
           uuids.reverse()
           if not server.wait_for_generation("/share/".join(uuids), date0) and fail_exit:
             exit(1)
