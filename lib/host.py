@@ -10,6 +10,7 @@ import pexpect
 import requests
 import fcntl
 import sys
+import tempfile
 from .utils import shell as utils_shell
 from datetime import datetime
 
@@ -42,6 +43,7 @@ class Host:
     self.hostid = pf + '_' + name
     self.provider = host_info["provider"]
     self.commands = {}
+    self.ssh_config_file = None
 
   def start(self):
     """ Setup and run this host """
@@ -139,16 +141,22 @@ class Host:
     else:
       return 7.0 # not used currently but this is fragile (may be latest or nightly)
 
+  def get_ssh_config(self, fail_exit):
+    if self.ssh_config_file is None:
+      # cache vagrant ssh-config because it is very slow
+      (code,value) = utils_shell("vagrant ssh-config " + self.hostid, fail_exit=fail_exit, keep_output=True)
+      if code == 0:
+        self.ssh_config_file = tempfile.NamedTemporaryFile()
+        self.ssh_config_file.write(value.encode("utf-8"))
+        self.ssh_config_file.flush()
+      else:
+        print("*** ERROR cannot get ssh-config for " + self.hostid)
+    return self.ssh_config_file is not None
+
   def run(self, command, fail_exit=True, live_output=False, quiet=True):
-    """ Run a command as root on this host """
-    if quiet:
-      q="-q"
-    else:
-      q=""
-    (code, value) = utils_shell("vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q, fail_exit=fail_exit, live_output=live_output, quiet=quiet)
+    (code,value) = self.run_with_ret_code(command, fail_exit, live_output, quiet)
     if not live_output:
-      token = re.sub('==>.*\n', '', value)
-      return token.rstrip()
+      return value
 
   def run_with_ret_code(self, command, fail_exit=True, live_output=False, quiet=True):
     """ Run a command as root on this host """
@@ -161,7 +169,12 @@ class Host:
       # assume ssh is working for the windows host, and set to powershell
       vagrant_cmd = "vagrant winrm " + self.hostid + " -c \"" + command + "\""
     else:
-      vagrant_cmd = "vagrant ssh " + self.hostid + " -c \"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "'\" -- " + q
+      if self.get_ssh_config(fail_exit):
+        # same as vagrant ssh -c but making sure any vagrant stdout is removed (and cache ssh config
+        ssh_command = "\"sudo /bin/sh -c 'PATH=\\$PATH:/vagrant/scripts LANG=C " + command + "' \""
+        vagrant_cmd = "ssh -F " + self.ssh_config_file.name + " " + q + " " + self.hostid + " " + ssh_command
+      else:
+        vagrant_cmd = "echo ERROR"
 
     (code, value) = utils_shell(vagrant_cmd, fail_exit=fail_exit, live_output=live_output, quiet=quiet)
     if not live_output:

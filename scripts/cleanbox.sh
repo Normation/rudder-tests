@@ -113,7 +113,7 @@ XKBOPTIONS=""
 BACKSPACE="guess"
 EOF
 fi
-loadkeys fr
+loadkeys fr 2>/dev/null
 
 # force root password to root
 sed -e 's|^root.*|root:$6$5.6rg6Xl$be5jxAm7/HyoL.3xmgwZRv7XkyqChB1vc.v7VgMeX7Di8C3TtKSgt5DmTFE0PsJxTI8d4eAtE5IRFToFsn4vF/:16638:0:99999:7:::|' /etc/shadow > /etc/shadow2 && mv /etc/shadow2 /etc/shadow
