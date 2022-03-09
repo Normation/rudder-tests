@@ -17,7 +17,7 @@ if os_arch == "amd64" then
   box_name = os_name .. "-64"
 elseif os_arch == "i386" then
   box_name = os_name .. "-32"
-else 
+else
   box_name = os_full_name
 end
 
@@ -86,7 +86,6 @@ local vbox = {
     guest_additions_path = "VBoxGuestAdditions_{{.Version}}.iso",
     virtualbox_version_file = ".vbox_version",
     iso_url = iso_url,
-    iso_checksum_type = "sha256",
     iso_checksum = iso_checksum,
     guest_os_type = guest_os_type,
     vm_name = "packer-" .. os_full_name,
@@ -108,7 +107,7 @@ function vagrant_cloud(box, token)
     access_token = token,
     version = next_version(box,token)
   }
-end 
+end
 
 -- Vagrant box creation
 local vagrant = {
