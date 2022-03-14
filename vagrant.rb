@@ -125,6 +125,7 @@ $vagrant_systems = {
   "ubuntu20" => "normation/ubuntu-20-04-64",
 
   "slackware14" => "ratfactor/slackware",
+  "slackware15" => "normation/slackware-15-64",
 
   "solaris10" => "uncompiled/solaris-10",
   "solaris11" => "ruby-concurrency/oracle-solaris-11",
