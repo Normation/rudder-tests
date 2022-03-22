@@ -14,25 +14,6 @@ import tempfile
 from .utils import shell as utils_shell
 from datetime import datetime
 
-use_proxy = ''
-def have_proxy():
-  """ Return proxy configuration if any """
-  global use_proxy
-  nrm_proxy = "http://filer.interne.normation.com:3128"
-  proxy_line = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy+" "
-  if use_proxy != '':
-    return use_proxy
-  socket.gethostbyname(socket.gethostname())
-  s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  s.connect(("8.8.8.8", 80))
-  if s.getsockname()[0].startswith('192.168.90.'):
-    nrm_ip = socket.gethostbyname("republique-1.normation.com.")
-    req = requests.get("http://ipinfo.io/ip")
-    if req.status_code == 200:
-      if req.content.strip() == nrm_ip:
-        use_proxy = proxy_line
-  return use_proxy
-
 class Host:
   """ Vagrant managed host """
   def __init__(self, platform, name, host_info):
@@ -47,7 +28,6 @@ class Host:
 
   def start(self):
     """ Setup and run this host """
-    proxy = have_proxy()
     lockFile = "/tmp/rtf-lock"
     f = open(lockFile, "w+")
     while "making sure that no vagrant up are running":
@@ -58,7 +38,7 @@ class Host:
           idle = random.randint(5, 10)
           print("Lock not available, waiting %s seconds"%idle)
           time.sleep(idle)
-    command = proxy + "vagrant up " + self.hostid + " --provider="+self.provider
+    command = "vagrant up " + self.hostid + " --provider="+self.provider
     ret = subprocess.call(command.split(" "))
     fcntl.flock(f, fcntl.LOCK_UN)
     f.close()

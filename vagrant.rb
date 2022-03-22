@@ -360,37 +360,6 @@ def aws_machine(cfg, machines, host_name, machine, name, ip)
   end
 end
 
-# Returns a proxy configuration if we are in Normation office
-$proxy = nil
-def get_proxy()
-  unless $proxy.nil?
-    return $proxy
-  end
-  def local_ip
-    orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
-
-    UDPSocket.open do |s|
-      s.connect '8.8.8.8', 1
-      s.addr.last
-    end
-  ensure
-    Socket.do_not_reverse_lookup = orig
-  end
-  if local_ip().start_with?('192.168.90.') then
-    nrm_ip = Socket.getaddrinfo("republique-1.normation.com.", 'http')[0][2]
-    public_ip = URI.parse("http://ipinfo.io/ip").read().strip()
-    if nrm_ip == public_ip then
-      nrm_proxy = "http://filer.interne.normation.com:3128"
-      $proxy = "http_proxy="+nrm_proxy+" https_proxy="+nrm_proxy+" HTTP_PROXY="+nrm_proxy+" HTTPS_PROXY="+nrm_proxy
-    else
-      $proxy = ""
-    end
-  else
-    $proxy = ""
-  end
-  return $proxy
-end
-
 # compute network information
 def network_info(machine, pf_id, host_id)
   # Network configuration
@@ -508,16 +477,13 @@ def setup_command(machine, net, host_name)
   command = ""
   if machine['provider'] == "aws" then
     command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
-    proxy = ""
-  else
-    proxy = get_proxy()
   end
 
   # hide passwords from set -x
   command += "set +x\nexport DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\"\nexport DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\"\nset -x\n"
 
   network = net.to_s + "/" + net.prefix.to_s
-  environment = "#{proxy}"
+  environment = ""
   if machine['server-type'] == "dev" then
     environment += " DEV_MODE=true"
   end
