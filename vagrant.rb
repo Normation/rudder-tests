@@ -82,13 +82,14 @@ $vagrant_systems = {
   "centos6" => "geerlingguy/centos6",
   "centos6x32" => "bento/centos-6.7-i386",
   "centos7" => "geerlingguy/centos7",
-  "centos8" => "geerlingguy/centos8",
+  "centos8" => "normation/centos-8-64",
+  "centosStream" => "normation/centos-8-64",
 
   "rhel5" => "normation/centos-5-64",
   "rhel6" => "geerlingguy/centos6",
   "rhel6x32" => "bento/centos-6.7-i386",
   "rhel7" => "geerlingguy/centos7",
-  "rhel8" => "geerlingguy/centos8",
+  "rhel8" => "normation/centos-8-64",
 
   "fedora18" => "boxcutter/fedora18",
 
