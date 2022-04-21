@@ -427,9 +427,9 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
     command += "c:/vagrant/scripts/setup-ssh-windows.ps1 '#{public_key}'\n"
     command += "Write-Host \"Setting up extras\"\n"
     command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/windows-extra.ps1\"\n"
-    unless machine['wsus_server'].nil? then
-      wsus_server = machine['wsus_server']
-      command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/wsus-no-update.ps1\" #{machine['wsus_server']}\n"
+    unless machine['wsus-server'].nil? then
+      wsus_server = machine['wsus-server']
+      command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/wsus-no-update.ps1\" #{wsus_server}\n"
     end
 
     if setup != "empty" and setup != "ncf" then
@@ -583,7 +583,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
               setup:'empty', version:nil, server:'', host_list:'',
               windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
               ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil, disk_size:nil, wsus_server:nil
+              sync_file:nil, cpus:nil, disk_size:nil
              )
   machine = {
     "system": os,
@@ -593,8 +593,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     "host_list": host_list,
     "ram": ram,
     "cpus": cpus,
-    "sync_file": sync_file,
-    "wsus_server": wsus_server,
+    "sync_file": sync_file
   }
   machines = host_list.split(/\s+/)
 
