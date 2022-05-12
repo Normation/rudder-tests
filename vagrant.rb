@@ -77,7 +77,8 @@ $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 # end of deprecated
 
 $vagrant_systems = {
-  "packer" => "/home/fdallidet/Rudder/rudder-tests/packer/builds/ubuntu-20-amd64.box",
+  "packer" => "",
+  "wsus" => "normation/wsus",
   "centos5" => "normation/centos-5-64",
   "centos6" => "geerlingguy/centos6",
   "centos6x32" => "bento/centos-6.7-i386",
