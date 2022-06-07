@@ -1,0 +1,5 @@
+{
+  "default":{ "rudder-version": "6.2" },
+  "wsus": { "rudder-setup": "empty", "system": "windows2019" },
+  "agent1": { "rudder-setup": "empty", "system": "windows2019", "wsus-server": "wsus" }
+}

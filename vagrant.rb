@@ -78,6 +78,7 @@ $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
 $vagrant_systems = {
   "packer" => "",
+  "wsus" => "normation/wsus",
   "centos5" => "normation/centos-5-64",
   "centos6" => "geerlingguy/centos6",
   "centos6x32" => "bento/centos-6.7-i386",
@@ -361,6 +362,12 @@ def aws_machine(cfg, machines, host_name, machine, name, ip)
   end
 end
 
+# Returns a proxy configuration if we are in Normation office
+$proxy = nil
+def get_proxy()
+  return ""
+end
+
 # compute network information
 def network_info(machine, pf_id, host_id)
   # Network configuration
@@ -421,6 +428,10 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
     command += "c:/vagrant/scripts/setup-ssh-windows.ps1 '#{public_key}'\n"
     command += "Write-Host \"Setting up extras\"\n"
     command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/windows-extra.ps1\"\n"
+    unless machine['wsus-server'].nil? then
+      wsus_server = machine['wsus-server']
+      command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/wsus-no-update.ps1\" #{wsus_server}\n"
+    end
 
     if setup != "empty" and setup != "ncf" then
       command += "Write-Host \"Setting up rudder agent\"\n"
@@ -583,7 +594,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
     "host_list": host_list,
     "ram": ram,
     "cpus": cpus,
-    "sync_file": sync_file,
+    "sync_file": sync_file
   }
   machines = host_list.split(/\s+/)
 
