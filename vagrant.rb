@@ -70,7 +70,7 @@ $solaris11 = "ruby-concurrency/oracle-solaris-11"
 
 $windows7 = "designerror/windows-7"
 $windows2008 = "normation/windows-2008r2-64"
-$windows2012 = "opentable/win-2012r2-standard-amd64-nocm"
+$windows2012 = "opentable/win-2012-standard-amd64-nocm"
 $windows2008r2 = "opentable/win-2008r2-standard-amd64-nocm"
 $windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
 
@@ -84,7 +84,8 @@ $vagrant_systems = {
   "centos6x32" => "bento/centos-6.7-i386",
   "centos7" => "geerlingguy/centos7",
   "centos8" => "normation/centos-8-64",
-  "centosStream" => "normation/centos-8-64",
+  "centos8Stream" => "normation/centos-8-64",
+  "centos9" => "almalinux/9",
 
   "rhel5" => "normation/centos-5-64",
   "rhel6" => "geerlingguy/centos6",
@@ -101,6 +102,7 @@ $vagrant_systems = {
   "sles12_04" => "normation/sles-12-04-64",
   "sles12"    => "normation/sles-12-04-64",
   "sles15"    => "normation/sles-15-64",
+  "sles15sp2" => "normation/sles-15-sp2-64",
 
   "debian6" => "normation/debian-6-64",
   "debian7" => "normation/debian-7-64",
@@ -118,6 +120,7 @@ $vagrant_systems = {
   "ubuntu16_04" => "normation/ubuntu-16-04-64",
   "ubuntu18_04" => "normation/ubuntu-18-04-64",
   "ubuntu20_04" => "normation/ubuntu-20-04-64",
+  "ubuntu22_04" => "ubuntu/jammy64",
 
   "ubuntu10" => "bento/ubuntu-10.04",
   "ubuntu12" => "normation/ubuntu-12.04",
@@ -125,6 +128,7 @@ $vagrant_systems = {
   "ubuntu16" => "normation/ubuntu-16-04-64",
   "ubuntu18" => "normation/ubuntu-18-04-64",
   "ubuntu20" => "normation/ubuntu-20-04-64",
+  "ubuntu22" => "ubuntu/jammy64",
 
   "slackware14" => "ratfactor/slackware",
   "slackware15" => "normation/slackware-15-64",
@@ -134,7 +138,7 @@ $vagrant_systems = {
 
   "windows7" => "designerror/windows-7",
   "windows2008" => "normation/windows-2008r2-64",
-  "windows2012" => "opentable/win-2012r2-standard-amd64-nocm",
+  "windows2012" => "jborean93/WindowsServer2012",
   "windows2008r2" => "opentable/win-2008r2-standard-amd64-nocm",
   "windows2012r2" => "opentable/win-2012r2-standard-amd64-nocm",
   "windows2016" => "yogendrat/windows2016",
@@ -419,7 +423,7 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
   end
 
   # TODO handle user specific key
-  if machine['system'] =~ /win/ then
+  if machine['system'] =~ /win/ or machine['system'] =~ /wsus/ then
     command += "Write-Host \"Setting up network\"\n"
     command += "& \"c:/vagrant/scripts/network.cmd\" #{net_prefix} #{first_ip} #{host_list}\n"
     command += "Write-Host \"Setting up fr keyboard\"\n"
