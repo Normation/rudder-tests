@@ -231,7 +231,7 @@ def platform(config, pf_id, pf_name, override={})
       end
       # Synchronize at least scripts
       if $vboxsfbug.include?($vagrant_systems[machine['system']]) or machine['provider'] == "aws" then
-        cfg.vm.synced_folder ".", "/vagrant", disabled: true
+        cfg.vm.synced_folder ".", "/vagrant", disabled: true, SharedFoldersEnableSymlinksCreate: false
         if machine['system'] =~ /win/ then
           # winrm type is defined by vagrant-winrm-syncedfolders plugin
           cfg.vm.synced_folder "scripts", "C:/vagrant/", type: "winrm"
@@ -611,7 +611,7 @@ def configure(config, os, pf_name, pf_id, host_name, host_id,
   # Configure
   config.vm.define name do |cfg|
     # the provisioning script is generated
-    cfg.vm.synced_folder ".", "/vagrant", disabled: true # disable default sync
+    cfg.vm.synced_folder ".", "/vagrant", disabled: true, SharedFoldersEnableSymlinksCreate: false # disable default sync
     cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
     cfg.vm.provision :shell, :inline => provisioning_command(machine, pf_name, host_name, network, machines), privileged: true
 
