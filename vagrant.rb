@@ -101,8 +101,10 @@ $vagrant_systems = {
   "sles12_03" => "normation/sles-12-03-64",
   "sles12_04" => "normation/sles-12-04-64",
   "sles12"    => "normation/sles-12-04-64",
-  "sles15"    => "normation/sles-15-64",
+  "sles15"    => "normation/sles-15-sp4-64",
+  "sles15sp1" => "normation/sles-15-64",
   "sles15sp2" => "normation/sles-15-sp2-64",
+  "sles15sp4" => "normation/sles-15-sp4-64",
 
   "debian6" => "normation/debian-6-64",
   "debian7" => "normation/debian-7-64",

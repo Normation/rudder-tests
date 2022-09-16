@@ -17,3 +17,5 @@ ${MNT}/VBoxLinuxAdditions.run --nox11 || true
 
 umount ${MNT}
 rm -rf ${MNT} ${BASE}/VBoxGuestAdditions_${VBX_VERSION}.iso
+cat /var/log/vbox*
+VBoxService -V

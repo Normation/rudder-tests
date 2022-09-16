@@ -1,4 +1,3 @@
 #!/bin/bash
 set -xe
-
-true
+yum install kernel-devel -y

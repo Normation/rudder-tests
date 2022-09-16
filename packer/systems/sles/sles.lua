@@ -2,7 +2,7 @@ function command(autoinst)
   return {
     "<esc><enter><wait>",
     "linux netdevice=eth0 netsetup=dhcp install=cd:/",
-    " lang=en_US autoyast=http://{{ .HTTPIP }}:{{ .HTTPPort }}/" .. autoinst,
+    " lang=en_US YAST_SKIP_XML_VALIDATION=1 autoyast=http://{{ .HTTPIP }}:{{ .HTTPPort }}/" .. autoinst,
     " textmode=1",
     "<enter><wait>",
     "<wait10><wait10><wait10><wait10><wait10><wait10>"

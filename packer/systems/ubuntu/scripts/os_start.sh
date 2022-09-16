@@ -9,7 +9,7 @@ apt-get update
 apt-get dist-upgrade -y
 
 # package that should exist everywhere
-apt-get -y install zsh vim less curl binutils rsync tree ntp htop dos2unix zip python tree htop ldapscripts lsb-release apt-transport-https dos2unix
+apt-get -y install zsh vim less curl binutils rsync tree ntp htop dos2unix zip python tree htop ldapscripts lsb-release apt-transport-https dos2unix ca-certificates
 apt-get -y install git || apt-get -y install git-core
 
 # machines without the service command will fail here if any
