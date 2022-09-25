@@ -23,19 +23,26 @@
     Password to connect to repository for private downloads.
 #>
 
-param([Parameter(Mandatory)]$Version, $PolicyServer, $User, $Password)
+param(
+  [Parameter(Mandatory)]
+  $version,
+  $policyServer,
+  [Parameter(Mandatory)]
+  $user,
+  [Parameter(Mandatory)]
+  $password
+)
 
-
-function get_url($version0) {
-  if($version0 -match '^ci/(.*)') {
-    $version = $Matches[1]
+function Get-Url($version) {
+  if($version -match '^ci/(.*)') {
+    $version = $matches[1]
     $urlBase = "https://publisher.normation.com"
   } else {
-    $version = $version0
+    $version = $version
     $urlBase = "https://download.rudder.io"
   }
   if($version -match '^(.*)-nightly$') {
-    $version = $Matches[1]
+    $version = $matches[1]
     $release = "nightly"
     $snapshot = "-SNAPSHOT"
   } else {
@@ -43,33 +50,47 @@ function get_url($version0) {
     $snapshot= ""
   }
 
-  if($version -match '^(\d+\.\d+)-(\d+\.\d+)$') {
-    $major = $Matches[1]
+  $majorVersion = if($version -match '^(\d+\.\d+)-(\d+\.\d+)$') {
+    # plugin version < 7.0
+    $matches[1]
+  } elseif($version -match '^(\d+\.\d+)(-.*)?$') {
+    # plugin version >= 7.0
+    $matches[1]
   } elseif($version -eq "latest") {
-    $major = $version
+    $version
   } else {
-    throw "Error: version $version (from $version0) is invalid"
+    throw "Error: version ${version} (from ${version}) is invalid"
   }
-  "$urlBase/plugins/$major/dsc/$release/rudder-agent-dsc-$version$snapshot.exe"
+
+  if ($majorVersion[0] -in @("5", "6")) {
+    "${urlBase}/plugins/${majorVersion}/dsc/${release}/rudder-agent-dsc-${version}${snapshot}.exe"
+  } else {
+    "${urlBase}/misc/windows/${version}/latest"
+  }
 }
 
 
 # download binary
-$url = get_url($Version)
+$url = Get-Url($version)
+Write-Host "Downloading '${url}'..."
 $tmpDir = [System.IO.Path]::GetTempPath()
-$tmpFile = "$tmpDir\rudder-agent.exe"
+# tmpDir ends with a backslash already
+$tmpFile = "${tmpDir}rudder-agent.exe"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-if([string]::IsNullOrEmpty($User)) {
+if([string]::IsNullOrEmpty($user)) {
   Invoke-WebRequest -OutFile $tmpFile -Uri $url
 } else {
-  $secpasswd = ConvertTo-SecureString $Password -AsPlainText -Force
-  $credential = New-Object System.Management.Automation.PSCredential($User, $secpasswd)
+  $secPasswd = ConvertTo-SecureString $password -AsPlainText -Force
+  $credential = New-Object System.Management.Automation.PSCredential($user, $secPasswd)
   Invoke-WebRequest -OutFile $tmpFile -Credential $credential -Uri $url
 }
 
 # install
-& "$tmpFile" /S /POLICYSERVER=$PolicyServer
+Write-Host "Executing '& `"${tmpFile}`" /S /POLICYSERVER=`"${policyServer}`""
+& "${tmpFile}" /S /POLICYSERVER="${policyServer}"
+
+Write-Host "Waiting for install to finish..."
+while (-not (Test-Path "C:\Program Files\Rudder\Uninstall.exe")) { Start-Sleep 1 }
 
 # Remove fails because of a permission denied !?
-#Remove-Item $tmpFile
-
+Remove-Item $tmpFile -Force | Out-Null
