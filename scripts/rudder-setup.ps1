@@ -24,52 +24,54 @@
 #>
 
 param(
-  [Parameter(Mandatory)]
   $version,
   $policyServer,
-  [Parameter(Mandatory)]
   $user,
-  [Parameter(Mandatory)]
   $password
 )
 
-function Get-Url($version) {
-  if($version -match '^ci/(.*)') {
-    $version = $matches[1]
-    $urlBase = "https://publisher.normation.com"
+function Get-Url($rawVersion) {
+  ($version, $urlBase) = if($rawVersion -match '^ci/(.*)') {
+    ($matches[1], "https://publisher.normation.com")
   } else {
-    $version = $version
-    $urlBase = "https://download.rudder.io"
-  }
-  if($version -match '^(.*)-nightly$') {
-    $version = $matches[1]
-    $release = "nightly"
-    $snapshot = "-SNAPSHOT"
-  } else {
-    $release = "release"
-    $snapshot= ""
+    ($rawVersion, "https://download.rudder.io")
   }
 
   $majorVersion = if($version -match '^(\d+\.\d+)-(\d+\.\d+)$') {
     # plugin version < 7.0
     $matches[1]
-  } elseif($version -match '^(\d+\.\d+)(-.*)?$') {
+  } elseif($version -match '^(\d+\.\d+(\.\d+)?)(-.*)?$') {
     # plugin version >= 7.0
     $matches[1]
   } elseif($version -eq "latest") {
     $version
   } else {
-    throw "Error: version ${version} (from ${version}) is invalid"
+    throw "Error: version ${version} (from ${rawVersion}) is invalid"
   }
 
   if ($majorVersion[0] -in @("5", "6")) {
-    "${urlBase}/plugins/${majorVersion}/dsc/${release}/rudder-agent-dsc-${version}${snapshot}.exe"
+    ($parsedVersion, $release, $snapshot) = if($version -match '^(.*)-nightly$') {
+      ($matches[1], "nightly", "-SNAPSHOT")
+    } else {
+      ($version, "release", "")
+    }
+    "${urlBase}/plugins/${majorVersion}/dsc/${release}/rudder-agent-dsc-${parsedVersion}${snapshot}.exe"
   } else {
     "${urlBase}/misc/windows/${version}/latest"
   }
 }
 
 
+@(
+  $version,
+  $policyServer,
+  $user,
+  $password
+) | ForEach-Object {
+  if ([String]::IsNullOrEmpty($_)) {
+    exit 1
+  }
+}
 # download binary
 $url = Get-Url($version)
 Write-Host "Downloading '${url}'..."
