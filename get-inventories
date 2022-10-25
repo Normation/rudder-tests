@@ -1,0 +1,19 @@
+#!/bin/bash
+
+SYSTEMS="debian6 debian7 debian8 debian9 debian10 debian11 ubuntu10.04 ubuntu12.04 ubuntu13.04 ubuntu14.04 ubuntu15.10 ubuntu16.04 ubuntu18.04 ubuntu20.04 ubuntu22.04 rhel5 rhel6 rhel7 rhel8 rhel9 sles11 sles12 sles15 slackware14.1 slackware14.2 solaris11.3 solaris11.4 aix5 windows2008r2"
+
+if [ -z "$1" ];
+then
+  echo "Usage $0 <rudder-version>"
+  exit 1
+fi
+version="$1"
+
+mkdir -p inventories
+
+for s in ${SYSTEMS}
+do
+  echo '{ "default":{}, "agent": { "rudder-setup": "agent", "system": "'"${s}"'", "save-inventory": "true" }}' > platforms/inventories.json
+  ./rtf platform setup inventories "${version}"
+  ./rtf platform destroy inventories
+done
