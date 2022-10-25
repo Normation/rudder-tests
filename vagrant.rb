@@ -20,62 +20,6 @@
 #
 # find more : https://atlas.hashicorp.com/boxes/search
 
-# TOO deprecated
-$centos5 = "normation/centos-5-64"
-$centos6 = "geerlingguy/centos6"
-$centos6x32 = "bento/centos-6.7-i386"
-$centos7 = "geerlingguy/centos7"
-$centos8 = "geerlingguy/centos8"
-
-$rhel5 = $centos5
-$rhel6 = $centos6
-$rhel6x32 = $centos6x32
-$rhel7 = $centos7
-
-$fedora18 = "boxcutter/fedora18"
-
-$oracle6 = "kikitux/oracle6"
-
-$sles11 = "normation/sles-11-03-64"
-$sles12 = "normation/sles-12-03-64"
-$sles15 = "normation/sles-15-64"
-
-$debian5 = "normation/debian-5-64"
-$debian6 = "normation/debian-6-64"
-$debian7 = "normation/debian-7-64"
-$debian8 = "normation/debian-8-64"
-$debian9 = "normation/debian-9-64"
-$debian10 = "normation/debian-10-64"
-$debian11 = "debian/bullseye64"
-
-$ubuntu10_04 = "bento/ubuntu-10.04"
-$ubuntu12_04 = "normation/ubuntu-12.04"
-$ubuntu12_10 = "chef/ubuntu-12.10"
-$ubuntu13_04 = "rafaelrosafu/raring64-vanilla"
-$ubuntu14_04 = "normation/ubuntu-14.04"
-$ubuntu15_10 = "wzurowski/wily64"
-$ubuntu16_04 = "normation/ubuntu-16-04-64"
-$ubuntu18_04 = "normation/ubuntu-18-04-64"
-
-$ubuntu10 = $ubuntu10_04
-$ubuntu12 = $ubuntu12_04
-$ubuntu14 = $ubuntu14_04
-$ubuntu16 = $ubuntu16_04
-$ubuntu18 = $ubuntu18_04
-
-$slackware14 = "ratfactor/slackware"
-
-$solaris10 = "uncompiled/solaris-10"
-$solaris11 = "ruby-concurrency/oracle-solaris-11"
-
-$windows7 = "designerror/windows-7"
-$windows2008 = "normation/windows-2008r2-64"
-$windows2012 = "opentable/win-2012-standard-amd64-nocm"
-$windows2008r2 = "opentable/win-2008r2-standard-amd64-nocm"
-$windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
-
-# end of deprecated
-
 $vagrant_systems = {
   "packer" => "",
   "wsus" => "normation/wsus",
@@ -92,6 +36,7 @@ $vagrant_systems = {
   "rhel6x32" => "bento/centos-6.7-i386",
   "rhel7" => "geerlingguy/centos7",
   "rhel8" => "normation/centos-8-64",
+  "rhel9" => "almalinux/9",
 
   "fedora18" => "boxcutter/fedora18",
 
@@ -389,13 +334,14 @@ def network_info(machine, pf_id, host_id)
   unless $NETWORK.nil? then
     net = IPAddr.new $NETWORK
     # calculate base network (can do better ?)
-    pf_id.times { net = net.to_range.last.succ }
+    len = net.prefix
+    pf_id.times { net = net.to_range.last.succ.mask(len) }
     # calculate new ip
     ip = net
     (host_id+$SKIP_IP+1).times { ip = ip.succ() }
     # Check the ip is still valid
     unless net.include?(ip) then
-      puts "Ip address for #{name} out of range"
+      puts "Ip address #{ip} for #{machine} out of range #{net}"
       exit(1)
     end
     forward = (80+pf_id)*100 + 80 # start at 8080
@@ -454,6 +400,11 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
     command += "/vagrant/scripts/network.sh #{net_prefix} #{first_ip} \"#{host_list}\"\n"
     unless machine.key?('provision') then
       command += setup_command(machine, net, host_name)
+    end
+    if machine.key?('save-inventory') then
+      command += "mkdir -p /var/rudder/tmp\n"
+      command += "echo root > /var/rudder/tmp/uuid.txt\n"
+      command += "/opt/rudder/bin/run-inventory -l /vagrant/inventories/#{machine['rudder-version']}-#{machine['system']}.ocs\n"
     end
     if machine['shell'] == 'tmux' then
       # provide shared root shell via tmux
@@ -561,64 +512,3 @@ class Hash
   end unless Hash.method_defined?(:except)
 end
 
-class IPAddr
-  # Returns the prefix length in bits for the ipaddr.
-  def prefix
-    case @family
-    when Socket::AF_INET
-      n = IN4MASK ^ @mask_addr
-      i = 32
-    when Socket::AF_INET6
-      n = IN6MASK ^ @mask_addr
-      i = 128
-    else
-      raise AddressFamilyError, "unsupported address family"
-    end
-    while n.positive?
-      n >>= 1
-      i -= 1
-    end
-    i
-  end
-end
-
-# TODO deprecated
-
-# keep this function separate for compatibility with older Vagrantfiles
-# NET_PREFIX must be a an int between 40 and 150.
-def configure(config, os, pf_name, pf_id, host_name, host_id,
-              setup:'empty', version:nil, server:'', host_list:'',
-              windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil, disk_size:nil
-             )
-  machine = {
-    "system": os,
-    "setup": setup,
-    "version": version,
-    "server": server,
-    "host_list": host_list,
-    "ram": ram,
-    "cpus": cpus,
-    "sync_file": sync_file
-  }
-  machines = host_list.split(/\s+/)
-
-  # Machine name
-  name = pf_name + "_" + host_name
-
-  # Network information
-  network, ip, port = network_info(machine, pf_id, host_id)
-
-  # Configure
-  config.vm.define name do |cfg|
-    # the provisioning script is generated
-    cfg.vm.synced_folder ".", "/vagrant", disabled: true, SharedFoldersEnableSymlinksCreate: false # disable default sync
-    cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
-    cfg.vm.provision :shell, :inline => provisioning_command(machine, pf_name, host_name, network, machines), privileged: true
-
-    vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
-  end
-end
-
-# end of deprecated
