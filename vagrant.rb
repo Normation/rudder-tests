@@ -254,6 +254,9 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
     cfg.ssh.username = 'Administrator'
   end
 
+  # we have lots of old systemd
+  cfg.ssh.extra_args = [ "-o", "PubkeyAcceptedKeyTypes +ssh-rsa" ]
+
   # Add new disk if specified
   cfg.trigger.after :up do |trigger|
     trigger.ruby do |env, m|

@@ -14,6 +14,7 @@ mkdir -p inventories
 for s in ${SYSTEMS}
 do
   echo '{ "default":{}, "agent": { "rudder-setup": "agent", "system": "'"${s}"'", "save-inventory": "true" }}' > platforms/inventories.json
+  echo "-- Inventory of ${s} --"
   ./rtf platform setup inventories "${version}"
   ./rtf platform destroy inventories
 done
