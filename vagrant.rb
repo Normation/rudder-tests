@@ -59,10 +59,10 @@ $vagrant_systems = {
   "debian11" => "debian/bullseye64",
 
   "ubuntu10_04" => "bento/ubuntu-10.04",
-  "ubuntu12_04" => "normation/ubuntu-12.04",
-  "ubuntu12_10" => "chef/ubuntu-12.10",
-  "ubuntu13_04" => "rafaelrosafu/raring64-vanilla",
-  "ubuntu14_04" => "normation/ubuntu-14.04",
+  "ubuntu12_04" => "shicorp/precise64",
+  "ubuntu12_10" => "larryli/quantal64",
+  "ubuntu13_04" => "thasmo/ubuntu13-04",
+  "ubuntu14_04" => "bento/ubuntu-14.04",
   "ubuntu15_10" => "wzurowski/wily64",
   "ubuntu16_04" => "normation/ubuntu-16-04-64",
   "ubuntu18_04" => "normation/ubuntu-18-04-64",
@@ -183,6 +183,7 @@ def platform(config, pf_id, pf_name, override={})
           # winrm type is defined by vagrant-winrm-syncedfolders plugin
           cfg.vm.synced_folder "scripts", "C:/vagrant/", type: "winrm"
         else
+          # if this is not working you must patch your vagrant with https://github.com/hashicorp/vagrant/pull/12973
           cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
         end
       end
@@ -214,7 +215,7 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   elsif machine['system'] =~ /solaris/ then
     memory = 1024
   else
-    memory = 256
+    memory = 384
   end
   # override allocated ram
   memory = machine['ram'] if machine.key?('ram')
@@ -255,7 +256,7 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   end
 
   # we have lots of old systemd
-  cfg.ssh.extra_args = [ "-o", "PubkeyAcceptedKeyTypes +ssh-rsa" ]
+  cfg.ssh.extra_args = [ "-o", "PubkeyAcceptedKeyTypes=+ssh-rsa", "-o", "HostKeyAlgorithms=+ssh-rsa" ]
 
   # Add new disk if specified
   cfg.trigger.after :up do |trigger|
@@ -407,7 +408,7 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
     if machine.key?('save-inventory') then
       command += "mkdir -p /var/rudder/tmp\n"
       command += "echo root > /var/rudder/tmp/uuid.txt\n"
-      command += "/opt/rudder/bin/run-inventory -l /vagrant/inventories/#{machine['rudder-version']}-#{machine['system']}.ocs\n"
+      command += "/opt/rudder/bin/run-inventory -l /tmp/#{machine['rudder-version']}-#{machine['system']}.ocs\n"
     end
     if machine['shell'] == 'tmux' then
       # provide shared root shell via tmux
