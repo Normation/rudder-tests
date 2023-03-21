@@ -93,6 +93,8 @@ $vagrant_systems = {
   "rhel7" => "geerlingguy/centos7",
   "rhel8" => "normation/centos-8-64",
 
+  "al2" => "gbailey/amzn2",
+
   "fedora18" => "boxcutter/fedora18",
 
   "oracle6" => "kikitux/oracle6",
