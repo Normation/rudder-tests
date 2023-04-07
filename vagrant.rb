@@ -94,6 +94,7 @@ $vagrant_systems = {
   "rhel8" => "normation/centos-8-64",
 
   "al2" => "gbailey/amzn2",
+  "amazon2023" => "normation/amazon-2023",
 
   "fedora18" => "boxcutter/fedora18",
 
@@ -392,13 +393,17 @@ def network_info(machine, pf_id, host_id)
   unless $NETWORK.nil? then
     net = IPAddr.new $NETWORK
     # calculate base network (can do better ?)
-    pf_id.times { net = net.to_range.last.succ }
+    pf_id.times {
+      prefix = net.prefix
+      net = net.to_range.last.succ
+      net.prefix = prefix
+    }
     # calculate new ip
     ip = net
     (host_id+$SKIP_IP+1).times { ip = ip.succ() }
     # Check the ip is still valid
     unless net.include?(ip) then
-      puts "Ip address for #{name} out of range"
+      puts "Ip address for #{pf_id}/#{host_id} out of range: #{ip} not in #{net}/#{net.prefix}"
       exit(1)
     end
     forward = (80+pf_id)*100 + 80 # start at 8080
