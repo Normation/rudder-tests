@@ -47,6 +47,7 @@ $debian8 = "normation/debian-8-64"
 $debian9 = "normation/debian-9-64"
 $debian10 = "normation/debian-10-64"
 $debian11 = "debian/bullseye64"
+$debian12 = "debian/bookworm64"
 
 $ubuntu10_04 = "bento/ubuntu-10.04"
 $ubuntu12_04 = "normation/ubuntu-12.04"
@@ -115,6 +116,7 @@ $vagrant_systems = {
   "debian9" => "normation/debian-9-64",
   "debian10" => "normation/debian-10-64",
   "debian11" => "debian/bullseye64",
+  "debian12" => "debian/bookworm64",
 
   "ubuntu10_04" => "bento/ubuntu-10.04",
   "ubuntu12_04" => "normation/ubuntu-12.04",
