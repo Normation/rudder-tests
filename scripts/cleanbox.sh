@@ -270,11 +270,15 @@ else
     then
       SLES_FULL_VERSION=`grep "VERSION=" /etc/os-release|sed 's%VERSION\ *=\ *"\(.*\)"%\1%'`
       SLES_VERSION=$(echo $SLES_FULL_VERSION | cut -d- -f1)
+      SLES_SERVICEPACK=$(echo $SLES_FULL_VERSION | cut -d- -f2)
 
-      if [ ${SLES_VERSION} -eq 15 ]
+      # special case : no service pack
+      if [ ${SLES_VERSION} -eq 15 ] && [ "${SLES_SERVICEPACK}" = "15" ]
       then
         zypper ar -f "http://192.168.180.1/SLE-15-Installer-DVD-x86_64-GM-DVD1/" "SLES_15_Installer" > /dev/null
         zypper ar -f "http://192.168.180.1/SLE-15-Packages-x86_64-GM-DVD1/" "SLES_15_Packages" > /dev/null
+      else
+        zypper ar -f "http://192.168.180.1/SLE-15-${SLES_SERVICEPACK}-Full-x86_64-GM-Media1/" > /dev/null
       fi
     fi
   fi
