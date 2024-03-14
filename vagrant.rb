@@ -275,7 +275,7 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   elsif machine['system'] =~ /solaris/ then
     memory = 1024
   else
-    memory = 256
+    memory = 512
   end
   # override allocated ram
   memory = machine['ram'] if machine.key?('ram')
