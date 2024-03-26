@@ -1,5 +1,5 @@
 {
-  "default":{ "rudder-version": "6.1", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
+  "default":{ "rudder-version": "8.0", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
   "server": { "rudder-setup": "server" },
   "agent10": { "rudder-setup": "agent", "system": "ubuntu10_04", "use_https": "false" },
   "agent12": { "rudder-setup": "agent", "system": "ubuntu12_04", "use_https": "false" },

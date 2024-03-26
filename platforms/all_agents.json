@@ -1,16 +1,18 @@
 {
-  "default":{ "rudder-version": "6.1" },
+  "default":{ "rudder-version": "8.0" },
   "server": { "rudder-setup": "server", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
   "centos5": { "rudder-setup": "agent", "system": "centos5", "inventory-os": "centos", "use_https": "false" },
   "centos6": { "rudder-setup": "agent", "system": "centos6", "inventory-os": "centos", "use_https": "false" },
   "centos7": { "rudder-setup": "agent", "system": "centos7", "inventory-os": "centos" },
   "centos8": { "rudder-setup": "agent", "system": "centos8", "inventory-os": "centos" },
+  "centos9": { "rudder-setup": "agent", "system": "centos9", "inventory-os": "centos" },
   "debian6": { "rudder-setup": "agent", "system": "debian6", "inventory-os": "debian", "use_https": "false" },
   "debian7": { "rudder-setup": "agent", "system": "debian7", "inventory-os": "debian", "use_https": "false" },
   "debian8": { "rudder-setup": "agent", "system": "debian8", "inventory-os": "debian" },
   "debian9": { "rudder-setup": "agent", "system": "debian9", "inventory-os": "debian" },
   "debian10": { "rudder-setup": "agent", "system": "debian10", "inventory-os": "debian" },
   "debian11": { "rudder-setup": "agent", "system": "debian11", "inventory-os": "debian" },
+  "debian12": { "rudder-setup": "agent", "system": "debian12", "inventory-os": "debian" },
   "sles11": { "rudder-setup": "agent", "system": "sles11", "inventory-os": "suse", "use_https": "false" },
   "sles12": { "rudder-setup": "agent", "system": "sles12", "inventory-os": "suse" },
   "sles15": { "rudder-setup": "agent", "system": "sles15", "inventory-os": "suse" },
@@ -22,6 +24,8 @@
   "ubuntu16": { "rudder-setup": "agent", "system": "ubuntu16_04", "inventory-os": "ubuntu" },
   "ubuntu18": { "rudder-setup": "agent", "system": "ubuntu18_04", "inventory-os": "ubuntu" },
   "ubuntu20": { "rudder-setup": "agent", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
+  "ubuntu22": { "rudder-setup": "agent", "system": "ubuntu22_04", "inventory-os": "ubuntu" },
   "slackware14_1": { "rudder-setup": "agent", "system": "slackware14_1", "inventory-os": "slackware" },
-  "slackware14_2": { "rudder-setup": "agent", "system": "slackware14_2", "inventory-os": "slackware" }
+  "slackware14_2": { "rudder-setup": "agent", "system": "slackware14_2", "inventory-os": "slackware" },
+  "amazon2023": { "rudder-setup": "agent", "system": "amazon2023", "inventory-os": "centos" }
 }

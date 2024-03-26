@@ -1,5 +1,5 @@
 {
-  "default":{ "rudder-version": "6.1", "system": "centos8", "inventory-os": "centos" },
+  "default":{ "rudder-version": "8.0", "system": "centos8", "inventory-os": "centos" },
   "server": { "rudder-setup": "server" },
   "agent5": { "rudder-setup": "agent", "system": "centos5", "use_https": "false" },
   "agent6": { "rudder-setup": "agent", "system": "centos6", "use_https": "false" },

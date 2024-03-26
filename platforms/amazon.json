@@ -1,5 +1,5 @@
 {
-  "default":{ "rudder-version": "ci/7.3-nightly", "system": "amazon2023", "inventory-os": "amazon" },
+  "default":{ "rudder-version": "8.0", "system": "amazon2023", "inventory-os": "amazon" },
   "server": { "rudder-setup": "server" },
   "relay":  { "rudder-setup": "relay" },
   "agent1": { "rudder-setup": "agent", "server" : "relay" }

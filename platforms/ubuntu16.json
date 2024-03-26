@@ -1,5 +1,5 @@
 {
-  "default":{ "rudder-version": "6.0", "system": "ubuntu16_04", "inventory-os": "ubuntu" },
+  "default":{ "rudder-version": "8.0", "system": "ubuntu16_04", "inventory-os": "ubuntu" },
   "server": { "rudder-setup": "server" },
   "relay":  { "rudder-setup": "relay" },
   "agent1": { "rudder-setup": "agent", "server": "relay" }

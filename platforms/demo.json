@@ -1,9 +1,0 @@
-{
-  "default":{ "rudder-version": "6.0", "system": "debian10", "inventory-os": "debian" },
-  "server": { "rudder-setup": "server", "server-type": "demo" },
-  "agent1": { "rudder-setup": "agent" },
-  "relay":  { "rudder-setup": "relay" },
-  "agent2": { "rudder-setup": "agent", "server": "relay", "system": "centos8" },
-  "agent3": { "rudder-setup": "agent", "server": "relay", "system": "ubuntu18_04" },
-  "agent4": { "rudder-setup": "agent", "server": "relay", "system": "centos7" }
-}
