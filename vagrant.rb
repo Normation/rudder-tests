@@ -128,6 +128,7 @@ $vagrant_systems = {
   "ubuntu18_04" => "normation/ubuntu-18-04-64",
   "ubuntu20_04" => "normation/ubuntu-20-04-64",
   "ubuntu22_04" => "ubuntu/jammy64",
+  "ubuntu24_04" => "bento/ubuntu-24.04",
 
   "ubuntu10" => "bento/ubuntu-10.04",
   "ubuntu12" => "normation/ubuntu-12.04",
@@ -136,6 +137,7 @@ $vagrant_systems = {
   "ubuntu18" => "normation/ubuntu-18-04-64",
   "ubuntu20" => "normation/ubuntu-20-04-64",
   "ubuntu22" => "ubuntu/jammy64",
+  "ubuntu24" => "bento/ubuntu-24.04",
 
   "slackware14" => "ratfactor/slackware",
   "slackware15" => "normation/slackware-15-64",
