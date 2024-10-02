@@ -93,6 +93,7 @@ $vagrant_systems = {
   "rhel6x32" => "bento/centos-6.7-i386",
   "rhel7" => "geerlingguy/centos7",
   "rhel8" => "normation/centos-8-64",
+  "rhel9" => "almalinux/9",
 
   "al2" => "gbailey/amzn2",
   "amazon2023" => "normation/amazon-2023",
