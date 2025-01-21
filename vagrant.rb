@@ -153,7 +153,8 @@ $vagrant_systems = {
   "windows2012r2" => "opentable/win-2012r2-standard-amd64-nocm",
   "windows2016" => "yogendrat/windows2016",
   "windows2019" => "StefanScherer/windows_2019",
-  "windows2022" => "StefanScherer/windows_2022"
+  "windows2022" => "StefanScherer/windows_2022",
+  "windows2025" => "https://publisher.normation.com/dev/windows_2025_virtualbox.box"
 }
 
 # list of boxes that don't have vboxsf enabled
