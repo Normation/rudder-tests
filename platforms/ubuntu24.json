@@ -1,0 +1,6 @@
+{
+  "default":{ "rudder-version": "8.2", "system": "ubuntu24_04", "inventory-os": "ubuntu" },
+  "server": { "rudder-setup": "server" },
+  "relay":  { "rudder-setup": "relay" },
+  "agent1": { "rudder-setup": "agent", "server": "relay", "ram": "512" }
+}

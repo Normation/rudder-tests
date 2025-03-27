@@ -25,6 +25,7 @@
   "ubuntu18": { "rudder-setup": "agent", "system": "ubuntu18_04", "inventory-os": "ubuntu" },
   "ubuntu20": { "rudder-setup": "agent", "system": "ubuntu20_04", "inventory-os": "ubuntu" },
   "ubuntu22": { "rudder-setup": "agent", "system": "ubuntu22_04", "inventory-os": "ubuntu" },
+  "ubuntu24": { "rudder-setup": "agent", "system": "ubuntu24_04", "inventory-os": "ubuntu" },
   "slackware14_1": { "rudder-setup": "agent", "system": "slackware14_1", "inventory-os": "slackware" },
   "slackware14_2": { "rudder-setup": "agent", "system": "slackware14_2", "inventory-os": "slackware" },
   "amazon2023": { "rudder-setup": "agent", "system": "amazon2023", "inventory-os": "centos" }

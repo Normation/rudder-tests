@@ -20,63 +20,6 @@
 #
 # find more : https://atlas.hashicorp.com/boxes/search
 
-# TOO deprecated
-$centos5 = "normation/centos-5-64"
-$centos6 = "geerlingguy/centos6"
-$centos6x32 = "bento/centos-6.7-i386"
-$centos7 = "geerlingguy/centos7"
-$centos8 = "geerlingguy/centos8"
-
-$rhel5 = $centos5
-$rhel6 = $centos6
-$rhel6x32 = $centos6x32
-$rhel7 = $centos7
-
-$fedora18 = "boxcutter/fedora18"
-
-$oracle6 = "kikitux/oracle6"
-
-$sles11 = "normation/sles-11-03-64"
-$sles12 = "normation/sles-12-03-64"
-$sles15 = "normation/sles-15-64"
-
-$debian5 = "normation/debian-5-64"
-$debian6 = "normation/debian-6-64"
-$debian7 = "normation/debian-7-64"
-$debian8 = "normation/debian-8-64"
-$debian9 = "normation/debian-9-64"
-$debian10 = "normation/debian-10-64"
-$debian11 = "debian/bullseye64"
-$debian12 = "debian/bookworm64"
-
-$ubuntu10_04 = "bento/ubuntu-10.04"
-$ubuntu12_04 = "normation/ubuntu-12.04"
-$ubuntu12_10 = "chef/ubuntu-12.10"
-$ubuntu13_04 = "rafaelrosafu/raring64-vanilla"
-$ubuntu14_04 = "normation/ubuntu-14.04"
-$ubuntu15_10 = "wzurowski/wily64"
-$ubuntu16_04 = "normation/ubuntu-16-04-64"
-$ubuntu18_04 = "normation/ubuntu-18-04-64"
-
-$ubuntu10 = $ubuntu10_04
-$ubuntu12 = $ubuntu12_04
-$ubuntu14 = $ubuntu14_04
-$ubuntu16 = $ubuntu16_04
-$ubuntu18 = $ubuntu18_04
-
-$slackware14 = "ratfactor/slackware"
-
-$solaris10 = "uncompiled/solaris-10"
-$solaris11 = "ruby-concurrency/oracle-solaris-11"
-
-$windows7 = "designerror/windows-7"
-$windows2008 = "normation/windows-2008r2-64"
-$windows2012 = "opentable/win-2012-standard-amd64-nocm"
-$windows2008r2 = "opentable/win-2008r2-standard-amd64-nocm"
-$windows2012r2 = "opentable/win-2012r2-standard-amd64-nocm"
-
-# end of deprecated
-
 $vagrant_systems = {
   "packer" => "",
   "wsus" => "normation/wsus",
@@ -93,9 +36,12 @@ $vagrant_systems = {
   "rhel6x32" => "bento/centos-6.7-i386",
   "rhel7" => "geerlingguy/centos7",
   "rhel8" => "normation/centos-8-64",
-  "rhel9" => "almalinux/9",
+  "rhel9" => "generic/rocky9",
 
-  "al2" => "gbailey/amzn2",
+  "oracle8" => "jedwards/oracle8",
+  "oracle9" => "generic/oracle9",
+
+  "al2" => "bento/amazonlinux-2",
   "amazon2023" => "normation/amazon-2023",
 
   "fedora18" => "boxcutter/fedora18",
@@ -157,45 +103,14 @@ $vagrant_systems = {
   "windows2025" => "https://publisher.normation.com/dev/windows_2025_virtualbox.box"
 }
 
-# list of boxes that don't have vboxsf enabled
-$vboxsfbug = [
-  "geerlingguy/centos6",
-  "bento/centos-6.7-i386",
-
-  "normation/debian-7-64",
-  "normation/debian-6-64",
-
-  "bento/ubuntu-10.04",
-  "chef/ubuntu-12.10",
-  "ubuntu/focal64",
-]
-
-$aws = {
-  # please use community AMI
-  "centos8" => [ "ami-078905c4b06b2108a", "ec2-user" ],
-
-  "sles11" => [ "ami-2e1aad53", "ec2-user" ],
-  "sles12" => [ "ami-d29b2daf", "ec2-user" ],
-
-  "ubuntu14_04" => [ "ami-933482ee", "ubuntu" ],
-  "ubuntu16_04" => [ "ami-0e55e373", "ubuntu" ],
-  "ubuntu18_04" => [ "ami-0701e7be9b2a77600", "ubuntu" ],
-
-  "ubuntu14" => [ "ami-933482ee", "ubuntu" ],
-  "ubuntu16" => [ "ami-0e55e373", "ubuntu" ],
-  "ubuntu18" => [ "ami-0701e7be9b2a77600", "ubuntu" ],
-
-  "windows2012" => [ "ami-802492fd", "Administrator" ],
-  "windows2016" => [ "ami-044b14bf9ccadeee9", "Administrator" ],
-  "windows2019" => [ "ami-0b0b2182e19d73648", "Administrator" ],
-}
-
 require 'socket'
 require 'open-uri'
 require 'json'
 require 'ipaddr'
 
 $SKIP_IP ||= 1
+$NETWORK ||= "192.168.0.0/24"
+
 
 # Configure a complete platform by just providing an id and a json file
 def platform(config, pf_id, pf_name, override={})
@@ -241,25 +156,10 @@ def platform(config, pf_id, pf_name, override={})
       unless $vagrant_systems.include? machine['system'] then
         puts "Unknown system #{machine['system']}"
       end
-      # Synchronize at least scripts
-      if $vboxsfbug.include?($vagrant_systems[machine['system']]) or machine['provider'] == "aws" then
-        cfg.vm.synced_folder ".", "/vagrant", disabled: true, SharedFoldersEnableSymlinksCreate: false
-        if machine['system'] =~ /win/ then
-          # winrm type is defined by vagrant-winrm-syncedfolders plugin
-          cfg.vm.synced_folder "scripts", "C:/vagrant/", type: "winrm"
-        else
-          cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
-        end
-      end
       # the provisioning script is generated
       cfg.vm.provision :shell, :inline => provisioning_command(machine, pf_name, host_name, network, machines)
 
-      # provider specific code
-      if machine['provider'] == "aws" then
-        aws_machine(cfg, machines, host_name, machine, name, ip)
-      else
-        vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
-      end
+      vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
     end
 
     host_id += 1
@@ -333,87 +233,25 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   end
 end
 
-# Configure a single machine for AWS
-def aws_machine(cfg, machines, host_name, machine, name, ip)
-  # Machine allocation
-  if machine['rudder-setup'] == 'server' or machine['rudder-setup'] == 'relay' or machine['system'] =~ /win/ then
-    instance_type = "t2.medium"
-  else
-    instance_type = "t2.micro"
-  end
-
-  # Configure
-  cfg.vm.provider 'aws' do |aws|
-    # Instance
-    aws.ami = $aws[machine['system']][0]
-    aws.instance_type = instance_type
-    # Security
-    aws.security_groups = $AWS_SECURITY_GROUP
-    aws.keypair_name = $AWS_KEYNAME
-    # Network
-    aws.subnet_id = $AWS_SUBNET
-    aws.private_ip_address = ip
-    aws.associate_public_ip = true
-    # Tags
-    aws.tags = {
-      'Name': "#{name}"
-    }
-    # Allow incoming winrm connections
-    aws.user_data = '<powershell>netsh advfirewall firewall add rule name="WinRM HTTP" dir=in localport=5985 protocol=TCP action=allow</powershell>'
-  end
-
-  cfg.vm.box = 'dummy' # aws plugin does not use regular boxes
-
-  # Specify username and private key path
-  cfg.ssh.username = $aws[machine['system']][1]
-  cfg.ssh.private_key_path = $AWS_KEYPATH
-
-  if machine['system'] =~ /win/ then
-    # defaul communicator is ssh and works for linux
-    # use :winrm (and not "winrm") on windows
-    cfg.vm.communicator = :winrm
-    cfg.winrm.username = "Administrator"
-    # :aws is defined by vagrant-aws-winrm plugin
-    cfg.winrm.password = :aws
-  end
-end
-
-# Returns a proxy configuration if we are in Normation office
-$proxy = nil
-def get_proxy()
-  return ""
-end
-
 # compute network information
 def network_info(machine, pf_id, host_id)
   # Network configuration
-  # TODO deprecated
-  first_ip = 2
-  $NET_PREFIX ||= 40
-  net = "192.168." + (pf_id+$NET_PREFIX).to_s
-  ip = net + "." + (first_ip + host_id).to_s
-  net = IPAddr.new ip + "/24"
-  forward = 100*(2*$NET_PREFIX+pf_id)+80
-  # end of deprecated
-
-  unless $NETWORK.nil? then
-    net = IPAddr.new $NETWORK
-    # calculate base network (can do better ?)
-    pf_id.times {
-      prefix = net.prefix
-      net = net.to_range.last.succ
-      net.prefix = prefix
-    }
-    # calculate new ip
-    ip = net
-    (host_id+$SKIP_IP+1).times { ip = ip.succ() }
-    # Check the ip is still valid
-    unless net.include?(ip) then
-      puts "Ip address for #{pf_id}/#{host_id} out of range: #{ip} not in #{net}/#{net.prefix}"
-      exit(1)
-    end
-    forward = (80+pf_id)*100 + 80 # start at 8080
+  net = IPAddr.new $NETWORK
+  # calculate base network
+  pf_id.times { # pf_id * successor of current network
+    prefix = net.prefix
+    net = net.to_range.last.succ
+    net.prefix = prefix
+  }
+  # calculate new ip
+  ip = net
+  (host_id+$SKIP_IP+1).times { ip = ip.succ() }
+  # Check the ip is still valid
+  unless net.include?(ip) then
+    puts "Ip address for #{pf_id}/#{host_id} out of range: #{ip} not in #{net}/#{net.prefix}"
+    exit(1)
   end
+  forward = (80+pf_id)*100 + 80 + host_id*2# start at 8080
 
   return net, ip, forward
 end
@@ -493,9 +331,6 @@ EOF
 EOS
       # force user login to root
       user = "vagrant"
-      if machine['provider'] == "aws" then
-        user = $aws[machine['system']][1]
-      end
       command += <<-EOS
 echo "if tty -s; then sudo -i; exit $?; fi" >> ~#{user}/.bashrc
 EOS
@@ -507,9 +342,6 @@ end
 def setup_command(machine, net, host_name)
   setup = machine['rudder-setup']
   command = ""
-  if machine['provider'] == "aws" then
-    command += "echo '#{host_name}' > /etc/hostname && hostname $(cat /etc/hostname)\n"
-  end
 
   # hide passwords from set -x
   command += "set +x\nexport DOWNLOAD_USER=\"#{$DOWNLOAD_USER}\"\nexport DOWNLOAD_PASSWORD=\"#{$DOWNLOAD_PASSWORD}\"\nset -x\n"
@@ -562,77 +394,3 @@ def setup_command(machine, net, host_name)
   end
   return command
 end
-
-# Workaround for a bug in vagrant-aws plugin : https://github.com/mitchellh/vagrant-aws/issues/566
-class Hash
-  def slice(*keep_keys)
-    h = {}
-    keep_keys.each { |key| h[key] = fetch(key) if has_key?(key) }
-    h
-  end unless Hash.method_defined?(:slice)
-  def except(*less_keys)
-    slice(*keys - less_keys)
-  end unless Hash.method_defined?(:except)
-end
-
-class IPAddr
-  # Returns the prefix length in bits for the ipaddr.
-  def prefix
-    case @family
-    when Socket::AF_INET
-      n = IN4MASK ^ @mask_addr
-      i = 32
-    when Socket::AF_INET6
-      n = IN6MASK ^ @mask_addr
-      i = 128
-    else
-      raise AddressFamilyError, "unsupported address family"
-    end
-    while n.positive?
-      n >>= 1
-      i -= 1
-    end
-    i
-  end
-end
-
-# TODO deprecated
-
-# keep this function separate for compatibility with older Vagrantfiles
-# NET_PREFIX must be a an int between 40 and 150.
-def configure(config, os, pf_name, pf_id, host_name, host_id,
-              setup:'empty', version:nil, server:'', host_list:'',
-              windows_plugin:false, advanced_reporting:false, dsc_plugin: false,
-              ncf_version:nil, cfengine_version:nil, ram:nil, provision:true,
-              sync_file:nil, cpus:nil, disk_size:nil
-             )
-  machine = {
-    "system": os,
-    "setup": setup,
-    "version": version,
-    "server": server,
-    "host_list": host_list,
-    "ram": ram,
-    "cpus": cpus,
-    "sync_file": sync_file
-  }
-  machines = host_list.split(/\s+/)
-
-  # Machine name
-  name = pf_name + "_" + host_name
-
-  # Network information
-  network, ip, port = network_info(machine, pf_id, host_id)
-
-  # Configure
-  config.vm.define name do |cfg|
-    # the provisioning script is generated
-    cfg.vm.synced_folder ".", "/vagrant", disabled: true, SharedFoldersEnableSymlinksCreate: false # disable default sync
-    cfg.vm.synced_folder "scripts", "/vagrant/scripts", type: "rsync"
-    cfg.vm.provision :shell, :inline => provisioning_command(machine, pf_name, host_name, network, machines), privileged: true
-
-    vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
-  end
-end
-
-# end of deprecated

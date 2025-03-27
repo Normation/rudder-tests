@@ -15,8 +15,6 @@ then
   PM_INSTALL="apt-get -y install"
 elif type yum 2> /dev/null
 then
-  # Fix Centos5 issue installing, which install both architecture, this has no effects on other distros
-  echo "multilib_policy=best" >> /etc/yum.conf
   PM_INSTALL="yum -y install"
 elif type zypper 2> /dev/null
 then
@@ -132,25 +130,6 @@ if type apt-get 2>/dev/null
 then
   export DEBIAN_FRONTEND=noninteractive
 
-  # pre answer interactive questions from oracle
-  cat << EOF | debconf-set-selections
-sun-java6-bin   shared/accepted-sun-dlj-v1-1    boolean true
-sun-java6-jre   shared/accepted-sun-dlj-v1-1    boolean true
-oracle-java8-installer  shared/present-oracle-license-v1-1  note
-oracle-java8-installer  shared/accepted-oracle-license-v1-1 boolean true
-oracle-java8-installer  shared/error-oracle-license-v1-1  error
-oracle-java8-installer  oracle-java8-installer/not_exist  error
-oracle-java8-installer  oracle-java8-installer/local  string
-EOF
-
-  # Replace repos by archive for Debian Squeeze
-  grep -e "^6\." /etc/debian_version > /dev/null
-  squeeze=$?
-  if [ $squeeze -eq 0 ] ;
-  then
-    echo "deb http://archive.debian.org/debian/ squeeze main" > /etc/apt/sources.list
-  fi
-
   release_opt=$(apt-get --version | head -n1 | perl -ne '/apt ([0-9]+\.[0-9]+)\..*/; if($1 > 1.5) { print "--allow-releaseinfo-change" }')
   apt-get update ${release_opt}
 
@@ -188,8 +167,6 @@ EOF
 
   apt-get install --force-yes -y apt-transport-https
 
-  # specific to debian7 / rudder server 2.11.6-4
-  apt-get install --force-yes -y libltdl7
 fi
 
 if [ -f /etc/debian_version ]
@@ -208,16 +185,6 @@ then
   ln -s /usr/sbin/update-alternatives /usr/sbin/alternatives
   if [ "$(uname -m)" = "x86_64" ]
   then
-
-    if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -ge 1 ]
-    then
-      # do not preinstall java on sles12
-      true
-    else
-      echo "Installing JDK8"
-      wget -q -O /tmp/jdk.rpm https://repository.rudder.io/build-dependencies/java/jdk-8u101-linux-x86_64.rpm
-      rpm -iv /tmp/jdk.rpm | grep '^.$' || true
-    fi
 
     rm -f /etc/zypp/repos.d/*.repo
 
@@ -251,15 +218,6 @@ then
       zypper ar -f "http://192.168.180.1/SLE-12-SP4-Server-DVD-x86_64-GM-DVD2/" "SLES_12_SP4_DVD2" > /dev/null
     fi
 
-  else
-    if [ ${SLES_VERSION} -eq 12 ] && [ ${SLES_SERVICEPACK} -ge 1 ]
-    then
-      true
-    else
-      echo "Installing JDK8"
-      wget -q -O /tmp/jdk.rpm https://repository.rudder.io/build-dependencies/java/jdk-8u101-linux-i586.rpm
-      rpm -iv /tmp/jdk.rpm | grep '^.$' || true
-    fi
   fi
 
 else
