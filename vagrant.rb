@@ -30,6 +30,7 @@ $vagrant_systems = {
   "centos8" => "normation/centos-8-64",
   "centos8Stream" => "normation/centos-8-64",
   "centos9" => "almalinux/9",
+  "centos10" => "almalinux/10",
 
   "rhel5" => "normation/centos-5-64",
   "rhel6" => "geerlingguy/centos6",
@@ -37,6 +38,7 @@ $vagrant_systems = {
   "rhel7" => "geerlingguy/centos7",
   "rhel8" => "normation/centos-8-64",
   "rhel9" => "generic/rocky9",
+  "rhel10" => "almalinux/10",
 
   "oracle8" => "jedwards/oracle8",
   "oracle9" => "generic/oracle9",
