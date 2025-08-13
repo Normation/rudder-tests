@@ -66,6 +66,7 @@ $vagrant_systems = {
   "debian10" => "normation/debian-10-64",
   "debian11" => "debian/bullseye64",
   "debian12" => "debian/bookworm64",
+  "debian13" => "boxomatic/debian-13",
 
   "ubuntu10_04" => "bento/ubuntu-10.04",
   "ubuntu12_04" => "normation/ubuntu-12.04",
