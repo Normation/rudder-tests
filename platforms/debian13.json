@@ -1,0 +1,17 @@
+{
+  "default": {
+    "rudder-version": "8.3",
+    "system": "debian13",
+    "inventory-os": "debian"
+  },
+  "server": {
+    "rudder-setup": "server"
+  },
+  "relay": {
+    "rudder-setup": "relay"
+  },
+  "agent1": {
+    "rudder-setup": "agent",
+    "server": "relay"
+  }
+}
