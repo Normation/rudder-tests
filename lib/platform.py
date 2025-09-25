@@ -3,15 +3,9 @@ import os
 import shutil
 import copy
 import re
-import sys
-import importlib
 import netifaces
 import ipaddress
 import signal
-import scenario.lib
-# Hack to import rudder lib, remove, some day ...
-sys.path.insert(0, "./rudder-api-client/lib.python")
-from rudder import RudderEndPoint, RudderError
 from . import Host
 from .utils import shell
 
@@ -59,7 +53,6 @@ end
 class Platform:
   """ A test platform
   Can be setup or teared down at once
-  Can be used to run a test scenario
   """
   def __init__(self, name, override={}):
     self.name = name
@@ -115,7 +108,7 @@ class Platform:
         return '9' + name
     return sorted(self.hosts.keys(), key=key)
 
-  def setup(self, client_path, fail_exit=False):
+  def setup(self, fail_exit=False):
     """ Startup the full platform """
     self.reset_platform()
     # guess the server if there is one
@@ -511,159 +504,16 @@ class Platform:
     #  exit(2)
     return (rudder_url, token)
 
-  def run_scenario(self, name, frmt, run_finally, err_stop, run_only, client_path, params, startTestNumber, destroyOnError=False, json_file=None):
-    """ Run a scenario on this platform """
-    try:
-      # test ruby binary
-      (code, rubyver) = shell("ruby --version")
-      if re.match(r'jruby', rubyver):
-        if not re.match(r'jruby 1.7', rubyver):
-          print("WARNING: this is not JRuby 1.7, compatibility unknown")
-
-      # Test rspec command
-      rspec = "ruby -S rspec --order defined --fail-fast --format " + frmt
-      shell(rspec)
-
-      # Get api command line
-      (rudder_url, token) = self.api_connection_info()
-      rcli = "rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token
-
-      # load and run
-      parameters = {}
-      for param in params:
-        kv = param.split('=')
-        parameters[kv[0]] = kv[1]
-      scenario.lib.scenario = scenario.lib.Scenario(self, rspec, rcli, frmt, run_only, run_finally, err_stop, parameters, startTestNumber)
-      scenario.lib.setenv(client_path, rudder_url, token)
-      module = importlib.import_module("scenario." + name)
-
-      scenario_to_run = getattr(module, "Scenario")
-      if json_file is not None:
-        with open(json_file) as f:
-          data = json.load(f)
-      else:
-          data = None
-      s = scenario_to_run(data)
-      s.run()
-
-      if scenario.lib.scenario.errors:
-        print("Test scenario '"+ name +"' failed on platform '" + self.name + "'")
-        exit(5)
-    finally:
-      if destroyOnError:
-        self.teardown()
 
   def print_environment(self, client_path):
     """ Print environment used to run tests on this platform """
     (rudder_url, token) = self.api_connection_info()
-    scenario.lib.setenv(client_path, rudder_url, token)
     print("export PATH=" + os.environ['PATH'])
     print("export PYTHONPATH=" + os.environ['PYTHONPATH'])
     print("export RUDDER_SERVER=" + os.environ['RUDDER_SERVER'])
     print("export RUDDER_TOKEN=" + os.environ['RUDDER_TOKEN'])
     print("alias rcli='rudder-cli --skip-verify --url=" + rudder_url + " --token=" + token + "'")
 
-  def export_test(self, rule_uuid, test_name, scenario=False):
-    """ Export a given rule, for use in a test or a scenario """
-    # Retrieve data
-    (rudder_url, token) = self.api_connection_info()
-    endpoint = RudderEndPoint(rudder_url, token, verify=False)
-    rule = endpoint.rule_details(rule_uuid)['rules'][0]
-    directives = []
-    for directive_uuid in rule['directives']:
-      directive = endpoint.directive_details(directive_uuid)['directives'][0]
-      del directive['id']
-      directives.append(directive)
-
-    # create test files
-    rule_file = "spec/tests/"+test_name+"_rule.rb"
-    test_file = "spec/tests/"+test_name+"_test.rb"
-    scenario_file = "scenario/"+test_name+".py"
-
-    make_rule_testfile(rule_file, rule, directives)
-    make_user_testfile(test_file)
-    print("""
-A test file to add the rule via the API has been created in %(rule_file)s
-This file is where you can make change to the generated rule or directive, but it works as is.
-
-A generic test file to test if the rule has been properly applied has been created in %(test_file)s
-It contains demo code, but since we don't know what the rule does it doesn't contain code.
--> Pleas edit %(rule_file)s !
-
-Add the test to an existing scenario:
-- Add the following line before the call to wait_for_generation on all agents
-    run('localhost', '%(test_name)s_rule', Err.BREAK, NAME="Test %(test_name)s", GROUP="special:all")
-- Add the following line after the call to wait_for_generation
-    run_on("agent", ''%(test_name)s_test', Err.CONTINUE)
-- Add the following lines before the removal of the agent nodes
-    run('localhost', 'directive_delete', Err.FINALLY, DELETE="%(directive_name)s", GROUP="special:all")
-    run('localhost', 'rule_delete', Err.FINALLY, DELETE="%(rule_name)s", GROUP="special:all")
-""" % {'rule_file': rule_file, 'test_file': test_file, 'test_name': test_name,
-       'directive_name': directive['displayName'], 'rule_name': rule['displayName']
-      })
-    if scenario:
-      make_scenario_file(scenario_file, test_name)
-      print("Additionnaly, a scenario has been created in " + scenario_file)
-
-  def export_technique_test(self, directive_uuid, test_name, path):
-    """ Export a technique test data, for use in a technique test, in the given path """
-
-    # Test destination directory
-    if not os.path.isdir(path):
-      print("The " + path + " path does not exist.")
-      exit(1)
-
-    # Retrieve data
-    (rudder_url, token) = self.api_connection_info()
-    endpoint = RudderEndPoint(rudder_url, token, verify=False)
-
-    file_check = test_name + ".rb"
-    file_metadata = test_name + ".metadata"
-    file_directive = test_name + ".json"
-
-    # Generate metadata
-    metadata = {}
-    metadata["inits"] = []
-    metadata["checks"] = [file_check]
-    metadata["directives"] = [file_directive]
-    metadata["sharedFiles"] = []
-    metadata["compliance"] = 100
-
-    make_jsonfile(os.path.join(path, file_metadata), metadata)
-
-    # Generate check file
-    make_user_testfile(os.path.join(path, file_check))
-
-    # Generate directive
-    directive = endpoint.directive_details(directive_uuid)['directives'][0]
-
-    # This is needed because of #8687, the API does not know these parameters at creation
-    if "isEnabled" in directive:
-      del directive["isEnabled"]
-    if "isSystem" in directive:
-      del directive["isSystem"]
-    if "priority" in directive:
-      del directive["priority"]
-    if "tags" in directive:
-      del directive["tags"]
-    if "policyMode" in directive:
-      del directive["policyMode"]
-    if "system" in directive:
-      del directive["system"]
-    if "id" in directive:
-      del directive["id"]
-
-
-    make_jsonfile(os.path.join(path, file_directive), directive)
-
-    print("""
-The test content has been generated in %s, it contains:
-
-- %s which contains the metatdata, automatically filled. You can edit the expected compliance (default is 100)
-- %s which contains the directive parameters, automatically filled.
-- %s which is a stub check file. You need to edit it to describe the expected state
-  -> Please edit it!
-""" % (path, file_metadata, file_directive, file_check))
 
   def dump_datastate(self):
       effective_hosts = {}
@@ -727,51 +577,6 @@ The test content has been generated in %s, it contains:
 
         effective_hosts[hostname] = host_infos
       print(json.dumps(effective_hosts, sort_keys=True, indent=2))
-
-  def dump_training_mail(self):
-    header = "Hello,\nPlease find below the informations to access via ssh the machines that you will use in the Rudder training:\n"
-    footer = "\nBest Regards"
-    core = ""
-    for host in self.hosts:
-      hostname = self.name + "_" + host
-      core += " %s:"%host
-
-      (code, output) = shell("vagrant ssh-config " + hostname, fail_exit=False, quiet=True)
-      user_re = re.compile(r'User (\S+)')
-      hostname_re = re.compile(r'HostName (\S+)')
-      port_re = re.compile(r'Port (\S+)')
-
-      for line in [l.strip() for l in output.split('\n')]:
-
-          m = hostname_re.match(line)
-          if m:
-            hostname = str(m.group(1))
-            info = self.hosts[host].info
-            if info['rudder-setup'] == 'server':
-              root = hostname
-              if 'password' in info:
-                password = info['password']
-              else:
-                password = "admin"
-
-          m = port_re.match(line)
-          if m:
-            port = str(m.group(1))
-
-          m = user_re.match(line)
-          if m:
-            login = str(m.group(1))
-      core += " " + '{: >15}'.format(hostname) + ":" + port + ", login = " + login
-      core += "\n"
-
-      web = "\nAccess to rudder web interface:\n"
-      web += " url: https://" + root + "/\n"
-      web += " login: admin\n"
-      web += " password: " + password + "\n"
-
-    print(header + core + web + footer)
-
-
 
 
 
@@ -923,47 +728,4 @@ require 'spec_helper'
 #  its(:exit_status) { should eq 0 }
 #end
 """)
-
-def make_scenario_file(filename, test_name):
-  with open(filename, "w") as fd:
-    fd.write("""# File generated using rtf test from-rule
-from scenario.lib import *
-
-# test begins, register start time
-start()
-
-run_on("all", 'agent', Err.CONTINUE)
-
-# force inventory
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="inventory")
-run_on("server", 'run_agent', Err.CONTINUE, PARAMS="run")
-
-# accept nodes
-for host in scenario.nodes("agent"):
-  run('localhost', 'agent_accept', Err.BREAK, ACCEPT=host)
-
-# Add a rule
-date0 = host_date('wait', Err.CONTINUE, "server")
-run('localhost', '%(test_name)s_rule', Err.BREAK, NAME="Test %(test_name)s", GROUP="special:all")
-for host in scenario.nodes("agent"):
-  wait_for_generation('wait', Err.CONTINUE, "server", date0, host, 20)
-
-# Run agent
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="update")
-run_on("agent", 'run_agent', Err.CONTINUE, PARAMS="run")
-
-# Test rule result
-run_on("agent", '%(test_name)s_test', Err.CONTINUE)
-
-# remove rule/directive
-run('localhost', 'directive_delete', Err.FINALLY, DELETE="Test %(test_name)s Directive", GROUP="special:all")
-run('localhost', 'rule_delete', Err.FINALLY, DELETE="Test %(test_name)s Rule", GROUP="special:all")
-
-# remove agent
-for host in scenario.nodes("agent"):
-  run('localhost', 'agent_delete', Err.FINALLY, DELETE=host)
-
-# test end, print summary
-finish()
-""" % {'test_name': test_name})
 

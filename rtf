@@ -21,15 +21,6 @@ Usage:
     rtf host list <platform>
     rtf host update-rudder <host> <version>
     rtf host update-os <host> <version>
-    rtf scenario list
-    rtf scenario doc <scenario>
-    rtf scenario env <platform>
-    rtf scenario ncf_tests <platform> <version> [--cfengine-version=<cfengine_version>]
-    rtf scenario ncf_tests <platform> <pull-request-number> [--cfengine-version=<cfengine_version>]
-    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]... [--destroy-on-error] [--json=<json>]
-    rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [--start=<test number>] [--destroy-on-error]
-    rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
-    rtf test from-directive <platform> <uuid> <test_name> <path>
 
 Options:
     --ova                  Export in ova format (the platform status is not kept)
@@ -108,43 +99,6 @@ Commands
     rtf host update-os <host> <version>
         Upgrade the OS on a single host of the platform.
 
-    rtf scenario list
-        List all available scenarii.
-
-    rtf scenario doc <scenario>
-        Print documentation of the scenario.
-
-    rtf scenario env <platform>
-        Output environment variables used to run a scenario on the platform.
-        Useful to run tests by yourself.
-
-    rtf scenario ncf_tests <platform> <version>
-        Setup the given platform, install ncf from git in the specified version and then run the ncf tests.
-        When no cfengine version is specified, tests will be executed with the cfengine agent shipped with the
-        Rudder agent in the same version than the ncf version specified.
-        You can also test a give ncf pull request by remplacing the version parameter by the redmine number, like 14641
-
-    rtf scenario run <platform> <scenario> [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>] [<KEY>=<VALUE>]...
-        Run a single scenario on a given platform.
-        Scenario specific parameters must be provided using additional KEY=VALUE.
-        See *Options* for more options.
-
-    rtf scenario technique <platform> <directory> [--technique=<pattern>] [--last-version] [--no-finally] [--stop] [--filter=<test1>,<test2>,...] [--format=<format>]
-        Push a list of techniques to the platform's server and run matching tests using the "technique" scenario.
-        Techniques are all the one found under the <directory>
-        Use --last-version when you want to use only test last technique version (directory must be a subdirectory of rudder-techniques)
-        Use --technique to provide a pattern (woldcard based) to filter the list of technique to test (ex: rpmPackageInstallation/5.1)
-
-    rtf test from-rule <platform> <uuid> <test_name> [--create-scenario]
-        Generate a test from an existing rule on the platform.
-        This create files to recreate the directive and the rules on all hosts.
-        The test file also contains a stub test to check that everything has worked.
-
-    rtf test from-directive <platform> <uuid> <test_name> <path>
-        Generate a technique test from an existing directive on the platform.
-        This create files to recreate the directive data, a metadata file and a stub test
-        in the destination path.
-
 """
 
 from subprocess import Popen, PIPE
@@ -163,42 +117,6 @@ def list_platforms():
   for file in os.listdir("platforms"):
     print(file.replace(".json", ""))
 
-def list_scenarii():
-  """ List available scenarios """
-  for f in os.listdir("scenario"):
-    if not f.endswith(".py"):
-      continue
-    file = f.replace(".py", "")
-    if file != "__init__" and file != "lib":
-      print(file)
-
-def scenario_doc(name):
-  try:
-    importlib.import_module("scenario." + name)
-  except ValueError as e:
-    print(e)
-
-def find_tests(techniques, filter, last_version):
-  params = "-d "
-  if last_version:
-    params += "-l "
-  if filter is not None and filter != "":
-    params += "-f '" + filter + "' "
-  cmd = os.getcwd() + "/scripts/technique-files " + params + techniques
-  (code, technique_dirs) = shell(cmd)
-  tests = []
-  for technique in technique_dirs.split("\n"):
-    if technique == "":
-      continue
-    test_dir = technique + "/tests"
-    if not os.path.isdir(test_dir):
-      continue
-    for file in os.listdir(test_dir):
-      match = re.search(r'^[\w\-_]+\.metadata$', file)
-      if match:
-        tests.append(test_dir + "/" + file)
-  return tests
-
 ##########################
 # Command line interface #
 ##########################
@@ -207,13 +125,6 @@ if __name__ == "__main__":
   args = docopt.docopt(__doc__)
   script_dir = os.path.dirname(os.path.realpath(__file__))
   os.chdir(script_dir)
-  # Hack nedded because there is no api client package yet
-  client_path = script_dir + "/rudder-api-client"
-  if not os.path.exists(client_path):
-    print("Can't find rudder-api-client, if you install rudder-api-client package, you should patch this script")
-    print("If you want to use rudder-api-client from a local repository please type this command:")
-    print("ln -s ~/<path_to>/rudder-api-client")
-    exit(1)
 
   if args['platform']:
     if args['list']:
@@ -233,7 +144,7 @@ if __name__ == "__main__":
         if args['--fail-early']:
           override['extra_line'] = "set -e"
         platform = Platform(args['<platform>'], override)
-        platform.setup(client_path, args['--fail-early'])
+        platform.setup(args['--fail-early'])
       elif args['shutdown']:
         platform = Platform(args['<platform>'])
         platform.shutdown()
@@ -277,51 +188,3 @@ if __name__ == "__main__":
 
   elif args['host']:
     pass
-  elif args['scenario']:
-    if args['list']:
-      list_scenarii()
-    elif args['doc']:
-      scenario_doc(args['<scenario>'])
-    elif args['env']:
-      platform = Platform(args['<platform>'])
-      platform.print_environment(client_path)
-    elif args['run']:
-      filter = args['--filter']
-      if filter == []:
-        filter = None
-      platform = Platform(args['<platform>'])
-      platform.run_scenario(args['<scenario>'], args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, args['<KEY>=<VALUE>'], args['--start'], destroyOnError=args['--destroy-on-error'], json_file=args['--json'])
-    elif args['ncf_tests']:
-      platform = Platform(args['<platform>'], {})
-      platform.setup(client_path)
-      if (args['--cfengine-version'] == None):
-        args['--cfengine-version'] = ''
-      platform.run_scenario("ncf_tests", args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, ["tag=" + args['<version>'], "cfengine_version=" + args['--cfengine-version']], args['--start'], destroyOnError=False)
-    elif args['technique']:
-      platform = Platform(args['<platform>'])
-      techniques = args['<directory>']
-      # Find the tests
-      tests = find_tests(techniques, args['--technique'], args['--last-version'])
-      if not tests:
-        print("There is no test in your techniques directory")
-        exit(1)
-      # push the techniques
-      platform.push_techniques(techniques)
-      # run the tests (all at once)
-      params = ["test=" + ",".join(tests), "root=" + techniques]
-      filter = args['--filter']
-      if filter == []:
-        filter = None
-      # add the reset scenario execution before a technique test, except if --start option is precised
-      start = args['--start']
-      if start == None:
-        args['--start'] = 0
-        platform.run_scenario('reset', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']), destroyOnError=args['--destroy-on-error'])
-      platform.run_scenario('technique', args['--format'], not args['--no-finally'], args['--stop'], filter, client_path, params, int(args['--start']), destroyOnError=args['--destroy-on-error'])
-  elif args['test']:
-    if args['from-rule']:
-      platform = Platform(args['<platform>'])
-      platform.export_test(args['<uuid>'], args['<test_name>'], args['--create-scenario'])
-    elif args['from-directive']:
-      platform = Platform(args['<platform>'])
-      platform.export_technique_test(args['<uuid>'], args['<test_name>'], args['<path>'])
