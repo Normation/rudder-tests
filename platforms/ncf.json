@@ -1,5 +1,0 @@
-{
-  "default":{ "system": "debian7" },
-  "agent1": { "rudder-setup": "ncf", "ncf-version": "rudder-8.0", "cfengine-version": "rudder-8.0" },
-  "agent2": { "rudder-setup": "ncf", "ncf-version": "https:\/\/github.com/Normation/ncf.git#master", "cfengine-version": "3.10" }
-}

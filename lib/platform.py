@@ -195,7 +195,7 @@ class Platform:
   def get_base_subnet(self):
     with open("Vagrantfile", "r+") as fd:
       for line in fd:
-        m = re.match("^\$NETWORK\s*=\s*[\'\"](.*)[\'\"]", line)
+        m = re.match(r"^\$NETWORK\s*=\s*[\'\"](.*)[\'\"]", line)
         if bool(m):
           self.base_subnet = m.group(1)
 
@@ -307,7 +307,7 @@ class Platform:
       outfile.write("#!/bin/sh\n")
       for host in self.hosts.values():
         outfile.write("VBoxManage registervm $(pwd)/" + host.hostid + "/" + host.hostid + ".vbox\n")
-        outfile.write('UUID=$(VBoxManage list vms | grep "\\"' + host.hostid + '\\"" | ' + "perl -pe 's/.*\{(.*)\}.*/$1/')\n")
+        outfile.write('UUID=$(VBoxManage list vms | grep "\\"' + host.hostid + '\\"" | ' + r"perl -pe 's/.*\{(.*)\}.*/$1/')\n")
         outfile.write("VBoxManage startvm $UUID --type headless\n")
       outfile.write("echo ''\n")
       outfile.write("echo 'You can now connect to VMs using ssh -F ssh_config <vmname>'\n")
@@ -320,7 +320,7 @@ class Platform:
     with open(dirname+'/terminate', 'w') as outfile:
       outfile.write("#!/bin/sh\n")
       for host in self.hosts.values():
-        outfile.write('UUID=$(VBoxManage list vms | grep "\\"' + host.hostid + '\\"" | ' + "perl -pe 's/.*\{(.*)\}.*/$1/')\n")
+        outfile.write('UUID=$(VBoxManage list vms | grep "\\"' + host.hostid + '\\"" | ' + r"perl -pe 's/.*\{(.*)\}.*/$1/')\n")
         outfile.write("[ -n \"$UUID\" ] && VBoxManage controlvm $UUID poweroff\n")
         outfile.write("[ -n \"$UUID\" ] && VBoxManage unregistervm $UUID\n")
       outfile.write("echo 'You can now safely remove this directory!'\n")
@@ -346,7 +346,7 @@ class Platform:
 
     i = 0
     for host in self.hosts.values():
-      uuid = os.popen("VBoxManage list vms | grep '" + host.hostid + "' | perl -pe 's/.*\{(.*)\}.*/$1/'").read().strip()
+      uuid = os.popen("VBoxManage list vms | grep '" + host.hostid + r"' | perl -pe 's/.*\{(.*)\}.*/$1/'").read().strip()
       host.uuid = uuid
 
       # configure host network ?
@@ -490,7 +490,7 @@ class Platform:
     os.system("vagrant status " + " ".join(host_list))
 
   def api_connection_info(self):
-    """ Get informations to connect to the server via the api """
+    """ Get information to connect to the server via the api """
     rudder_url = None
     token = None
     for hostname, host in self.hosts.items():
@@ -579,7 +579,6 @@ class Platform:
       print(json.dumps(effective_hosts, sort_keys=True, indent=2))
 
 
-
 ###################
 # Utility methods #
 ###################
@@ -600,132 +599,3 @@ def load_json(filename):
     print("JSON syntax error in " + filename)
     print(e.message)
     exit(3)
-
-def make_jsonfile(filename, content):
-  with open(filename, "w") as fd:
-    fd.write('[')
-    fd.write(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))
-    fd.write(']')
-
-def make_rule_testfile(filename, rule, directives):
-  with open(filename, "w") as fd:
-    data = """# File generated using rtf test from-rule
-# This test creates a rule named '%(displayName)s' and its directive(s)
-# And is checks that the api returned correctly
-
-require 'spec_helper'
-
-group = $params['GROUP']
-
-directiveFile = "/tmp/directive.json"
-ruleFile = "/tmp/rule.json"
-
-describe "Add a test directive and a rule"  do
-      """ % {'displayName': rule['displayName']}
-    for idx, directive in enumerate(directives):
-      data += """
-  # Add directive
-  describe command($rudderCli + " directive create --json=" + directiveFile + " %(technique)s %(name)s") do
-    before(:all) {
-      File.open(directiveFile, 'w') { |file|
-        file << <<EOF
-%(directive)s
-EOF
-      }
-    }
-    after(:all) {
-      File.delete(directiveFile)
-    }
-    its(:exit_status) { should eq 0 }
-    its(:stdout) { should match /^"[0-9a-f\\-]+"$/ }
-    it {
-      # register output uuid for next command
-      $uuid%(id)i = subject.stdout.gsub(/^"|"$/, "").chomp()
-    }
-  end
-
-""" % {'technique': directive['techniqueName'], 'name': directive['displayName'], 'directive': json.dumps(directive, indent=2), 'id': idx}
-    data += """
-  # create a rule
-  describe command($rudderCli + " rule create --json=" + ruleFile + " testRule") do
-    before(:all) {
-      File.open(ruleFile, 'w') { |file|
-        file << <<EOF
-{
-  "directives": [
-"""
-    data += ",".join(['"#{$uuid' + str(i) + '}"' for i in range(0, len(directives))])
-    data += """
-  ],
-  "displayName": "%(displayName)s Rule",
-  "longDescription": "%(longDescription)s ",
-  "shortDescription": "%(shortDescription)s",
-  "targets": [
-    {
-      "exclude": {
-        "or": []
-      },
-      "include": {
-        "or": [
-          "#{group}"
-        ]
-      }
-    }
-  ]
-}
-EOF
-      }
-    }
-    after(:all) {
-      File.delete(ruleFile)
-    }
-    its(:exit_status) { should eq 0 }
-    its(:stdout) { should match /^"[0-9a-f\\-]+"$/ }
-    it {
-      # register output uuid for next command
-      $uuid = subject.stdout.gsub(/^"|"$/, "").chomp()
-    }
-  end
-
-end
-""" % {'displayName': rule['displayName'], 'longDescription': rule['longDescription'], 'shortDescription': rule['shortDescription']}
-    fd.write(data)
-
-def make_user_testfile(filename):
-  with open(filename, "w") as fd:
-    fd.write("""# Sample file generated using rtf test from-rule
-# This is where you test your rule
-
-require 'spec_helper'
-
-# Please add your test here
-# see http://serverspec.org/resource_types.html for a full documentation of available tests
-
-## Ex: Test that a a package has been installed
-#describe package'apache2') do
-#  it { should be_installed }
-#  it { should be_installed.with_version('2.4.10') }
-#end
-
-## Ex: Test that a user exist
-#describe user('testuser') do
-#  it { should exist }
-#  it { should have_home_directory '/home/testuser' }
-#end
-
-## Ex: Test that a file exists
-#describe file('/etc/passwd') do
-#  it { should be_file }
-#  it { should be_mode 640 }
-#  it { should be_owned_by 'root' }
-#  its(:content) { should match /regex to match/ }
-#end
-
-## Ex: Test the output of a command
-#describe command('ls -al /') do
-#  its(:stdout) { should match /bin/ }
-#  its(:stderr) { should match /No such file or directory/ }
-#  its(:exit_status) { should eq 0 }
-#end
-""")
-

@@ -37,17 +37,13 @@ postclean() {
   if type curl >/dev/null 2>/dev/null
   then
     curl -L -s -o /usr/local/bin/rudder-setup ${http}://repository.rudder.io/tools/rudder-setup
-    curl -L -s -o /usr/local/bin/ncf-setup ${http}://repository.rudder.io/tools/ncf-setup
   else
     wget -q -O /usr/local/bin/rudder-setup ${http}://repository.rudder.io/tools/rudder-setup
-    wget -q -O /usr/local/bin/ncf-setup ${http}://repository.rudder.io/tools/ncf-setup
   fi
 
-  chmod +x /usr/local/bin/rudder-setup /usr/local/bin/ncf-setup
-  cp $SCRIPTS_PREFIX/scripts/ncf /usr/local/bin/
+  chmod +x /usr/local/bin/rudder-setup
   cp $SCRIPTS_PREFIX/scripts/lib.sh /usr/local/bin/
   cp $SCRIPTS_PREFIX/scripts/version-test.sh /usr/local/bin/
-  chmod +x /usr/local/bin/ncf
 
 }
 
@@ -155,8 +151,6 @@ then
       sed -i -e 's/mirror.rackspace/old-releases.ubuntu/g' /etc/apt/sources.list
     fi
   fi
-
-
 
   if hash service 2>/dev/null
   then

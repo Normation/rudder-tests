@@ -46,8 +46,6 @@ $vagrant_systems = {
   "al2" => "bento/amazonlinux-2",
   "amazon2023" => "normation/amazon-2023",
 
-  "fedora18" => "boxcutter/fedora18",
-
   "oracle6" => "kikitux/oracle6",
 
   "sles11"    => "normation/sles-11-03-64",
@@ -179,8 +177,6 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
     memory = 2048
   elsif machine['system'] =~ /win/ then
     memory = 2048
-  elsif machine['system'] =~ /solaris/ then
-    memory = 1024
   else
     memory = 512
   end
@@ -294,7 +290,7 @@ def provisioning_command(machine, pf_name, host_name, net, machines)
       command += "powershell -executionpolicy bypass  \"c:/vagrant/scripts/wsus-no-update.ps1\" #{wsus_server}\n"
     end
 
-    if setup != "empty" and setup != "ncf" then
+    if setup != "empty" then
       command += "Write-Host \"Setting up rudder agent\"\n"
       command += "& \"C:/vagrant/scripts/rudder-setup.ps1\" -Version #{machine['rudder-version']} -PolicyServer \"#{machine['server']}\" -User \"#{$DOWNLOAD_USER}\" -Password \"#{$DOWNLOAD_PASSWORD}\"\n"
     end
@@ -363,9 +359,7 @@ def setup_command(machine, net, host_name)
   environment += " DISABLE_AUTODETECT_NETWORKS=yes ALLOWEDNETWORK=#{network} UNSUPPORTED=#{ENV['UNSUPPORTED']}"
   environment += " USE_HTTPS=#{machine['use_https']} ADMIN_PASSWORD=#{admin_pass} REPO_PREFIX=rtf/"
 
-  if setup == "ncf" then
-    command += "#{environment} /usr/local/bin/ncf-setup setup-local \"#{machine['ncf_version']}\" \"#{machine['cfengine_version']}\"\n"
-  elsif setup != "empty" then
+  if setup != "empty" then
     arg3 = ""
     if setup == "server" then
       arg3 = "\"#{machine['plugins']}\""
@@ -391,8 +385,6 @@ def setup_command(machine, net, host_name)
   if setup == "server" then
     if machine['server-type'] == "dev" then
       command += "/vagrant/scripts/dev.sh\n"
-    elsif machine['server-type'] == "demo" then
-      command += "/vagrant/scripts/demo-server-setup.sh\n"
     end
   end
   return command

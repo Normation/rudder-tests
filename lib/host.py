@@ -115,7 +115,7 @@ class Host:
     """Get rudder version (x.y) if any"""
     if 'rudder-version' not in self.info:
       return None
-    m = re.search('(\d+\.\d+)', self.info['rudder-version'])
+    m = re.search(r'(\d+\.\d+)', self.info['rudder-version'])
     if m:
       return float(m.group(1))
     else:
@@ -174,16 +174,6 @@ class Host:
 
   def pull(self, source, destination):
     utils_shell("vagrant scp \"" + self.hostid + ":" + source + "\" \"" + destination + "\"")
-
-  def push_techniques(self, directory):
-    """ Replace all techniques with the provided ones """
-    # First, erase technique directories matching the tested one
-    name = os.path.basename(os.path.abspath(directory))
-    self.run("cd /var/rudder/configuration-repository/techniques/ && find -mindepth 1 -type d -name " + name + " | xargs rm -rf ", fail_exit=False, live_output=True)
-    # Then push new techniques
-    self.push(directory, "/tmp/")
-    self.run("mv /tmp/" + name + " /var/rudder/configuration-repository/techniques/", live_output=True)
-    self.run("cd /var/rudder/configuration-repository/techniques/ && git add --all . && git commit --allow-empty -m 'Replacing all techniques with the test ones' && rudder server reload-techniques", live_output=True)
 
   def share(self, password):
     """ Shares this box via vagrant cloud """
