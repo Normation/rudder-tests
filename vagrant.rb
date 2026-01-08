@@ -196,6 +196,16 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
     vm.cpus = machine.key?('cpus') ? machine['cpus'] : 1
     vm.nic_model_type = "e1000"
   end
+<<<<<<< Updated upstream
+=======
+  cfg.vm.provider :vmware_desktop do |vm|
+    vm.vmx["memsize"] = memory
+    vm.vmx["numvcpus"] = machine.key?('cpus') ? machine['cpus'] : 2
+    vm.clone_directory = "C:/VagrantVMs" if Vagrant::Util::Platform.windows?
+    vm.allowlist_verified = true
+  end
+    
+>>>>>>> Stashed changes
   if machine['rudder-setup'] =~ /server/ then
     cfg.vm.network :forwarded_port, guest: 80, host: port
     cfg.vm.network :forwarded_port, guest: 443, host: port+1
