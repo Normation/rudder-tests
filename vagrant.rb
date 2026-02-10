@@ -102,6 +102,9 @@ $vagrant_systems = {
   "windows2019" => "StefanScherer/windows_2019",
   "windows2022" => "StefanScherer/windows_2022",
   "windows2025" => "https://publisher.normation.com/dev/windows_2025_virtualbox.box"
+
+  "cis_rhel9_fd" => "normation/cis-almalinux-9-firewalld"
+  "cis_rhel9_nf" => "normation/cis-almalinux-9-nftables"
 }
 
 require 'socket'
