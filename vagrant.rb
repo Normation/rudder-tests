@@ -23,6 +23,10 @@
 $vagrant_systems = {
   "packer" => "",
   "wsus" => "normation/wsus",
+
+  "alma9" => "almalinux/9",
+  "alma10" => "almalinux/10",
+
   "centos5" => "normation/centos-5-64",
   "centos6" => "geerlingguy/centos6",
   "centos6x32" => "bento/centos-6.7-i386",
@@ -40,13 +44,12 @@ $vagrant_systems = {
   "rhel9" => "generic/rocky9",
   "rhel10" => "almalinux/10",
 
+  "oracle6" => "kikitux/oracle6",
   "oracle8" => "jedwards/oracle8",
   "oracle9" => "generic/oracle9",
 
   "al2" => "bento/amazonlinux-2",
   "amazon2023" => "normation/amazon-2023",
-
-  "oracle6" => "kikitux/oracle6",
 
   "sles11"    => "normation/sles-11-03-64",
   "sles12_03" => "normation/sles-12-03-64",
@@ -101,10 +104,10 @@ $vagrant_systems = {
   "windows2016" => "StefanScherer/windows_2016",
   "windows2019" => "StefanScherer/windows_2019",
   "windows2022" => "StefanScherer/windows_2022",
-  "windows2025" => "https://publisher.normation.com/dev/windows_2025_virtualbox.box"
+  "windows2025" => "https://publisher.normation.com/dev/windows_2025_virtualbox.box",
 
-  "cis_rhel9_fd" => "normation/cis-almalinux-9-firewalld"
-  "cis_rhel9_nf" => "normation/cis-almalinux-9-nftables"
+  "cis_rhel9_fd" => "normation/cis-almalinux-9-firewalld",
+  "cis_rhel9_nf" => "normation/cis-almalinux-9-nftables",
 }
 
 require 'socket'

@@ -1,0 +1,7 @@
+{
+  "default":{ "rudder-version": "9.1", "system": "ubuntu24_04" },
+  "server": { "rudder-setup": "server" },
+  "agent1": { "rudder-setup": "agent", "ram": "512" },
+  "agent2": { "rudder-setup": "agent", "ram": "512", "system": "alma9" },
+  "agent3": { "rudder-setup": "none", "ram": "2048", "system": "windows2022" }
+}
