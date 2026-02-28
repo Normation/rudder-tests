@@ -13,6 +13,42 @@ import sys
 import tempfile
 from .utils import shell as utils_shell
 from datetime import datetime
+import platform
+
+def is_wsl():
+    try:
+        with open("/proc/version", "r") as f:
+            return "microsoft" in f.read().lower()
+    except Exception:
+        return False
+    
+def find_vagrant():    
+    if is_wsl():
+        win_vagrant = "/mnt/c/Program Files/Vagrant/bin/vagrant.exe"
+        if os.path.exists(win_vagrant):
+            return win_vagrant
+        
+    vagrant = shutil.which("vagrant")
+    if vagrant:
+        return vagrant
+
+    raise RuntimeError("vagrant command not found")
+
+def find_vboxmanage():
+    if is_wsl():
+        win_vbox = "/mnt/c/Program Files/Oracle/VirtualBox/VBoxManage.exe"
+        if os.path.exists(win_vbox):
+            return win_vbox
+
+    vbox = shutil.which("VBoxManage")
+    if vbox:
+        return vbox
+
+    raise RuntimeError("VBoxManage command not found")
+
+VAGRANT = find_vagrant()
+VBOXMANAGE = find_vboxmanage()
+
 
 class Host:
   """ Vagrant managed host """
@@ -28,77 +64,72 @@ class Host:
 
   def start(self):
     """ Setup and run this host """
-    lockFile = "/tmp/rtf-lock"
-    f = open(lockFile, "w+")
-    while "making sure that no vagrant up are running":
-      try:
-        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        break
-      except IOError:
-          idle = random.randint(5, 10)
-          print("Lock not available, waiting %s seconds"%idle)
-          time.sleep(idle)
-    command = "vagrant up " + self.hostid + " --provider="+self.provider
-    ret = subprocess.call(command.split(" "))
-    fcntl.flock(f, fcntl.LOCK_UN)
-    f.close()
-    return ret
+    command = [
+        VAGRANT,
+        "up",
+        self.hostid
+    ]
+    if self.provider:
+      command.append(f"--provider={self.provider}")
+    return subprocess.call(command)
+
 
   def stop(self):
     """ Destroy this host """
-    return os.system("vagrant destroy -f " + self.hostid)
+    return os.system(f"\"{VAGRANT}\" destroy -f {self.hostid}")
 
   def reprovision(self):
     """ Just run provisioning script this host """
-    return os.system("vagrant provision " + self.hostid)
+    return os.system(f"\"{VAGRANT}\" provision {self.hostid}")
 
   def halt(self):
     """ Halt this host """
-    return os.system("vagrant halt " + self.hostid)
+    return os.system(f"\"{VAGRANT}\" halt {self.hostid}")
 
   def snapshot(self, name):
     """ Snapshot this host """
-    return os.system("vagrant snapshot save " + self.hostid + " " + name)
+    return os.system(f"\"{VAGRANT}\" snapshot save {self.hostid} {name}")
 
   def rollback(self, name):
     """ Go to last snapshot on this host """
-    return os.system("vagrant snapshot restore " + self.hostid + " " + name)
+    return os.system(f"\"{VAGRANT}\" snapshot restore {self.hostid} {name}")
 
   def snapshot_delete(self, name):
     """ Remove last snapshot on this host """
-    return os.system("vagrant snapshot pop " + self.hostid + " " + name)
+    return os.system(f"\"{VAGRANT}\" snapshot pop {self.hostid} {name}")
 
   def export(self, directory):
     """ Export this VM using Virtualbox commads """
     fullname = os.path.basename(os.getcwd()).replace('.', '') + '_' + self.hostid
     # List VMs and do something on the one we are working on
-    for line in os.popen("VBoxManage list vms"):
+    for line in os.popen(f"\"{VBOXMANAGE}\" list vms"):
       m = re.match(r'"' + fullname + r'[0-9_]+" \{(.*)\}', line)
       if m:
-        uuid = m.group(1)
+        uuid = m.group()
         running = False
         print("Exporting " + fullname + " / " + uuid + " to directory " + directory)
         # If the VM is running, pause it (and save its state) and rerun it later
-        for running_line in os.popen("VBoxManage list runningvms"):
+        for running_line in os.popen(f"\"{VBOXMANAGE}\" list runningvms"):
           if re.search(uuid, running_line):
             running = True
         if running:
-          os.system("VBoxManage controlvm " + uuid + " savestate")
-        os.system("VBoxManage clonevm " + uuid + " --options keepallmacs --options keepdisknames --name " + self.hostid + " --basefolder " + directory)
+          os.system(f"\"{VBOXMANAGE}\" controlvm {uuid} savestate")
+        os.system(f"\"{VBOXMANAGE}\" clonevm {uuid} " f"--options keepallmacs --options keepdisknames " f"--name {self.hostid} --basefolder \"{directory}\"")
+
         disk_uuid = ""
         # work around a virtualbox bug, when you clone a vm, the new disk is registered, whateverthe parameters -> unregister it
-        for disk_line in os.popen("VBoxManage list hdds"):
+        for disk_line in os.popen(f"\"{VBOXMANAGE}\" list hdds"):
           m = re.match(r'UUID:\s+([0-9a-f\-]+)', disk_line)
           if m:
             disk_uuid = m.group(1)
           if re.match(r'Location:\s+'+directory+'/'+self.hostid, disk_line):
-            os.system("VBoxManage closemedium disk " + disk_uuid)
+            os.system(f"\"{VBOXMANAGE}\" closemedium disk {disk_uuid}")
         if running:
-          os.system("VBoxManage startvm " + uuid + " --type headless")
+          os.system(f"\"{VBOXMANAGE}\" startvm {uuid} --type headless")
 
   def ssh_config(self, key_directory):
     """ get ssh configuration to connect to this machine """
-    (code, output) = utils_shell("vagrant ssh-config " + self.hostid, fail_exit=False)
+    (code, output) = utils_shell(f"\"{VAGRANT}\" ssh-config {self.hostid}", fail_exit=False)
     if code != 0:
       print("Cannot get ssh-configuration for " + self.hostid)
       print("A patch for vagrant is available here https://github.com/peckpeck/vagrant/commit/93c5b853511548087fba7e8813c34ee45226e1cc")
@@ -124,7 +155,7 @@ class Host:
   def get_ssh_config(self, fail_exit):
     if self.ssh_config_file is None:
       # cache vagrant ssh-config because it is very slow
-      (code,value) = utils_shell("vagrant ssh-config " + self.hostid, fail_exit=fail_exit, keep_output=True)
+      (code,value) = utils_shell(f"\"{VAGRANT}\" ssh-config {self.hostid}", fail_exit=fail_exit, keep_output=True)
       if code == 0:
         self.ssh_config_file = tempfile.NamedTemporaryFile()
         self.ssh_config_file.write(value.encode("utf-8"))
@@ -147,7 +178,8 @@ class Host:
 
     if 'windows' in self.info['system']:
       # assume ssh is working for the windows host, and set to powershell
-      vagrant_cmd = "vagrant winrm " + self.hostid + " -c \"" + command + "\""
+      vagrant_cmd = f"\"{VAGRANT}\" winrm {self.hostid} -c \"{command}\""
+
     else:
       if self.get_ssh_config(fail_exit):
         # same as vagrant ssh -c but making sure any vagrant stdout is removed (and cache ssh config
@@ -170,17 +202,17 @@ class Host:
     return value
 
   def push(self, source, destination):
-    utils_shell("vagrant scp \"" + source + "\" \"" + self.hostid + ":" + destination + "\"")
+    utils_shell(f"\"{VAGRANT}\" scp \"{source}\" \"{self.hostid}:{destination}\"")
 
   def pull(self, source, destination):
-    utils_shell("vagrant scp \"" + self.hostid + ":" + source + "\" \"" + destination + "\"")
+    utils_shell(f"\"{VAGRANT}\" scp \"{self.hostid}:{source}\" \"{destination}\"")
+
 
   def share(self, password):
     """ Shares this box via vagrant cloud """
     # make sure the VM is running
-    os.system("vagrant up " + self.hostid)
-    # run vagrant share, provide a password, print its output and extract the command to run
-    process = pexpect.spawn("/usr/bin/vagrant share --disable-http --ssh "+ self.hostid)
+    os.system(f"\"{VAGRANT}\" up {self.hostid}")
+    process = pexpect.spawn(f"\"{VAGRANT}\" share --disable-http --ssh {self.hostid}")
     process.expect("Please enter a password to encrypt the key: ")
     print(process.before, end='')
     process.sendline(password)
@@ -203,7 +235,7 @@ class Host:
         return m.group(2)+"/rudder"
       m = re.match(r'### AUTOGENERATED FOR PLATFORM ' + self.platform + r' (.*?) (aws:)', line)
       if m:
-        command = "vagrant ssh-config " + self.hostid
+        command = f"\"{VAGRANT}\" ssh-config {self.hostid}"
         (code, output) = utils_shell(command)
         adress = re.match(r'\s*HostName (.*)', output)
         return "https://" + adress.group(1) + "/rudder"

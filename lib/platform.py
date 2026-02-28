@@ -38,9 +38,11 @@ $DOWNLOAD_PASSWORD="xxx"
 require_relative 'vagrant.rb'
 
 Vagrant.configure("2") do |config|
-  config.vm.provider 'virtualbox' do |v|
-      v.linked_clone = true if Vagrant::VERSION =~ /^1.8/
+  config.vm.provider 'vmware_desktop' do |v|
+  v.vmx["memsize"] = "4096"
+  v.vmx["numvcpus"] = "2"
   end
+
   if Vagrant.has_plugin?("vagrant-cachier")
     config.cache.scope = :box
   end
@@ -57,7 +59,7 @@ class Platform:
   def __init__(self, name, override={}):
     self.name = name
     self.hosts = {}
-    self.provider = "virtualbox"
+    self.provider = override.get("provider", "virtualbox")
     self.override = override
     self.base_subnet = "192.168.0.0/24"
     self.has_relay = False
