@@ -59,6 +59,7 @@ $vagrant_systems = {
   "sles15sp1" => "normation/sles-15-64",
   "sles15sp2" => "normation/sles-15-sp2-64",
   "sles15sp4" => "normation/sles-15-sp4-64",
+  "sles15sp7" => "https://publisher.normation.com/dev/sles-15-sp7-amd64.box",
 
   "debian6" => "normation/debian-6-64",
   "debian7" => "normation/debian-7-64",
