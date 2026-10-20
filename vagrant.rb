@@ -81,6 +81,7 @@ $vagrant_systems = {
   "ubuntu20_04" => "normation/ubuntu-20-04-64",
   "ubuntu22_04" => "ubuntu/jammy64",
   "ubuntu24_04" => "bento/ubuntu-24.04",
+  "ubuntu26_04" => "cloud-image/ubuntu-26.04",
 
   "ubuntu10" => "bento/ubuntu-10.04",
   "ubuntu12" => "normation/ubuntu-12.04",
@@ -90,6 +91,7 @@ $vagrant_systems = {
   "ubuntu20" => "normation/ubuntu-20-04-64",
   "ubuntu22" => "ubuntu/jammy64",
   "ubuntu24" => "bento/ubuntu-24.04",
+  "ubuntu26" => "cloud-image/ubuntu-26.04",
 
   "slackware14" => "ratfactor/slackware",
   "slackware15" => "normation/slackware-15-64",
@@ -180,7 +182,7 @@ end
 def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
   # RAM allocation
   if machine['rudder-setup'] =~ /server/ then
-    memory = 2048
+    memory = 3072
   elsif machine['rudder-setup'] =~ /relay/ then
     memory = 2048
   elsif machine['system'] =~ /win/ then
@@ -213,6 +215,7 @@ def vagrant_machine(cfg, machines, host_name, machine, name, ip, port)
     cfg.vm.network :forwarded_port, guest: 5432, host: 15432
 
     cfg.vm.synced_folder "/var/rudder/share", "/var/rudder/share", :create => true
+    cfg.vm.synced_folder "/var/rudder/lib/relay", "/var/rudder/lib/relay", :create => true
     cfg.vm.synced_folder "/var/rudder/inventories", "/var/rudder/inventories", :create => true, :owner => "root", :group => "root"
     cfg.vm.synced_folder "/var/rudder/cfengine-community/inputs", "/var/rudder/cfengine-community/inputs", :create => true, :owner => "root", :group => "root"
   end
